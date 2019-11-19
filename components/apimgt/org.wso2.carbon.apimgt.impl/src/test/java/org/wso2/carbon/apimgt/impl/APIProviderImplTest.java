@@ -4694,6 +4694,12 @@ public class APIProviderImplTest {
         assertNull(jsonObject);
     }
 
+    /**
+     * This method tests the retrieval of API Security Audit Properties when both the tenant and global
+     * configs contain values
+     * @throws APIManagementException
+     * @throws RegistryException
+     */
     @Test
     public void testGetSecurityAuditAttributesFromAllConfigs() throws APIManagementException, RegistryException {
         // Mock values from global config
