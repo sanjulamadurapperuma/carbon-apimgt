@@ -142,9 +142,11 @@ public class SettingsMappingUtil {
         if (securityAuditPropertyObject != null) {
             String apiToken = (String) securityAuditPropertyObject.get(APIConstants.SECURITY_AUDIT_API_TOKEN);
             String collectionId = (String) securityAuditPropertyObject.get(APIConstants.SECURITY_AUDIT_COLLECTION_ID);
+            String hostname = (String) securityAuditPropertyObject.get(APIConstants.SECURITY_AUDIT_HOSTNAME);
 
             properties.setApiToken(apiToken);
             properties.setCollectionId(collectionId);
+            properties.setHostname(hostname);
         }
         return properties;
     }
