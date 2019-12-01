@@ -47,6 +47,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.cxf.jaxrs.ext.MessageContext;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
@@ -842,23 +843,23 @@ public class ApisApiServiceImpl implements ApisApiService {
             String apiDefinition = apiProvider.getOpenAPIDefinition(apiIdentifier);
             // Get configuration file, retrieve API token and collection id
             JSONObject securityAuditPropertyObject = apiProvider.getSecurityAuditAttributesFromConfig(username);
-            String apiToken = (String) securityAuditPropertyObject.get("apiToken");
-            String collectionId = (String) securityAuditPropertyObject.get("collectionId");
-            String hostname = (String) securityAuditPropertyObject.get("hostname");
+            String apiToken = (String) securityAuditPropertyObject.get(APIConstants.SECURITY_AUDIT_API_TOKEN);
+            String collectionId = (String) securityAuditPropertyObject.get(APIConstants.SECURITY_AUDIT_COLLECTION_ID);
+            String baseUrl = (String) securityAuditPropertyObject.get(APIConstants.SECURITY_AUDIT_BASE_URL);
 
-            if (hostname == null) {
-                hostname = APIConstants.BASE_AUDIT_URL;
+            if (baseUrl == null) {
+                baseUrl = APIConstants.BASE_AUDIT_URL;
             }
             // Retrieve the uuid from the database
             String auditUuid = ApiMgtDAO.getInstance().getAuditApiId(apiIdentifier);
             if (auditUuid != null) {
-                updateAuditApi(apiDefinition, apiToken, auditUuid, hostname, isDebugEnabled);
+                updateAuditApi(apiDefinition, apiToken, auditUuid, baseUrl, isDebugEnabled);
             } else {
-                auditUuid = createAuditApi(collectionId, apiToken, apiIdentifier, apiDefinition, hostname,
-                        isDebugEnabled);
+                auditUuid = createAuditApi(collectionId, apiToken, apiIdentifier, apiDefinition,
+                        baseUrl, isDebugEnabled);
             }
             // Logic for the HTTP request
-            String getUrl = hostname + "/" + auditUuid + APIConstants.ASSESSMENT_REPORT;
+            String getUrl = baseUrl + "/" + auditUuid + APIConstants.ASSESSMENT_REPORT;
             URL getReportUrl = new URL(getUrl);
             try (CloseableHttpClient getHttpClient = (CloseableHttpClient) APIUtil
                     .getHttpClient(getReportUrl.getPort(), getReportUrl.getProtocol())) {
@@ -909,7 +910,7 @@ public class ApisApiServiceImpl implements ApisApiService {
         return null;
     }
 
-    private void updateAuditApi(String apiDefinition, String apiToken, String auditUuid, String hostname,
+    private void updateAuditApi(String apiDefinition, String apiToken, String auditUuid, String baseUrl,
             boolean isDebugEnabled)
             throws IOException, APIManagementException {
         // Set the property to be attached in the body of the request
@@ -917,7 +918,7 @@ public class ApisApiServiceImpl implements ApisApiService {
         JSONObject jsonBody = new JSONObject();
         jsonBody.put("specfile", Base64Utils.encode(apiDefinition.getBytes("UTF-8")));
         // Logic for HTTP Request
-        String putUrl = hostname + "/" + auditUuid;
+        String putUrl = baseUrl + "/" + auditUuid;
         URL updateApiUrl = new URL(putUrl);
         try (CloseableHttpClient httpClient = (CloseableHttpClient) APIUtil
                 .getHttpClient(updateApiUrl.getPort(), updateApiUrl.getProtocol())) {
@@ -944,13 +945,13 @@ public class ApisApiServiceImpl implements ApisApiService {
     }
 
     private String createAuditApi(String collectionId, String apiToken, APIIdentifier apiIdentifier,
-            String apiDefinition, String hostname, boolean isDebugEnabled)
+            String apiDefinition, String baseUrl, boolean isDebugEnabled)
             throws IOException, APIManagementException, ParseException {
         HttpURLConnection httpConn;
         OutputStream outputStream;
         PrintWriter writer;
         String auditUuid = null;
-        URL url = new URL(hostname);
+        URL url = new URL(baseUrl);
         httpConn = (HttpURLConnection) url.openConnection();
         httpConn.setUseCaches(false);
         httpConn.setDoOutput(true); // indicates POST method
