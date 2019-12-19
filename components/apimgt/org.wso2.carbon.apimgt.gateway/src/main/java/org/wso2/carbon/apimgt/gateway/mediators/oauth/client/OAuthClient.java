@@ -31,8 +31,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.net.URLEncoder;
-import java.util.Base64;
 
 public class OAuthClient {
     private static final Log log = LogFactory.getLog(OAuthClient.class);
@@ -45,7 +43,7 @@ public class OAuthClient {
     private static final Gson gson = new GsonBuilder().create();
 
     public static TokenResponse generateToken(String url, String apiKey, String apiSecret,
-            String username, String password, String grantType) throws IOException {
+            String grantType) throws IOException {
         if(log.isDebugEnabled()) {
             log.debug("Initializing token generation request: [token-endpoint] " + url);
         }
@@ -79,7 +77,7 @@ public class OAuthClient {
             connection.setRequestMethod(HTTP_POST);
 
             // Set authorization header
-            String credentials = null;
+            String credentials;
             CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
             try {
                 credentials = cryptoUtil.encryptAndBase64Encode((apiKey + ":" + apiSecret).getBytes());
