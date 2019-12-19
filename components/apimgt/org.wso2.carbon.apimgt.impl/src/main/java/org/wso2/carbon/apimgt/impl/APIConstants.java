@@ -1094,6 +1094,18 @@ public final class APIConstants {
         }
     }
 
+    public static class OAuthConstants {
+        public static final String OAUTH_ID = "id";
+        public static final String TOKEN_API_URL = "tokenApiUrl";
+        public static final String OAUTH_API_KEY = "apiKey";
+        public static final String OAUTH_API_SECRET = "apiSecret";
+        public static final String GRANT_TYPE = "grantType";
+        public static final String TOKEN_REFRESH_INTERVAL = "tokenRefreshInterval";
+
+        private OAuthConstants() {
+        }
+    }
+
     // Primary/Secondary Login configuration
     public static final String USERID_LOGIN = "UserIdLogin";
     public static final String EMAIL_LOGIN = "EmailLogin";
