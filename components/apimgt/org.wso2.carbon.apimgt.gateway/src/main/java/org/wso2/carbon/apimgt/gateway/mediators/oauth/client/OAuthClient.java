@@ -24,6 +24,8 @@ import org.apache.commons.httpclient.util.HttpURLConnection;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.apimgt.gateway.mediators.oauth.client.domain.TokenResponse;
+import org.wso2.carbon.core.util.CryptoException;
+import org.wso2.carbon.core.util.CryptoUtil;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -77,9 +79,17 @@ public class OAuthClient {
             connection.setRequestMethod(HTTP_POST);
 
             // Set authorization header
-            String credentials = Base64.getEncoder().encodeToString((apiKey + ":" + apiSecret).getBytes());
-            connection.setRequestProperty(AUTHORIZATION_HEADER, "Basic " + credentials);
-            connection.setRequestProperty(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
+            String credentials = null;
+            CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
+            try {
+                credentials = cryptoUtil.encryptAndBase64Encode((apiKey + ":" + apiSecret).getBytes());
+                connection.setRequestProperty(AUTHORIZATION_HEADER, "Basic " + credentials);
+                connection.setRequestProperty(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
+            } catch (CryptoException e) {
+                log.error("Error while encrypting the credentials");
+            }
+            // TODO - Remove the following line if not needed
+//            credentials = Base64.getEncoder().encodeToString((apiKey + ":" + apiSecret).getBytes());
         }
 
         log.debug("Requesting access token...");
