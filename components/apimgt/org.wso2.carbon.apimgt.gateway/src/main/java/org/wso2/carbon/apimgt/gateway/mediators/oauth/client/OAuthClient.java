@@ -49,6 +49,7 @@ public class OAuthClient {
         }
 
         HttpURLConnection connection = null;
+        // TODO - Code for the grant type password
 //        if(grantType.equals("password")) {
 //            String query = String.format("grant_type=password&username=%spassword%s",
 //                    URLEncoder.encode(username, UTF_8), URLEncoder.encode(password, UTF_8));
@@ -86,25 +87,27 @@ public class OAuthClient {
             } catch (CryptoException e) {
                 log.error("Error while encrypting the credentials");
             }
-            // TODO - Remove the following line if not needed
-//            credentials = Base64.getEncoder().encodeToString((apiKey + ":" + apiSecret).getBytes());
         }
 
         log.debug("Requesting access token...");
 
-        int responseCode = connection.getResponseCode();
-        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        String inputLine;
-        StringBuffer response = new StringBuffer();
-        while((inputLine = in.readLine()) != null) {
-            response.append(inputLine);
-        }
-        in.close();
+        int responseCode = 0;
+        if (connection != null) {
+            responseCode = connection.getResponseCode();
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            String inputLine;
+            StringBuffer response = new StringBuffer();
+            while((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
 
-        if(log.isDebugEnabled()) {
-            log.debug("Response: [status-code] " + responseCode + " [message] " + response.toString());
+            if(log.isDebugEnabled()) {
+                log.debug("Response: [status-code] " + responseCode + " [message] " + response.toString());
+            }
+            return gson.fromJson(response.toString(), TokenResponse.class);
         }
-        return gson.fromJson(response.toString(), TokenResponse.class);
+        return null;
     }
 
 }

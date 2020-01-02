@@ -61,6 +61,7 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             log.debug("OAuth Mediator is invoked...");
         }
 
+        // TODO - See if this definition is actually required
         org.apache.axis2.context.MessageContext axisMC = ((Axis2MessageContext) messageContext).
                 getAxis2MessageContext();
 
@@ -80,7 +81,9 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
         oAuthEndpoint.setTokenRefreshInterval(tokenRefreshInterval);
 
         TokenGeneratorScheduledExecutor scheduledExecutor = new TokenGeneratorScheduledExecutor();
-        scheduledExecutor.schedule(oAuthEndpoint);
+        if (oAuthEndpoint != null) {
+            scheduledExecutor.schedule(oAuthEndpoint);
+        }
 
         String accessToken = TokenCache.getInstance().getTokenMap().get(getEndpointId());
         Map<String, Object> transportHeaders = (Map<String, Object>) ((Axis2MessageContext)messageContext)
