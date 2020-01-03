@@ -46,6 +46,7 @@ public class SecurityConfigContext extends ConfigContextDecorator {
         
         context.put("isEndpointSecured", api.isEndpointSecured());
         context.put("isEndpointAuthDigest", api.isEndpointAuthDigest());
+        context.put("isEndpointOAuth", api.isEndpointOAuth());
         context.put("username", api.getEndpointUTUsername());
         context.put("securevault_alias", alias);
         context.put("base64unpw", new String(Base64.encodeBase64(unpw.getBytes())));

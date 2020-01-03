@@ -298,6 +298,11 @@ public final class APIConstants {
     public static final String API_OVERVIEW_ENDPOINT_AUTH_DIGEST = "overview_endpointAuthDigest";
     public static final String API_OVERVIEW_ENDPOINT_USERNAME = "overview_endpointUsername";
     public static final String API_OVERVIEW_ENDPOINT_PASSWORD = "overview_endpointPpassword";
+    public static final String API_OVERVIEW_ENDPOINT_OAUTH = "overview_endpointOAuth";
+    public static final String API_OVERVIEW_ENDPOINT_TOKEN_URL = "overview_endpointTokenUrl";
+    public static final String API_OVERVIEW_ENDPOINT_API_KEY = "overview_apiKey";
+    public static final String API_OVERVIEW_ENDPOINT_API_SECRET = "overview_apiSecret";
+    public static final String API_OVERVIEW_ENDPOINT_GRANT_TYPE = "overview_grantType";
     public static final String API_OVERVIEW_TRANSPORTS = "overview_transports";
     public static final String API_OVERVIEW_INSEQUENCE = "overview_inSequence";
     public static final String API_OVERVIEW_OUTSEQUENCE = "overview_outSequence";
