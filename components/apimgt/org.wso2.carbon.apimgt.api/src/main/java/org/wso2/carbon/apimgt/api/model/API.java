@@ -90,8 +90,13 @@ public class API implements Serializable {
 
     private boolean endpointSecured = false;
     private boolean endpointAuthDigest = false;
+    private boolean endpointOAuth = false;
     private String endpointUTUsername;
     private String endpointUTPassword;
+    private String tokenUrl;
+    private String apiKey;
+    private String apiSecret;
+    private String grantType;
 
     private String transports;
     private String inSequence;
@@ -684,6 +689,52 @@ public class API implements Serializable {
      */
     public void setEndpointAuthDigest(boolean endpointAuthDigest) {
         this.endpointAuthDigest = endpointAuthDigest;
+    }
+
+    /**
+     * @return the endpointOAuth
+     */
+    public boolean isEndpointOAuth() {
+        return endpointOAuth;
+    }
+
+    /**
+     * @param endpointOAuth the endpointOAuth to set
+     */
+    public void setEndpointOAuth(boolean endpointOAuth) {
+        this.endpointOAuth = endpointOAuth;
+    }
+
+    public String getTokenUrl() {
+        return tokenUrl;
+    }
+
+    public void setTokenUrl(String tokenUrl) {
+        this.tokenUrl = tokenUrl;
+    }
+
+    public String getApiKey() {
+        return apiKey;
+    }
+
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
+    }
+
+    public String getApiSecret() {
+        return apiSecret;
+    }
+
+    public void setApiSecret(String apiSecret) {
+        this.apiSecret = apiSecret;
+    }
+
+    public String getGrantType() {
+        return grantType;
+    }
+
+    public void setGrantType(String grantType) {
+        this.grantType = grantType;
     }
 
     public String getInSequence() {
