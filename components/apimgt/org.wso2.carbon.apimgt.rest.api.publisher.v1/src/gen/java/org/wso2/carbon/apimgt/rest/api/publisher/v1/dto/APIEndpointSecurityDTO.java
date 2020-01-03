@@ -20,7 +20,7 @@ public class APIEndpointSecurityDTO   {
 @XmlEnum(String.class)
 public enum TypeEnum {
 
-    @XmlEnumValue("BASIC") BASIC(String.valueOf("BASIC")), @XmlEnumValue("DIGEST") DIGEST(String.valueOf("DIGEST"));
+    @XmlEnumValue("BASIC") BASIC(String.valueOf("BASIC")), @XmlEnumValue("DIGEST") DIGEST(String.valueOf("DIGEST")), @XmlEnumValue("OAUTH") OAUTH(String.valueOf("OAUTH"));
 
 
     private String value;
@@ -51,9 +51,13 @@ public enum TypeEnum {
     private TypeEnum type = null;
     private String username = null;
     private String password = null;
+    private String tokenUrl = null;
+    private String apiKey = null;
+    private String apiSecret = null;
+    private String grantType = null;
 
   /**
-   * Accepts one of the following, basic or digest.
+   * Accepts one of the following, basic, digest or oauth.
    **/
   public APIEndpointSecurityDTO type(TypeEnum type) {
     this.type = type;
@@ -61,7 +65,7 @@ public enum TypeEnum {
   }
 
   
-  @ApiModelProperty(example = "basic", value = "Accepts one of the following, basic or digest.")
+  @ApiModelProperty(example = "basic", value = "Accepts one of the following, basic, digest or oauth.")
   @JsonProperty("type")
   public TypeEnum getType() {
     return type;
@@ -104,6 +108,74 @@ public enum TypeEnum {
     this.password = password;
   }
 
+  /**
+   **/
+  public APIEndpointSecurityDTO tokenUrl(String tokenUrl) {
+    this.tokenUrl = tokenUrl;
+    return this;
+  }
+
+  
+  @ApiModelProperty(example = "http://localhost:8244/token", value = "")
+  @JsonProperty("tokenUrl")
+  public String getTokenUrl() {
+    return tokenUrl;
+  }
+  public void setTokenUrl(String tokenUrl) {
+    this.tokenUrl = tokenUrl;
+  }
+
+  /**
+   **/
+  public APIEndpointSecurityDTO apiKey(String apiKey) {
+    this.apiKey = apiKey;
+    return this;
+  }
+
+  
+  @ApiModelProperty(example = "by2gPAePag6N165_NVnKB7cI8iAa", value = "")
+  @JsonProperty("apiKey")
+  public String getApiKey() {
+    return apiKey;
+  }
+  public void setApiKey(String apiKey) {
+    this.apiKey = apiKey;
+  }
+
+  /**
+   **/
+  public APIEndpointSecurityDTO apiSecret(String apiSecret) {
+    this.apiSecret = apiSecret;
+    return this;
+  }
+
+  
+  @ApiModelProperty(example = "3KQt5bvgoesIS7TRj58IsoqlIgIa", value = "")
+  @JsonProperty("apiSecret")
+  public String getApiSecret() {
+    return apiSecret;
+  }
+  public void setApiSecret(String apiSecret) {
+    this.apiSecret = apiSecret;
+  }
+
+  /**
+   **/
+  public APIEndpointSecurityDTO grantType(String grantType) {
+    this.grantType = grantType;
+    return this;
+  }
+
+  
+  @ApiModelProperty(example = "client_credentials", value = "")
+  @JsonProperty("grantType")
+  public String getGrantType() {
+    return grantType;
+  }
+  public void setGrantType(String grantType) {
+    this.grantType = grantType;
+  }
+
 
   @Override
   public boolean equals(java.lang.Object o) {
@@ -116,12 +188,16 @@ public enum TypeEnum {
     APIEndpointSecurityDTO apIEndpointSecurity = (APIEndpointSecurityDTO) o;
     return Objects.equals(type, apIEndpointSecurity.type) &&
         Objects.equals(username, apIEndpointSecurity.username) &&
-        Objects.equals(password, apIEndpointSecurity.password);
+        Objects.equals(password, apIEndpointSecurity.password) &&
+        Objects.equals(tokenUrl, apIEndpointSecurity.tokenUrl) &&
+        Objects.equals(apiKey, apIEndpointSecurity.apiKey) &&
+        Objects.equals(apiSecret, apIEndpointSecurity.apiSecret) &&
+        Objects.equals(grantType, apIEndpointSecurity.grantType);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, username, password);
+    return Objects.hash(type, username, password, tokenUrl, apiKey, apiSecret, grantType);
   }
 
   @Override
@@ -132,6 +208,10 @@ public enum TypeEnum {
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("    username: ").append(toIndentedString(username)).append("\n");
     sb.append("    password: ").append(toIndentedString(password)).append("\n");
+    sb.append("    tokenUrl: ").append(toIndentedString(tokenUrl)).append("\n");
+    sb.append("    apiKey: ").append(toIndentedString(apiKey)).append("\n");
+    sb.append("    apiSecret: ").append(toIndentedString(apiSecret)).append("\n");
+    sb.append("    grantType: ").append(toIndentedString(grantType)).append("\n");
     sb.append("}");
     return sb.toString();
   }
