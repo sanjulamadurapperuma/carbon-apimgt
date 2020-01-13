@@ -645,10 +645,20 @@ public class APIMappingUtil {
         APIEndpointSecurityDTO securityDTO = dto.getEndpointSecurity();
         if (dto.getEndpointSecurity() != null && securityDTO.getType() != null) {
             api.setEndpointSecured(true);
-            api.setEndpointUTUsername(securityDTO.getUsername());
-            api.setEndpointUTPassword(securityDTO.getPassword());
+
             if (APIEndpointSecurityDTO.TypeEnum.DIGEST.equals(securityDTO.getType())) {
                 api.setEndpointAuthDigest(true);
+                api.setEndpointUTUsername(securityDTO.getUsername());
+                api.setEndpointUTPassword(securityDTO.getPassword());
+            } else if (APIEndpointSecurityDTO.TypeEnum.OAUTH.equals(securityDTO.getType())) {
+                api.setEndpointOAuth(true);
+                api.setTokenUrl(securityDTO.getTokenUrl());
+                api.setApiKey(securityDTO.getApiKey());
+                api.setApiSecret(securityDTO.getApiSecret());
+                api.setGrantType(securityDTO.getGrantType());
+            } else {
+                api.setEndpointUTUsername(securityDTO.getUsername());
+                api.setEndpointUTPassword(securityDTO.getPassword());
             }
         }
     }
@@ -962,16 +972,31 @@ public class APIMappingUtil {
         if (api.isEndpointSecured()) {
             APIEndpointSecurityDTO securityDTO = new APIEndpointSecurityDTO();
             securityDTO.setType(APIEndpointSecurityDTO.TypeEnum.BASIC); //set default as basic
-            securityDTO.setUsername(api.getEndpointUTUsername());
+
             String tenantDomain = MultitenantUtils.getTenantDomain(APIUtil.replaceEmailDomainBack(api.getId()
                     .getProviderName()));
-            if (checkEndpointSecurityPasswordEnabled(tenantDomain)) {
-                securityDTO.setPassword(api.getEndpointUTPassword());
-            } else {
-                securityDTO.setPassword(""); //Do not expose password
-            }
+
             if (api.isEndpointAuthDigest()) {
                 securityDTO.setType(APIEndpointSecurityDTO.TypeEnum.DIGEST);
+                securityDTO.setUsername(api.getEndpointUTUsername());
+                if (checkEndpointSecurityPasswordEnabled(tenantDomain)) {
+                    securityDTO.setPassword(api.getEndpointUTPassword());
+                } else {
+                    securityDTO.setPassword(""); //Do not expose password
+                }
+            } else if (api.isEndpointOAuth()) {
+                securityDTO.setType(APIEndpointSecurityDTO.TypeEnum.OAUTH);
+                securityDTO.setTokenUrl(api.getTokenUrl());
+                securityDTO.setApiKey(api.getApiKey());
+                securityDTO.setApiSecret(api.getApiSecret());
+                securityDTO.setGrantType(api.getGrantType());
+            } else {
+                securityDTO.setUsername(api.getEndpointUTUsername());
+                if (checkEndpointSecurityPasswordEnabled(tenantDomain)) {
+                    securityDTO.setPassword(api.getEndpointUTPassword());
+                } else {
+                    securityDTO.setPassword(""); //Do not expose password
+                }
             }
             dto.setEndpointSecurity(securityDTO);
         }
