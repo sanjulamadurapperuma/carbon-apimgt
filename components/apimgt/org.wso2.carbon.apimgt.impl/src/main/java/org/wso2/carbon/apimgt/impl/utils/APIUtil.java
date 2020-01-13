@@ -660,14 +660,20 @@ public final class APIUtil {
                 uriTemplate.setScopes(scope);
                 uriTemplate.setResourceURI(api.getUrl());
                 uriTemplate.setResourceSandboxURI(api.getSandboxUrl());
-                // AWS Lambda: set arn to URI template
+                // AWS Lambda: set arn & timeout to URI template
                 if (paths != null) {
                     JSONObject path = (JSONObject) paths.get(uTemplate);
                     if (path != null) {
                         JSONObject operation = (JSONObject) path.get(method.toLowerCase());
-                        if (operation != null && operation.containsKey(APIConstants.SWAGGER_X_AMZN_RESOURCE_NAME)) {
-                            uriTemplate.setAmznResourceName((String)
-                                    operation.get(APIConstants.SWAGGER_X_AMZN_RESOURCE_NAME));
+                        if (operation != null) {
+                            if (operation.containsKey(APIConstants.SWAGGER_X_AMZN_RESOURCE_NAME)) {
+                                uriTemplate.setAmznResourceName((String)
+                                        operation.get(APIConstants.SWAGGER_X_AMZN_RESOURCE_NAME));
+                            }
+                            if (operation.containsKey(APIConstants.SWAGGER_X_AMZN_RESOURCE_TIMEOUT)) {
+                                uriTemplate.setAmznResourceTimeout(((Long)
+                                        operation.get(APIConstants.SWAGGER_X_AMZN_RESOURCE_TIMEOUT)).intValue());
+                            }
                         }
                     }
                 }
@@ -8216,8 +8222,15 @@ public final class APIUtil {
      * @param accessExp        - Value of the ACCESSED Expiry Type
      * @return - The cache object
      */
-    public static Cache getCache(final String cacheManagerName, final String cacheName, final long modifiedExp,
+    public synchronized static Cache getCache(final String cacheManagerName, final String cacheName, final long modifiedExp,
                                  final long accessExp) {
+
+        Iterable<Cache<?, ?>> availableCaches = Caching.getCacheManager(cacheManagerName).getCaches();
+        for (Cache cache:availableCaches) {
+            if(cache.getName().equalsIgnoreCase(getCacheName(cacheName))){
+                return Caching.getCacheManager(cacheManagerName).getCache(cacheName);
+            }
+        }
 
         return Caching.getCacheManager(
                 cacheManagerName).createCacheBuilder(cacheName).
@@ -8236,6 +8249,11 @@ public final class APIUtil {
      */
     public static Cache getCache(final String cacheManagerName, final String cacheName) {
         return Caching.getCacheManager(cacheManagerName).getCache(cacheName);
+    }
+
+    private static String getCacheName(String cacheName) {
+        return Boolean.parseBoolean(ServerConfiguration.getInstance().getFirstProperty("Cache.ForceLocalCache"))
+                && !cacheName.startsWith("$__local__$.") ? "$__local__$." + cacheName : cacheName;
     }
 
     /**
