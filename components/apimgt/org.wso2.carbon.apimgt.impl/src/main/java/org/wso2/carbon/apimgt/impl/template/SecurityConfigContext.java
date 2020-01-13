@@ -51,6 +51,10 @@ public class SecurityConfigContext extends ConfigContextDecorator {
         context.put("securevault_alias", alias);
         context.put("base64unpw", new String(Base64.encodeBase64(unpw.getBytes())));
         context.put("isSecureVaultEnabled", isSecureVaultEnabled);
+        context.put("tokenUrl", api.getTokenUrl());
+        context.put("apiKey", api.getApiKey());
+        context.put("apiSecret", api.getApiSecret());
+        context.put("grantType", api.getGrantType());
         
         return context;
     }
