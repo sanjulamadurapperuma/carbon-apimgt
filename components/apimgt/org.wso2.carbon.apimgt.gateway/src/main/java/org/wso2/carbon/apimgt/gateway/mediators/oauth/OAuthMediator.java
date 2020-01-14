@@ -74,12 +74,6 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
         oAuthEndpoint.setApiSecret(apiSecret);
         oAuthEndpoint.setGrantType(grantType);
 
-        // TODO - Remove this section when replaced with code block after this
-//        TokenGeneratorScheduledExecutor scheduledExecutor = new TokenGeneratorScheduledExecutor();
-//        if (oAuthEndpoint != null) {
-//            scheduledExecutor.schedule(oAuthEndpoint);
-//        }
-
         TokenResponse tokenResponse = null;
         if (oAuthEndpoint != null) {
             try {
@@ -95,7 +89,6 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             }
         }
 
-//        String accessToken = TokenCache.getInstance().getTokenMap().get(getEndpointId());
         String accessToken = null;
         if (tokenResponse != null) {
             accessToken = tokenResponse.getAccessToken();
