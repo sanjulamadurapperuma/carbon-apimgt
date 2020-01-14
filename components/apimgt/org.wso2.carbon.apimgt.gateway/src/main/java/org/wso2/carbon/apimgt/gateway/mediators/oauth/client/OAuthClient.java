@@ -20,17 +20,22 @@ package org.wso2.carbon.apimgt.gateway.mediators.oauth.client;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.apache.commons.httpclient.util.HttpURLConnection;
+import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.gateway.mediators.oauth.client.domain.TokenResponse;
-import org.wso2.carbon.core.util.CryptoException;
-import org.wso2.carbon.core.util.CryptoUtil;
+import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.util.Base64;
 
 public class OAuthClient {
     private static final Log log = LogFactory.getLog(OAuthClient.class);
@@ -43,12 +48,12 @@ public class OAuthClient {
     private static final Gson gson = new GsonBuilder().create();
 
     public static TokenResponse generateToken(String url, String apiKey, String apiSecret,
-            String grantType) throws IOException {
+            String grantType) throws IOException, APIManagementException {
         if(log.isDebugEnabled()) {
             log.debug("Initializing token generation request: [token-endpoint] " + url);
         }
 
-        HttpURLConnection connection = null;
+        HttpPost httpPost = null;
         // TODO - Code for the grant type password
 //        if(grantType.equals("password")) {
 //            String query = String.format("grant_type=password&username=%spassword%s",
@@ -68,44 +73,47 @@ public class OAuthClient {
 //            connection.setRequestProperty(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
 //        } else if(grantType.equals("client_credentials")) {
         if(grantType.equals("client_credentials")) {
-            url += "?grant_type=client_credentials";
+            // TODO - Following line excluded because of the OAuth endpoint not accepting parameters
+            //            url += "?grant_type=client_credentials";
+            String data = "grant_type=client_credentials";
 
             URL url_ = new URL(url);
-            connection = (HttpURLConnection) url_.openConnection();
-            connection.setDoOutput(true);
-
-            // Set HTTP method
-            connection.setRequestMethod(HTTP_POST);
-
+            httpPost = new HttpPost(url);
             // Set authorization header
-            String credentials;
-            CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
-            try {
-                credentials = cryptoUtil.encryptAndBase64Encode((apiKey + ":" + apiSecret).getBytes());
-                connection.setRequestProperty(AUTHORIZATION_HEADER, "Basic " + credentials);
-                connection.setRequestProperty(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
-            } catch (CryptoException e) {
-                log.error("Error while encrypting the credentials");
-            }
-        }
+            String credentials = Base64.getEncoder().encodeToString((apiKey + ":" + apiSecret).getBytes());
 
-        log.debug("Requesting access token...");
+            try (CloseableHttpClient httpClient = (CloseableHttpClient) APIUtil
+                    .getHttpClient(url_.getPort(), url_.getProtocol())) {
+                httpPost.setHeader(AUTHORIZATION_HEADER, "Basic " + credentials);
+                httpPost.setHeader(CONTENT_TYPE_HEADER, "application/x-www-form-urlencoded");
+                httpPost.setEntity(new StringEntity(data));
 
-        int responseCode = 0;
-        if (connection != null) {
-            responseCode = connection.getResponseCode();
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            String inputLine;
-            StringBuffer response = new StringBuffer();
-            while((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
-            }
-            in.close();
+                try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+                    log.debug("Requesting access token...");
 
-            if(log.isDebugEnabled()) {
-                log.debug("Response: [status-code] " + responseCode + " [message] " + response.toString());
+                    int responseCode = response.getStatusLine().getStatusCode();
+
+                    if (!(responseCode == HttpStatus.SC_OK)) {
+                        throw new APIManagementException(
+                                "Error while accessing the Token URL. Found http status " + response.getStatusLine());
+                    }
+                    BufferedReader reader = new BufferedReader(
+                            new InputStreamReader(response.getEntity().getContent(), "UTF-8"));
+                    String inputLine;
+                    StringBuilder stringBuilder = new StringBuilder();
+
+                    while ((inputLine = reader.readLine()) != null) {
+                        stringBuilder.append(inputLine);
+                    }
+
+                    if (log.isDebugEnabled()) {
+                        log.debug("Response: [status-code] " + responseCode + " [message] " + stringBuilder.toString());
+                    }
+                    return gson.fromJson(stringBuilder.toString(), TokenResponse.class);
+                } finally {
+                    httpPost.releaseConnection();
+                }
             }
-            return gson.fromJson(response.toString(), TokenResponse.class);
         }
         return null;
     }
