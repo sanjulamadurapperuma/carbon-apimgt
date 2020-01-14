@@ -25,6 +25,8 @@ import org.apache.synapse.MessageContext;
 import org.apache.synapse.core.SynapseEnvironment;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
 import org.apache.synapse.mediators.AbstractMediator;
+import org.wso2.carbon.apimgt.gateway.mediators.oauth.client.OAuthClient;
+import org.wso2.carbon.apimgt.gateway.mediators.oauth.client.domain.TokenResponse;
 import org.wso2.carbon.apimgt.gateway.mediators.oauth.conf.OAuthEndpoint;
 import org.wso2.carbon.apimgt.impl.APIConstants.OAuthConstants;
 
@@ -72,16 +74,38 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
         oAuthEndpoint.setApiSecret(apiSecret);
         oAuthEndpoint.setGrantType(grantType);
 
-        TokenGeneratorScheduledExecutor scheduledExecutor = new TokenGeneratorScheduledExecutor();
+        // TODO - Remove this section when replaced with code block after this
+//        TokenGeneratorScheduledExecutor scheduledExecutor = new TokenGeneratorScheduledExecutor();
+//        if (oAuthEndpoint != null) {
+//            scheduledExecutor.schedule(oAuthEndpoint);
+//        }
+
+        TokenResponse tokenResponse = null;
         if (oAuthEndpoint != null) {
-            scheduledExecutor.schedule(oAuthEndpoint);
+            try {
+                log.info("Generating access token...");
+
+                tokenResponse = OAuthClient.generateToken(oAuthEndpoint.getTokenApiUrl(),
+                        oAuthEndpoint.getApiKey(), oAuthEndpoint.getApiSecret(), oAuthEndpoint.getGrantType());
+                // TODO - Remove this log
+                log.info("Access Token generated: "
+                        + " [access-token] " + tokenResponse.getAccessToken() + "\n\n");
+            } catch(Exception e) {
+                log.error("Could not generate access token...", e);
+            }
         }
 
-        String accessToken = TokenCache.getInstance().getTokenMap().get(getEndpointId());
-        Map<String, Object> transportHeaders = (Map<String, Object>) ((Axis2MessageContext)messageContext)
-                .getAxis2MessageContext().getProperty("TRANSPORT_HEADERS");
-        transportHeaders.put("Authorization", "Bearer " + accessToken);
-        log.debug("Access token set: " + accessToken);
+//        String accessToken = TokenCache.getInstance().getTokenMap().get(getEndpointId());
+        String accessToken = null;
+        if (tokenResponse != null) {
+            accessToken = tokenResponse.getAccessToken();
+            Map<String, Object> transportHeaders = (Map<String, Object>) ((Axis2MessageContext)messageContext)
+                    .getAxis2MessageContext().getProperty("TRANSPORT_HEADERS");
+            transportHeaders.put("Authorization", "Bearer " + accessToken);
+            log.debug("Access token set: " + accessToken);
+        } else {
+            log.debug("Token Response is null...");
+        }
         return true;
     }
 
