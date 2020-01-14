@@ -2,12 +2,12 @@ package org.wso2.carbon.apimgt.gateway.mediators.oauth.conf;
 
 public class OAuthEndpoint {
 
-    private String id;
+    private String id = "3421";
     private String tokenApiUrl;
     private String apiKey;
     private String apiSecret;
     private String grantType;
-    private int tokenRefreshInterval;
+    private int tokenRefreshInterval = 20;
 
     public String getId() {
         return id;
