@@ -34,6 +34,7 @@ import org.apache.axis2.engine.AxisConfiguration;
 import org.apache.axis2.transport.http.HTTPConstants;
 import org.apache.axis2.util.JavaUtils;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -82,6 +83,7 @@ import org.wso2.carbon.apimgt.api.doc.model.APIResource;
 import org.wso2.carbon.apimgt.api.doc.model.Operation;
 import org.wso2.carbon.apimgt.api.doc.model.Parameter;
 import org.wso2.carbon.apimgt.api.model.API;
+import org.wso2.carbon.apimgt.api.model.APICategory;
 import org.wso2.carbon.apimgt.api.model.APIIdentifier;
 import org.wso2.carbon.apimgt.api.model.APIProduct;
 import org.wso2.carbon.apimgt.api.model.APIProductIdentifier;
@@ -110,12 +112,7 @@ import org.wso2.carbon.apimgt.api.model.policy.PolicyConstants;
 import org.wso2.carbon.apimgt.api.model.policy.QuotaPolicy;
 import org.wso2.carbon.apimgt.api.model.policy.RequestCountLimit;
 import org.wso2.carbon.apimgt.api.model.policy.SubscriptionPolicy;
-import org.wso2.carbon.apimgt.impl.APIConstants;
-import org.wso2.carbon.apimgt.impl.APIMRegistryServiceImpl;
-import org.wso2.carbon.apimgt.impl.APIManagerAnalyticsConfiguration;
-import org.wso2.carbon.apimgt.impl.APIManagerConfiguration;
-import org.wso2.carbon.apimgt.impl.PasswordResolverFactory;
-import org.wso2.carbon.apimgt.impl.ThrottlePolicyDeploymentManager;
+import org.wso2.carbon.apimgt.impl.*;
 import org.wso2.carbon.apimgt.impl.clients.ApplicationManagementServiceClient;
 import org.wso2.carbon.apimgt.impl.clients.OAuthAdminClient;
 import org.wso2.carbon.apimgt.impl.clients.UserInformationRecoveryClient;
@@ -481,6 +478,7 @@ public final class APIUtil {
             api.setCorsConfiguration(getCorsConfigurationFromArtifact(artifact));
             api.setAuthorizationHeader(artifact.getAttribute(APIConstants.API_OVERVIEW_AUTHORIZATION_HEADER));
             api.setApiSecurity(artifact.getAttribute(APIConstants.API_OVERVIEW_API_SECURITY));
+            api.setApiCategories(getAPICategoriesFromAPIGovernanceArtifact(artifact, tenantId));
 
         } catch (GovernanceException e) {
             String msg = "Failed to get API for artifact ";
@@ -711,7 +709,7 @@ public final class APIUtil {
                 api.setMonetizationProperties(jsonObj);
             }
             api.setGatewayLabels(getLabelsFromAPIGovernanceArtifact(artifact, api.getId().getProviderName()));
-
+            api.setApiCategories(getAPICategoriesFromAPIGovernanceArtifact(artifact, tenantId));
             //get endpoint config string from artifact, parse it as a json and set the environment list configured with
             //non empty URLs to API object
             try {
@@ -1266,6 +1264,15 @@ public final class APIUtil {
             //attaching micro-gateway labels to the API
             attachLabelsToAPIArtifact(artifact, api, tenantDomain);
 
+            //attaching api categories to the API
+            List<APICategory> attachedApiCategories = api.getApiCategories();
+            artifact.removeAttribute(APIConstants.API_CATEGORIES_CATEGORY_NAME);
+            if (attachedApiCategories != null) {
+                for (APICategory category : attachedApiCategories) {
+                    artifact.addAttribute(APIConstants.API_CATEGORIES_CATEGORY_NAME, category.getName());
+                }
+            }
+
             //set monetization status (i.e - enabled or disabled)
             artifact.setAttribute(APIConstants.Monetization.API_MONETIZATION_STATUS, Boolean.toString(api.getMonetizationStatus()));
             //set additional monetization data
@@ -1374,6 +1381,15 @@ public final class APIUtil {
             if (apiProduct.getMonetizationProperties() != null) {
                 artifact.setAttribute(APIConstants.Monetization.API_MONETIZATION_PROPERTIES,
                         apiProduct.getMonetizationProperties().toJSONString());
+            }
+
+            //attaching api categories to the API
+            List<APICategory> attachedApiCategories = apiProduct.getApiCategories();
+            artifact.removeAttribute(APIConstants.API_CATEGORIES_CATEGORY_NAME);
+            if (attachedApiCategories != null) {
+                for (APICategory category : attachedApiCategories) {
+                    artifact.addAttribute(APIConstants.API_CATEGORIES_CATEGORY_NAME, category.getName());
+                }
             }
         } catch (GovernanceException e) {
             String msg = "Failed to create API for : " + apiProduct.getId().getName();
@@ -7302,6 +7318,19 @@ public final class APIUtil {
     }
 
     /**
+     * Returns the configuration of the Identity Provider. This is used for login/logout operation of API Publisher and
+     *  API Developer Portal. By default, this is not defined in the configuration hence this returns null. In that
+     *  case, local server will be used as the IDP.
+     *
+     * @return configuration of the Identity Provider from the api-manager configuration
+     * @throws APIManagementException error when retrieving the configuration
+     */
+    public static IDPConfiguration getIdentityProviderConfig() throws APIManagementException {
+        return ServiceReferenceHolder.getInstance().getAPIManagerConfigurationService()
+                .getAPIManagerConfiguration().getIdentityProviderConfig();
+    }
+
+    /**
      * Extract the provider of the API from name
      *
      * @param apiVersion   - API Name with version
@@ -9257,6 +9286,7 @@ public final class APIUtil {
                 JSONObject jsonObj = (JSONObject) parser.parse(monetizationInfo);
                 apiProduct.setMonetizationProperties(jsonObj);
             }
+            apiProduct.setApiCategories(getAPICategoriesFromAPIGovernanceArtifact(artifact, tenantId));
         } catch (GovernanceException e) {
             String msg = "Failed to get API Product for artifact ";
             throw new APIManagementException(msg, e);
@@ -9845,6 +9875,68 @@ public final class APIUtil {
             return username += SUPER_TENANT_SUFFIX;
         }
         return username;
+    }
+
+    /**
+     * This method returns the categories attached to the API
+     *
+     * @param artifact        API artifact
+     * @param tenantID        tenant ID of API Provider
+     * @return List<APICategory> list of categories
+     */
+    private static List<APICategory> getAPICategoriesFromAPIGovernanceArtifact(GovernanceArtifact artifact, int tenantID)
+            throws GovernanceException, APIManagementException {
+        String[] categoriesOfAPI = artifact.getAttributes(APIConstants.API_CATEGORIES_CATEGORY_NAME);
+
+        List<APICategory> categoryList = new ArrayList<>();
+
+        if (ArrayUtils.isNotEmpty(categoriesOfAPI)) {
+            //category array retrieved from artifact has only the category name, therefore we need to fetch categories
+            //and fill out missing attributes before attaching the list to the api
+            String tenantDomain = getTenantDomainFromTenantId(tenantID);
+            List<APICategory> allCategories = getAllAPICategoriesOfTenant(tenantDomain);
+
+            //todo-category: optimize this loop with breaks
+            for (String categoryName : categoriesOfAPI) {
+                for (APICategory category : allCategories) {
+                    if (categoryName.equals(category.getName())) {
+                        categoryList.add(category);
+                        break;
+                    }
+                }
+            }
+        }
+        return categoryList;
+    }
+
+    /**
+     * This method is used to get the categories in a given tenant space
+     *
+     * @param tenantDomain tenant domain name
+     * @return categories in a given tenant space
+     * @throws APIManagementException if failed to fetch categories
+     */
+    public static List<APICategory> getAllAPICategoriesOfTenant(String tenantDomain) throws APIManagementException {
+        ApiMgtDAO apiMgtDAO = ApiMgtDAO.getInstance();
+        int tenantId = getTenantIdFromTenantDomain(tenantDomain);
+        return apiMgtDAO.getAllCategories(tenantId);
+    }
+
+    /**
+     * Validates the API category names to be attached to an API
+     * @param categories
+     * @param tenantDomain
+     * @return
+     */
+    public static boolean validateAPICategories(List<APICategory> categories, String tenantDomain)
+            throws APIManagementException {
+        List<APICategory> availableCategories = getAllAPICategoriesOfTenant(tenantDomain);
+        for (APICategory category : categories) {
+            if (!availableCategories.contains(category)) {
+                return false;
+            }
+        }
+        return true;
     }
 }
 

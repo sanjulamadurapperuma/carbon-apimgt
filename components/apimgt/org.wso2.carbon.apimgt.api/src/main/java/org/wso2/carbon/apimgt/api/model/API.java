@@ -168,6 +168,8 @@ public class API implements Serializable {
      */
     private boolean enableSchemaValidation = false;
 
+    private List<APICategory> apiCategories;
+
 
     public void setEnvironmentList(Set<String> environmentList) {
         this.environmentList = environmentList;
@@ -1035,6 +1037,14 @@ public class API implements Serializable {
                     .append("\"}\n");
         }
         return sb.toString();
+    }
+
+    public void setApiCategories(List<APICategory> apiCategories) {
+        this.apiCategories = apiCategories;
+    }
+
+    public List<APICategory> getApiCategories() {
+        return apiCategories;
     }
 
     @Override
