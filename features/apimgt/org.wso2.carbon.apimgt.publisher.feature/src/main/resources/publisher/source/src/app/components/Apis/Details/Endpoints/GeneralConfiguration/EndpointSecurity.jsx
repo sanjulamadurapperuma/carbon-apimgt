@@ -89,6 +89,7 @@ function EndpointSecurity(props) {
         }
         onChangeEndpointAuth(endpointSecurityInfo[field], field);
     };
+    // TODO - Fix the issue where the username and password is not shown by default when endpoint security is enabled
     return (
         <Grid container direction='row' spacing={2}>
             <Grid item xs={6}>
