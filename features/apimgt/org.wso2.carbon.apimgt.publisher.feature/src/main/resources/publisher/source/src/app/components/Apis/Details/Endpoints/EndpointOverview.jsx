@@ -425,7 +425,15 @@ function EndpointOverview(props) {
      * */
     const handleToggleEndpointSecurity = () => {
         const tmpSecurityInfo = endpointSecurityInfo === null
-            ? { type: 'BASIC', username: null, password: null } : null;
+            ? {
+                type: 'BASIC',
+                username: null,
+                password: null,
+                grantType: null,
+                tokenUrl: null,
+                apiKey: null,
+                apiSecret: null,
+            } : null;
         setEndpointSecurityInfo(tmpSecurityInfo);
         endpointsDispatcher({ action: 'endpointSecurity', value: tmpSecurityInfo });
     };
