@@ -419,6 +419,11 @@ public final class APIUtil {
             } else { //If APIEndpointPasswordRegistryHandler is enabled take password from the registry hidden property
                 api.setEndpointUTPassword(getActualEpPswdFromHiddenProperty(api, registry));
             }
+            api.setEndpointOAuth(Boolean.parseBoolean(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_OAUTH)));
+            api.setGrantType(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_GRANT_TYPE));
+            api.setTokenUrl(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_TOKEN_URL));
+            api.setApiKey(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_KEY));
+            api.setApiSecret(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_SECRET));
             api.setTransports(artifact.getAttribute(APIConstants.API_OVERVIEW_TRANSPORTS));
             api.setInSequence(artifact.getAttribute(APIConstants.API_OVERVIEW_INSEQUENCE));
             api.setOutSequence(artifact.getAttribute(APIConstants.API_OVERVIEW_OUTSEQUENCE));
@@ -612,6 +617,11 @@ public final class APIUtil {
             } else { //If APIEndpointPasswordRegistryHandler is enabled take password from the registry hidden property
                 api.setEndpointUTPassword(getActualEpPswdFromHiddenProperty(api, registry));
             }
+            api.setEndpointOAuth(Boolean.parseBoolean(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_OAUTH)));
+            api.setGrantType(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_GRANT_TYPE));
+            api.setTokenUrl(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_TOKEN_URL));
+            api.setApiKey(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_KEY));
+            api.setApiSecret(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_SECRET));
             api.setTransports(artifact.getAttribute(APIConstants.API_OVERVIEW_TRANSPORTS));
             api.setInSequence(artifact.getAttribute(APIConstants.API_OVERVIEW_INSEQUENCE));
             api.setOutSequence(artifact.getAttribute(APIConstants.API_OVERVIEW_OUTSEQUENCE));
@@ -1213,6 +1223,11 @@ public final class APIUtil {
                     APIConstants.API_OVERVIEW_ENDPOINT_AUTH_DIGEST, Boolean.toString(api.isEndpointAuthDigest()));
             artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_USERNAME, api.getEndpointUTUsername());
             artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_PASSWORD, api.getEndpointUTPassword());
+            artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_OAUTH, Boolean.toString(api.isEndpointOAuth()));
+            artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_GRANT_TYPE, api.getGrantType());
+            artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_TOKEN_URL, api.getTokenUrl());
+            artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_KEY, api.getApiKey());
+            artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_SECRET, api.getApiSecret());
             artifact.setAttribute(APIConstants.API_OVERVIEW_TRANSPORTS, api.getTransports());
             artifact.setAttribute(APIConstants.API_OVERVIEW_INSEQUENCE, api.getInSequence());
             artifact.setAttribute(APIConstants.API_OVERVIEW_OUTSEQUENCE, api.getOutSequence());
@@ -3400,6 +3415,11 @@ public final class APIUtil {
             } else { //If APIEndpointPasswordRegistryHandler is enabled take password from the registry hidden property
                 api.setEndpointUTPassword(getActualEpPswdFromHiddenProperty(api, registry));
             }
+            api.setEndpointOAuth(Boolean.parseBoolean(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_OAUTH)));
+            api.setGrantType(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_GRANT_TYPE));
+            api.setTokenUrl(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_TOKEN_URL));
+            api.setApiKey(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_KEY));
+            api.setApiSecret(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_SECRET));
             api.setTransports(artifact.getAttribute(APIConstants.API_OVERVIEW_TRANSPORTS));
 
             api.setEndpointConfig(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_CONFIG));
