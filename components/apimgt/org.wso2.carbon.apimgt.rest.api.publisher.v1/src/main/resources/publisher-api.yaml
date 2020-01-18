@@ -8076,16 +8076,29 @@ definitions:
       type:
         type: string
         example: basic
-        description: Accepts one of the following, basic or digest.
+        description: Accepts one of the following, basic, digest or oauth.
         enum:
           - BASIC
           - DIGEST
+          - OAUTH
       username:
         type: string
         example: admin
       password:
         type: string
         example: password
+      grantType:
+        type: string
+        example: client_credentials
+      tokenUrl:
+        type: string
+        example: http://localhost:8244/token
+      apiKey:
+        type: string
+        example: by2gPAePag6N165_NVnKB7cI8iAa
+      apiSecret:
+        type: string
+        example: 3KQt5bvgoesIS7TRj58IsoqlIgIa
 
   #-----------------------------------------------------
   # API Business Information resource
