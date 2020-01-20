@@ -201,7 +201,21 @@ function Endpoints(props) {
     const validate = (implementationType) => {
         const { endpointConfig, endpointSecurity } = apiObject;
         if (endpointSecurity) {
-            if (endpointSecurity.username === '' || endpointSecurity.password === null) {
+            // TODO
+            if (endpointSecurity.type === 'OAUTH') {
+                if (endpointSecurity.grantType === ''
+                || endpointSecurity.tokenUrl === '' || endpointSecurity.apiKey === ''
+                    || endpointSecurity.apiSecret === '') {
+                    return {
+                        isValid: false,
+                        message: intl.formatMessage({
+                            id: 'Apis.Details.Endpoints.Endpoints.missing.security.oauth.client.error',
+                            defaultMessage: 'Endpoint Security Grant Type/Token URL'
+                            + '/API Key/API Secret should not be empty',
+                        }),
+                    };
+                }
+            } else if (endpointSecurity.username === '' || endpointSecurity.password === null) {
                 return {
                     isValid: false,
                     message: intl.formatMessage({
