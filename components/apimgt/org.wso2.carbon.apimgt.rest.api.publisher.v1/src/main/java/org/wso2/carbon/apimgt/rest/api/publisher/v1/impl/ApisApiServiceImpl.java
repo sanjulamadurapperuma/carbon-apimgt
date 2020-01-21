@@ -147,6 +147,38 @@ import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.ThrottlingPolicyDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.WSDLInfoDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.WSDLValidationResponseDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.WorkflowResponseDTO;
+import org.wso2.carbon.core.util.CryptoException;
+import org.wso2.carbon.core.util.CryptoUtil;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.io.InputStreamReader;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.lang.reflect.Field;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Map;
+
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.utils.CertificateRestApiUtils;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.utils.RestApiPublisherUtils;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.utils.mappings.APIMappingUtil;
@@ -286,6 +318,7 @@ public class ApisApiServiceImpl implements ApisApiService {
                 RestApiUtil.handleBadRequest("Endpoint URLs should be valid web socket URLs", log);
             }
 
+            // TODO - See if the OAuth client key and secret has to be encrypted when creating an API
             // AWS Lambda: secret key encryption while creating the API
             if (body.getEndpointConfig() != null) {
                 LinkedHashMap endpointConfig = (LinkedHashMap) body.getEndpointConfig();
@@ -604,6 +637,25 @@ public class ApisApiServiceImpl implements ApisApiService {
             org.wso2.carbon.apimgt.rest.api.util.annotations.Scope[] apiDtoClassAnnotatedScopes =
                     APIDTO.class.getAnnotationsByType(org.wso2.carbon.apimgt.rest.api.util.annotations.Scope.class);
             boolean hasClassLevelScope = checkClassScopeAnnotation(apiDtoClassAnnotatedScopes, tokenScopes);
+
+            // OAuth 2.0 backend protection: Api Key and Api Secret encryption while updating the API
+            if (body.getEndpointSecurity() != null) {
+                APIEndpointSecurityDTO endpointSecurity = body.getEndpointSecurity();
+                if (endpointSecurity.getType().compareTo(APIEndpointSecurityDTO.TypeEnum.OAUTH) == 0) {
+                    if (endpointSecurity.getGrantType().equals(APIConstants.OAuthConstants.CLIENT_CREDENTIALS)) {
+                        String apiKey = endpointSecurity.getApiKey();
+                        String apiSecret = endpointSecurity.getApiSecret();
+                        if (!StringUtils.isEmpty(apiKey) && !StringUtils.isEmpty(apiSecret)) {
+                            CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
+                            String encryptedApiKey = cryptoUtil.encryptAndBase64Encode(apiKey.getBytes());
+                            String encryptedApiSecret = cryptoUtil.encryptAndBase64Encode(apiSecret.getBytes());
+                            endpointSecurity.setApiKey(encryptedApiKey);
+                            endpointSecurity.setApiSecret(encryptedApiSecret);
+                            body.setEndpointSecurity(endpointSecurity);
+                        }
+                    }
+                }
+            }
 
             // AWS Lambda: secret key encryption while updating the API
             if (body.getEndpointConfig() != null) {
