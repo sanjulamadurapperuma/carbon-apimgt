@@ -28,7 +28,10 @@ import org.apache.synapse.mediators.AbstractMediator;
 import org.wso2.carbon.apimgt.gateway.mediators.oauth.OAuthClient;
 import org.wso2.carbon.apimgt.gateway.mediators.oauth.TokenResponse;
 import org.wso2.carbon.apimgt.gateway.mediators.oauth.conf.OAuthEndpoint;
+import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.APIConstants.OAuthConstants;
+import org.wso2.carbon.core.util.CryptoException;
+import org.wso2.carbon.core.util.CryptoUtil;
 
 import java.util.Map;
 
@@ -63,41 +66,48 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             log.debug("OAuth Mediator is invoked...");
         }
 
-        String tokenApiUrl = (String) messageContext.getProperty(OAuthConstants.TOKEN_API_URL);
-        String apiKey = (String) messageContext.getProperty(OAuthConstants.OAUTH_API_KEY);
-        String apiSecret = (String) messageContext.getProperty(OAuthConstants.OAUTH_API_SECRET);
-        String grantType = (String) messageContext.getProperty(OAuthConstants.GRANT_TYPE);
+        CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
+        try {
+            String tokenApiUrl = (String) messageContext.getProperty(OAuthConstants.TOKEN_API_URL);
+            String apiKey = (String) messageContext.getProperty(OAuthConstants.OAUTH_API_KEY);
+            String apiSecret = (String) messageContext.getProperty(OAuthConstants.OAUTH_API_SECRET);
+            String grantType = (String) messageContext.getProperty(OAuthConstants.GRANT_TYPE);
 
-        OAuthEndpoint oAuthEndpoint = new OAuthEndpoint();
-        oAuthEndpoint.setTokenApiUrl(tokenApiUrl);
-        oAuthEndpoint.setApiKey(apiKey);
-        oAuthEndpoint.setApiSecret(apiSecret);
-        oAuthEndpoint.setGrantType(grantType);
+            String decryptedApiKey = new String(cryptoUtil.base64DecodeAndDecrypt(apiKey));
+            String decryptedApiSecret = new String(cryptoUtil.base64DecodeAndDecrypt(apiSecret));
 
-        TokenResponse tokenResponse = null;
-        if (oAuthEndpoint != null) {
-            try {
-                log.info("Generating access token...");
+            OAuthEndpoint oAuthEndpoint = new OAuthEndpoint();
+            oAuthEndpoint.setTokenApiUrl(tokenApiUrl);
+            oAuthEndpoint.setApiKey(decryptedApiKey);
+            oAuthEndpoint.setApiSecret(decryptedApiSecret);
+            oAuthEndpoint.setGrantType(grantType);
 
-                tokenResponse = OAuthClient.generateToken(oAuthEndpoint.getTokenApiUrl(),
-                        oAuthEndpoint.getApiKey(), oAuthEndpoint.getApiSecret(), oAuthEndpoint.getGrantType());
-                // TODO - Remove this log
-                log.info("Access Token generated: "
-                        + " [access-token] " + tokenResponse.getAccessToken() + "\n\n");
-            } catch(Exception e) {
-                log.error("Could not generate access token...", e);
+            TokenResponse tokenResponse = null;
+            if (oAuthEndpoint != null) {
+                try {
+                    log.info("Generating access token...");
+
+                    tokenResponse = OAuthClient.generateToken(oAuthEndpoint.getTokenApiUrl(),
+                            oAuthEndpoint.getApiKey(), oAuthEndpoint.getApiSecret(), oAuthEndpoint.getGrantType());
+    //                log.info("Access Token generated: "
+    //                        + " [access-token] " + tokenResponse.getAccessToken() + "\n\n");
+                } catch(Exception e) {
+                    log.error("Could not generate access token...", e);
+                }
             }
-        }
 
-        String accessToken = null;
-        if (tokenResponse != null) {
-            accessToken = tokenResponse.getAccessToken();
-            Map<String, Object> transportHeaders = (Map<String, Object>) ((Axis2MessageContext)messageContext)
-                    .getAxis2MessageContext().getProperty("TRANSPORT_HEADERS");
-            transportHeaders.put("Authorization", "Bearer " + accessToken);
-            log.debug("Access token set: " + accessToken);
-        } else {
-            log.debug("Token Response is null...");
+            String accessToken = null;
+            if (tokenResponse != null) {
+                accessToken = tokenResponse.getAccessToken();
+                Map<String, Object> transportHeaders = (Map<String, Object>) ((Axis2MessageContext)messageContext)
+                        .getAxis2MessageContext().getProperty("TRANSPORT_HEADERS");
+                transportHeaders.put("Authorization", "Bearer " + accessToken);
+                log.debug("Access token set: " + accessToken);
+            } else {
+                log.debug("Token Response is null...");
+            }
+        } catch (CryptoException e) {
+            e.printStackTrace();
         }
         return true;
     }

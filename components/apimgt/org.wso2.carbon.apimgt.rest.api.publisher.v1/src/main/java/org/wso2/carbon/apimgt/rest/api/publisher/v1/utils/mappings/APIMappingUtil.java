@@ -60,6 +60,8 @@ import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.ScopeBindingsDTO;
 import org.wso2.carbon.apimgt.rest.api.util.RestApiConstants;
 import org.wso2.carbon.apimgt.rest.api.util.dto.ErrorDTO;
 import org.wso2.carbon.apimgt.rest.api.util.utils.RestApiUtil;
+import org.wso2.carbon.core.util.CryptoException;
+import org.wso2.carbon.core.util.CryptoUtil;
 import org.wso2.carbon.governance.custom.lifecycles.checklist.util.CheckListItem;
 import org.wso2.carbon.registry.core.exceptions.RegistryException;
 import org.wso2.carbon.user.api.UserStoreException;
@@ -983,7 +985,8 @@ public class APIMappingUtil {
 
     }
 
-    private static void setEndpointSecurityFromModelToApiDTO(API api, APIDTO dto) throws APIManagementException {
+    private static void setEndpointSecurityFromModelToApiDTO(API api, APIDTO dto)
+            throws APIManagementException {
 
         if (api.isEndpointSecured()) {
             APIEndpointSecurityDTO securityDTO = new APIEndpointSecurityDTO();
@@ -1001,11 +1004,17 @@ public class APIMappingUtil {
                     securityDTO.setPassword(""); //Do not expose password
                 }
             } else if (api.isEndpointOAuth()) {
-                securityDTO.setType(APIEndpointSecurityDTO.TypeEnum.OAUTH);
-                securityDTO.setTokenUrl(api.getTokenUrl());
-                securityDTO.setApiKey(api.getApiKey());
-                securityDTO.setApiSecret(api.getApiSecret());
-                securityDTO.setGrantType(api.getGrantType());
+                try {
+                    CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
+                    securityDTO.setType(APIEndpointSecurityDTO.TypeEnum.OAUTH);
+                    securityDTO.setTokenUrl(api.getTokenUrl());
+                    securityDTO.setApiKey(new String(cryptoUtil.base64DecodeAndDecrypt(api.getApiKey())));
+                    securityDTO.setApiSecret(new String(cryptoUtil.base64DecodeAndDecrypt(api.getApiSecret())));
+                    securityDTO.setGrantType(api.getGrantType());
+                } catch (CryptoException e) {
+                    String msg = "Failed to decrypt API Key and API Secret for OAuth Endpoint";
+                    throw new APIManagementException(msg, e);
+                }
             } else {
                 securityDTO.setUsername(api.getEndpointUTUsername());
                 if (checkEndpointSecurityPasswordEnabled(tenantDomain)) {
