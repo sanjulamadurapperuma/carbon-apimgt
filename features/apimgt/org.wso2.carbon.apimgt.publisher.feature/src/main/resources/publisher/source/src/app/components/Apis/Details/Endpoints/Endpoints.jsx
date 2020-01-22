@@ -201,7 +201,7 @@ function Endpoints(props) {
     const validate = (implementationType) => {
         const { endpointConfig, endpointSecurity } = apiObject;
         if (endpointSecurity) {
-            // TODO
+            // TODO - See why the OAuth error message does not print
             if (endpointSecurity.type === 'OAUTH') {
                 if (endpointSecurity.grantType === ''
                 || endpointSecurity.tokenUrl === '' || endpointSecurity.apiKey === ''
@@ -210,7 +210,7 @@ function Endpoints(props) {
                         isValid: false,
                         message: intl.formatMessage({
                             id: 'Apis.Details.Endpoints.Endpoints.missing.security.oauth.client.error',
-                            defaultMessage: 'Endpoint Security Grant Type/Token URL'
+                            defaultMessage: 'Endpoint Security Token URL'
                             + '/API Key/API Secret should not be empty',
                         }),
                     };

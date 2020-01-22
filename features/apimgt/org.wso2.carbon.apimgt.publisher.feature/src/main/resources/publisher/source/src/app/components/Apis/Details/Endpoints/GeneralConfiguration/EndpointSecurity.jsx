@@ -39,7 +39,9 @@ function EndpointSecurity(props) {
         grantType: '',
     });
     const [securityValidity, setSecurityValidity] = useState();
-    const [selectedAuthType, setSelectedAuthType] = useState();
+    // TODO - Remove selectedAuthType if not being used
+    // TODO - Implement check for grant type and disable save button if not selected
+    // const [selectedAuthType, setSelectedAuthType] = useState();
 
     const authTypes = [
         {
@@ -61,6 +63,23 @@ function EndpointSecurity(props) {
             value: intl.formatMessage({
                 id: 'Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.oauth',
                 defaultMessage: 'OAuth',
+            }),
+        },
+    ];
+
+    const grantTypes = [
+        {
+            key: 'CLIENT_CREDENTIALS',
+            value: intl.formatMessage({
+                id: 'Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.oauth.grant.type.client',
+                defaultMessage: 'Client Credentials',
+            }),
+        },
+        {
+            key: 'PASSWORD',
+            value: intl.formatMessage({
+                id: 'APis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.oauth.grant.type.password',
+                defaultMessage: 'Password',
             }),
         },
     ];
@@ -99,7 +118,7 @@ function EndpointSecurity(props) {
                     value={endpointSecurityInfo.type}
                     variant='outlined'
                     onChange={(event) => {
-                        setSelectedAuthType(event.target.value);
+                        // setSelectedAuthType(event.target.value);
                         onChangeEndpointAuth(event.target.value, 'type');
                     }}
                     inputProps={{
@@ -114,7 +133,7 @@ function EndpointSecurity(props) {
             </Grid>
             <Grid item xs={6} />
 
-            {(selectedAuthType === 'BASIC' || selectedAuthType === 'DIGEST') && (
+            {(endpointSecurityInfo.type === 'BASIC' || endpointSecurityInfo.type === 'DIGEST') && (
                 <>
                     <Grid item xs={6}>
                         <TextField
@@ -193,10 +212,10 @@ function EndpointSecurity(props) {
                 </>
             )}
 
-            {(selectedAuthType === 'OAUTH')
+            {(endpointSecurityInfo.type === 'OAUTH')
             && (
                 <>
-                    <Grid item xs={6}>
+                    {/* <Grid item xs={6}>
                         <TextField
                             disabled={isRestricted(['apim:api_create'], api)}
                             required
@@ -231,9 +250,39 @@ function EndpointSecurity(props) {
                             value={endpointSecurityInfo.grantType}
                             onBlur={() => validateAndUpdateSecurityInfo('grantType')}
                         />
+                    </Grid> */}
+
+                    <Grid item xs={6}>
+                        <TextField
+                            disabled={isRestricted(['apim:api_create'], api)}
+                            required
+                            fullWidth
+                            select
+                            label={(
+                                <FormattedMessage
+                                    id='Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.grant.type.input'
+                                    defaultMessage='Grant Type'
+                                />
+                            )}
+                            variant='outlined'
+                            onChange={(event) => setEndpointSecurityInfo(
+                                { ...endpointSecurityInfo, grantType: event.target.value },
+                            )}
+                            value={endpointSecurityInfo.grantType}
+                            inputProps={{
+                                name: 'key',
+                                id: 'grant-type-select',
+                            }}
+                            onBlur={() => validateAndUpdateSecurityInfo('grantType')}
+                        >
+                            {grantTypes.map((type) => (
+                                <MenuItem value={type.key}>{type.value}</MenuItem>
+                            ))}
+                        </TextField>
                     </Grid>
 
-                    {endpointSecurityInfo.grantType === 'client_credentials'
+
+                    {endpointSecurityInfo.grantType === 'CLIENT_CREDENTIALS'
                     && (
                         <>
                             <Grid item xs={6}>

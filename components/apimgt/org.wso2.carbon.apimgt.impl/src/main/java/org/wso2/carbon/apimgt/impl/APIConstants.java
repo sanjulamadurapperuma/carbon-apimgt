@@ -1120,8 +1120,8 @@ public final class APIConstants {
         public static final String OAUTH_API_KEY = "apiKey";
         public static final String OAUTH_API_SECRET = "apiSecret";
         public static final String GRANT_TYPE = "grantType";
-        public static final String CLIENT_CREDENTIALS = "client_credentials";
-        public static final String PASSWORD = "password";
+        public static final String CLIENT_CREDENTIALS = "CLIENT_CREDENTIALS";
+        public static final String PASSWORD = "PASSWORD";
 
         private OAuthConstants() {
         }
