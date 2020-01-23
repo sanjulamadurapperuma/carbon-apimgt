@@ -28,7 +28,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.wso2.carbon.apimgt.api.APIManagementException;
-import org.wso2.carbon.apimgt.gateway.mediators.oauth.TokenResponse;
+import org.wso2.carbon.apimgt.gateway.mediators.oauth.client.TokenResponse;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 
 import java.io.BufferedReader;
