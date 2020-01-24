@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.apimgt.gateway.mediators.oauth;
+package org.wso2.carbon.apimgt.gateway.mediators.oauth.client;
 
 import com.google.gson.annotations.SerializedName;
 

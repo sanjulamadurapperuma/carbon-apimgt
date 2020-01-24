@@ -25,10 +25,9 @@ import org.apache.synapse.MessageContext;
 import org.apache.synapse.core.SynapseEnvironment;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
 import org.apache.synapse.mediators.AbstractMediator;
-import org.wso2.carbon.apimgt.gateway.mediators.oauth.OAuthClient;
-import org.wso2.carbon.apimgt.gateway.mediators.oauth.TokenResponse;
+//import org.wso2.carbon.apimgt.gateway.mediators.oauth.client.OAuthClient;
+import org.wso2.carbon.apimgt.gateway.mediators.oauth.client.TokenResponse;
 import org.wso2.carbon.apimgt.gateway.mediators.oauth.conf.OAuthEndpoint;
-import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.APIConstants.OAuthConstants;
 import org.wso2.carbon.core.util.CryptoException;
 import org.wso2.carbon.core.util.CryptoUtil;
@@ -42,7 +41,7 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
 
     private static final Log log = LogFactory.getLog(OAuthMediator.class);
 
-    private String endpointId;
+    private String endpointId = "3421";
 
     static {
         log.info("Initializing OAuth Mediator...");
@@ -87,8 +86,11 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
                 try {
                     log.info("Generating access token...");
 
-                    tokenResponse = OAuthClient.generateToken(oAuthEndpoint.getTokenApiUrl(),
-                            oAuthEndpoint.getApiKey(), oAuthEndpoint.getApiSecret(), oAuthEndpoint.getGrantType());
+                    TokenGeneratorScheduledExecutor scheduledExecutor = new TokenGeneratorScheduledExecutor();
+                    scheduledExecutor.schedule(oAuthEndpoint);
+
+//                    tokenResponse = OAuthClient.generateToken(oAuthEndpoint.getTokenApiUrl(),
+//                            oAuthEndpoint.getApiKey(), oAuthEndpoint.getApiSecret(), oAuthEndpoint.getGrantType());
     //                log.info("Access Token generated: "
     //                        + " [access-token] " + tokenResponse.getAccessToken() + "\n\n");
                 } catch(Exception e) {
@@ -96,16 +98,17 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
                 }
             }
 
-            String accessToken = null;
-            if (tokenResponse != null) {
-                accessToken = tokenResponse.getAccessToken();
-                Map<String, Object> transportHeaders = (Map<String, Object>) ((Axis2MessageContext)messageContext)
-                        .getAxis2MessageContext().getProperty("TRANSPORT_HEADERS");
-                transportHeaders.put("Authorization", "Bearer " + accessToken);
-                log.debug("Access token set: " + accessToken);
-            } else {
-                log.debug("Token Response is null...");
-            }
+//            String accessToken = null;
+//            if (tokenResponse != null) {
+//
+//            } else {
+//                log.debug("Token Response is null...");
+//            }
+            String accessToken = TokenCache.getInstance().getTokenMap().get(getEndpointId());
+            Map<String, Object> transportHeaders = (Map<String, Object>) ((Axis2MessageContext)messageContext)
+                    .getAxis2MessageContext().getProperty("TRANSPORT_HEADERS");
+            transportHeaders.put("Authorization", "Bearer " + accessToken);
+            log.debug("Access token set: " + accessToken);
         } catch (CryptoException e) {
             e.printStackTrace();
         }
