@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.apimgt.gateway.mediators.oauth;
+package org.wso2.carbon.apimgt.gateway.mediators.oauth.client;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -28,7 +28,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.wso2.carbon.apimgt.api.APIManagementException;
-import org.wso2.carbon.apimgt.gateway.mediators.oauth.client.TokenResponse;
+import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 
 import java.io.BufferedReader;
@@ -72,7 +72,7 @@ public class OAuthClient {
         //            connection.setRequestProperty(AUTHORIZATION_HEADER, "Basic " + credentials);
         //            connection.setRequestProperty(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
         //        } else if(grantType.equals("client_credentials")) {
-        if(grantType.equals("client_credentials")) {
+        if (grantType.equals(APIConstants.OAuthConstants.CLIENT_CREDENTIALS)) {
             // TODO - Following line excluded because of the OAuth endpoint not accepting parameters
             //            url += "?grant_type=client_credentials";
             String data = "grant_type=client_credentials";
