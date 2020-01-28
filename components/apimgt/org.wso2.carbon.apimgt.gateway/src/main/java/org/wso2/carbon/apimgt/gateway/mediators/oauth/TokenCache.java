@@ -1,5 +1,7 @@
 package org.wso2.carbon.apimgt.gateway.mediators.oauth;
 
+import org.wso2.carbon.apimgt.gateway.mediators.oauth.client.TokenResponse;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,7 +11,7 @@ import java.util.Map;
 public class TokenCache {
     private static final TokenCache instance = new TokenCache();
 
-    private final Map<String, String> tokenMap = new HashMap<>();
+    private final Map<String, TokenResponse> tokenMap = new HashMap<>();
 
     /**
      * Private Constructor
@@ -29,7 +31,7 @@ public class TokenCache {
      * Get token map
      * @return
      */
-    public Map<String, String> getTokenMap() {
+    public Map<String, TokenResponse> getTokenMap() {
         return tokenMap;
     }
 }

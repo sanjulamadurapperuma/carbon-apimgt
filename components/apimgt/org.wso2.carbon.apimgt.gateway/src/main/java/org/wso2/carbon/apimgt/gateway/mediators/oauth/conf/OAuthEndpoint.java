@@ -7,7 +7,7 @@ public class OAuthEndpoint {
     private String apiKey;
     private String apiSecret;
     private String grantType;
-    private int tokenRefreshInterval = 20;
+    private int tokenRefreshInterval;
 
     public String getId() {
         return id;

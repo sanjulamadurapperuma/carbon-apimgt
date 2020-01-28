@@ -1123,6 +1123,18 @@ public final class APIConstants {
         public static final String CLIENT_CREDENTIALS = "CLIENT_CREDENTIALS";
         public static final String PASSWORD = "PASSWORD";
 
+        public static final String ACCESS_TOKEN = "access_token";
+        public static final String REFRESH_TOKEN = "refresh_token";
+        public static final String SCOPE = "scope";
+        public static final String TOKEN_TYPE = "token_type";
+        public static final String EXPIRES_IN = "expires_in";
+
+        // For configs
+        public static final String OAUTH_ENDPOINT_SECURITY = "OAuthEndpointSecurity.";
+        public static final String OAUTH_TOKEN_REFRESH_INTERVAL = OAUTH_ENDPOINT_SECURITY + "TokenRefreshInterval";
+
+        public static final String TOKEN_REFRESH_INTERVAL = "tokenRefreshInterval";
+
         private OAuthConstants() {
         }
     }

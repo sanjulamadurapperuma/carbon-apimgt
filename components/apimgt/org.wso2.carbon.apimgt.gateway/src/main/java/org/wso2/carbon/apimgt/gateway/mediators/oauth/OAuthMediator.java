@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.apimgt.gateway.mediators.oauth;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.ManagedLifecycle;
@@ -26,9 +27,14 @@ import org.apache.synapse.core.SynapseEnvironment;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
 import org.apache.synapse.mediators.AbstractMediator;
 //import org.wso2.carbon.apimgt.gateway.mediators.oauth.client.OAuthClient;
+import org.json.simple.JSONObject;
+import org.wso2.carbon.apimgt.api.APIProvider;
 import org.wso2.carbon.apimgt.gateway.mediators.oauth.client.TokenResponse;
 import org.wso2.carbon.apimgt.gateway.mediators.oauth.conf.OAuthEndpoint;
+import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.APIConstants.OAuthConstants;
+import org.wso2.carbon.apimgt.impl.APIManagerConfiguration;
+import org.wso2.carbon.apimgt.impl.internal.ServiceReferenceHolder;
 import org.wso2.carbon.core.util.CryptoException;
 import org.wso2.carbon.core.util.CryptoUtil;
 
@@ -75,13 +81,17 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             String decryptedApiKey = new String(cryptoUtil.base64DecodeAndDecrypt(apiKey));
             String decryptedApiSecret = new String(cryptoUtil.base64DecodeAndDecrypt(apiSecret));
 
+            // TODO - Get the refresh token interval from the config
+            JSONObject oAuthEndpointSecurityProperties = getOAuthEndpointSecurityProperties();
+            int tokenRefreshInterval = Integer.parseInt((String) oAuthEndpointSecurityProperties.get(OAuthConstants.TOKEN_REFRESH_INTERVAL));
+
             OAuthEndpoint oAuthEndpoint = new OAuthEndpoint();
             oAuthEndpoint.setTokenApiUrl(tokenApiUrl);
             oAuthEndpoint.setApiKey(decryptedApiKey);
             oAuthEndpoint.setApiSecret(decryptedApiSecret);
             oAuthEndpoint.setGrantType(grantType);
+            oAuthEndpoint.setTokenRefreshInterval(tokenRefreshInterval);
 
-            TokenResponse tokenResponse = null;
             if (oAuthEndpoint != null) {
                 try {
                     log.info("Generating access token...");
@@ -104,15 +114,39 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
 //            } else {
 //                log.debug("Token Response is null...");
 //            }
-            String accessToken = TokenCache.getInstance().getTokenMap().get(getEndpointId());
-            Map<String, Object> transportHeaders = (Map<String, Object>) ((Axis2MessageContext)messageContext)
-                    .getAxis2MessageContext().getProperty("TRANSPORT_HEADERS");
-            transportHeaders.put("Authorization", "Bearer " + accessToken);
-            log.debug("Access token set: " + accessToken);
+            TokenResponse tokenResponse = TokenCache.getInstance().getTokenMap().get(getEndpointId());
+            if (tokenResponse != null) {
+                String accessToken = tokenResponse.getAccessToken();
+                Map<String, Object> transportHeaders = (Map<String, Object>) ((Axis2MessageContext) messageContext)
+                        .getAxis2MessageContext().getProperty("TRANSPORT_HEADERS");
+                transportHeaders.put("Authorization", "Bearer " + accessToken);
+                log.debug("Access token set: " + accessToken);
+            } else {
+                log.debug("Token Response is null...");
+            }
         } catch (CryptoException e) {
             e.printStackTrace();
         }
         return true;
+    }
+
+    /**
+     * This method returns the OAuthEndpointSecurity Properties from the API Manager Configuration
+     * @return JSONObject OAuthEndpointSecurity properties
+     */
+    public JSONObject getOAuthEndpointSecurityProperties() {
+        APIManagerConfiguration configuration = ServiceReferenceHolder.getInstance()
+                .getAPIManagerConfigurationService().getAPIManagerConfiguration();
+        String tokenRefreshInterval = configuration.getFirstProperty(APIConstants
+                .OAuthConstants.OAUTH_TOKEN_REFRESH_INTERVAL);
+
+        JSONObject configProperties = new JSONObject();
+
+        if (StringUtils.isNotEmpty(tokenRefreshInterval)) {
+            configProperties.put(APIConstants.OAuthConstants.TOKEN_REFRESH_INTERVAL, tokenRefreshInterval);
+            return configProperties;
+        }
+        return null;
     }
 
     public String getEndpointId() {
