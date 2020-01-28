@@ -1014,6 +1014,12 @@
         </APISecurityAudit>
     {% endif %}
 
+    {% if oauth_endpoint_security is defined %}
+        <OAuthEndpointSecurity>
+            <TokenRefreshInterval>{{oauth_endpoint_security.refresh_interval}}</TokenRefreshInterval>
+        </OAuthEndpointSecurity>
+    {% endif %}
+
     {% if apim.devportal.application_attributes is defined %}
     <ApplicationConfiguration>
         <ApplicationAttributes>

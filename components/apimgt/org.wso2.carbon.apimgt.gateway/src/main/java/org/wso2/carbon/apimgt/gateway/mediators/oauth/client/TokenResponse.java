@@ -20,6 +20,8 @@ package org.wso2.carbon.apimgt.gateway.mediators.oauth.client;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.sql.Timestamp;
+
 public class TokenResponse {
 
     @SerializedName("access_token")
@@ -35,6 +37,8 @@ public class TokenResponse {
 
     @SerializedName("expires_in")
     private String expiresIn;
+
+    private Long validTill;
 
     public String getAccessToken() {
         return accessToken;
@@ -74,5 +78,13 @@ public class TokenResponse {
 
     public void setExpiresIn(String expiresIn) {
         this.expiresIn = expiresIn;
+    }
+
+    public Long getValidTill() {
+        return validTill;
+    }
+
+    public void setValidTill(Long validTill) {
+        this.validTill = validTill;
     }
 }

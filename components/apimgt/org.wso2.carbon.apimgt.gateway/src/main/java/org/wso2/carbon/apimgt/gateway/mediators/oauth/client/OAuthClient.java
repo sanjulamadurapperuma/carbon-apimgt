@@ -27,6 +27,9 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
@@ -35,6 +38,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.sql.Timestamp;
 import java.util.Base64;
 
 public class OAuthClient {
@@ -106,10 +110,28 @@ public class OAuthClient {
                         stringBuilder.append(inputLine);
                     }
 
+                    JSONObject responseJson = (JSONObject) new JSONParser().parse(stringBuilder.toString());
+                    TokenResponse tokenResponse = new TokenResponse();
+                    tokenResponse.setAccessToken(responseJson.get(APIConstants.OAuthConstants.ACCESS_TOKEN).toString());
+                    // TODO - Handle null pointer when properties are non-existent in JSONObject
+                    // TODO - Uncomment following code block once null pointer check is done for all the fields.
+//                    tokenResponse.setRefreshToken(responseJson.get(APIConstants.OAuthConstants.REFRESH_TOKEN).toString());
+                    tokenResponse.setScope(responseJson.get(APIConstants.OAuthConstants.SCOPE).toString());
+                    tokenResponse.setTokenType(responseJson.get(APIConstants.OAuthConstants.TOKEN_TYPE).toString());
+                    tokenResponse.setExpiresIn(responseJson.get(APIConstants.OAuthConstants.EXPIRES_IN).toString());
+                    long currentTimeInSeconds = System.currentTimeMillis() / 1000;
+                    long expiryTimeInSeconds = currentTimeInSeconds + Long.parseLong(responseJson.get(APIConstants.
+                            OAuthConstants.EXPIRES_IN).toString());
+                    tokenResponse.setValidTill(expiryTimeInSeconds);
+
+
                     if (log.isDebugEnabled()) {
                         log.debug("Response: [status-code] " + responseCode + " [message] " + stringBuilder.toString());
                     }
-                    return gson.fromJson(stringBuilder.toString(), TokenResponse.class);
+                    return tokenResponse;
+                } catch (ParseException e) {
+                    //TODO - Improve the error message
+                    log.error("ParseException", e);
                 } finally {
                     httpPost.releaseConnection();
                 }
