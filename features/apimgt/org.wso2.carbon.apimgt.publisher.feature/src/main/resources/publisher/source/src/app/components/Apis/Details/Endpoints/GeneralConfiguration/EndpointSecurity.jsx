@@ -20,6 +20,7 @@ import { Grid, TextField, MenuItem } from '@material-ui/core';
 import { FormattedMessage, injectIntl } from 'react-intl';
 import { isRestricted } from 'AppData/AuthManager';
 import APIContext from 'AppComponents/Apis/Details/components/ApiContext';
+import APIValidation from 'AppData/APIValidation';
 
 /**
  * The base component for advanced endpoint configurations.
@@ -100,11 +101,25 @@ function EndpointSecurity(props) {
         setEndpointSecurityInfo(tmpSecurity);
     }, [props]);
 
+    const validateTokenURL = (value) => {
+        const state = APIValidation.url.required().validate(value).error;
+        // state 'null' means the URL is valid.
+        if (state === null) {
+            return true;
+        } else {
+            return false;
+        }
+    };
+
     const validateAndUpdateSecurityInfo = (field) => {
         if (!endpointSecurityInfo[field]) {
             setSecurityValidity({ ...securityValidity, [field]: false });
         } else {
-            setSecurityValidity({ ...securityValidity, [field]: true });
+            let validity = false;
+            if (field === 'tokenUrl') {
+                validity = validateTokenURL(endpointSecurityInfo[field]);
+            }
+            setSecurityValidity({ ...securityValidity, [field]: validity });
         }
         onChangeEndpointAuth(endpointSecurityInfo[field], field);
     };
@@ -296,7 +311,7 @@ function EndpointSecurity(props) {
                                             <FormattedMessage
                                                 id={'Apis.Details.Endpoints.GeneralConfiguration'
                                         + '.EndpointSecurity.no.tokenUrl.error'}
-                                                defaultMessage='Token URL should not be empty'
+                                                defaultMessage='Token URL should not be empty or formatted incorrectly'
                                             />
                                         ) : (
                                             <FormattedMessage
