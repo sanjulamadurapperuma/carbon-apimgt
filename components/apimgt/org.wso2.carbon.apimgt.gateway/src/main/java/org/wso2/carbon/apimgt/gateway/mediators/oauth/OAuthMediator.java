@@ -26,9 +26,7 @@ import org.apache.synapse.MessageContext;
 import org.apache.synapse.core.SynapseEnvironment;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
 import org.apache.synapse.mediators.AbstractMediator;
-//import org.wso2.carbon.apimgt.gateway.mediators.oauth.client.OAuthClient;
 import org.json.simple.JSONObject;
-import org.wso2.carbon.apimgt.api.APIProvider;
 import org.wso2.carbon.apimgt.gateway.mediators.oauth.client.TokenResponse;
 import org.wso2.carbon.apimgt.gateway.mediators.oauth.conf.OAuthEndpoint;
 import org.wso2.carbon.apimgt.impl.APIConstants;
@@ -82,7 +80,6 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             String decryptedApiKey = new String(cryptoUtil.base64DecodeAndDecrypt(apiKey));
             String decryptedApiSecret = new String(cryptoUtil.base64DecodeAndDecrypt(apiSecret));
 
-            // TODO - Get the refresh token interval from the config
             JSONObject oAuthEndpointSecurityProperties = getOAuthEndpointSecurityProperties();
             if (oAuthEndpointSecurityProperties != null) {
                 int tokenRefreshInterval = Integer.parseInt((String) oAuthEndpointSecurityProperties.get(OAuthConstants.TOKEN_REFRESH_INTERVAL));
@@ -101,22 +98,11 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
 
                         TokenGeneratorScheduledExecutor scheduledExecutor = new TokenGeneratorScheduledExecutor();
                         scheduledExecutor.schedule(oAuthEndpoint);
-
-                        //                    tokenResponse = OAuthClient.generateToken(oAuthEndpoint.getTokenApiUrl(),
-                        //                            oAuthEndpoint.getApiKey(), oAuthEndpoint.getApiSecret(), oAuthEndpoint.getGrantType());
-                        //                log.info("Access Token generated: "
-                        //                        + " [access-token] " + tokenResponse.getAccessToken() + "\n\n");
                     } catch(Exception e) {
                         log.error("Could not generate access token...", e);
                     }
                 }
 
-                //            String accessToken = null;
-                //            if (tokenResponse != null) {
-                //
-                //            } else {
-                //                log.debug("Token Response is null...");
-                //            }
                 TokenResponse tokenResponse = TokenCache.getInstance().getTokenMap().get(getEndpointId());
                 if (tokenResponse != null) {
                     String accessToken = tokenResponse.getAccessToken();
@@ -132,8 +118,7 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
                 log.error("The Token Refresh Interval has not been set correctly in the config...");
             }
         } catch (CryptoException e) {
-            // TODO - Make improvements here as well
-            e.printStackTrace();
+            log.error(" Error occurred when decrypting the client key and client secret", e);
         }
         return true;
     }
