@@ -37,6 +37,7 @@ import org.wso2.carbon.apimgt.impl.APIManagerConfiguration;
 import org.wso2.carbon.apimgt.impl.internal.ServiceReferenceHolder;
 import org.wso2.carbon.core.util.CryptoException;
 import org.wso2.carbon.core.util.CryptoUtil;
+import java.util.UUID;
 
 import java.util.Map;
 
@@ -83,48 +84,55 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
 
             // TODO - Get the refresh token interval from the config
             JSONObject oAuthEndpointSecurityProperties = getOAuthEndpointSecurityProperties();
-            int tokenRefreshInterval = Integer.parseInt((String) oAuthEndpointSecurityProperties.get(OAuthConstants.TOKEN_REFRESH_INTERVAL));
+            if (oAuthEndpointSecurityProperties != null) {
+                int tokenRefreshInterval = Integer.parseInt((String) oAuthEndpointSecurityProperties.get(OAuthConstants.TOKEN_REFRESH_INTERVAL));
 
-            OAuthEndpoint oAuthEndpoint = new OAuthEndpoint();
-            oAuthEndpoint.setTokenApiUrl(tokenApiUrl);
-            oAuthEndpoint.setApiKey(decryptedApiKey);
-            oAuthEndpoint.setApiSecret(decryptedApiSecret);
-            oAuthEndpoint.setGrantType(grantType);
-            oAuthEndpoint.setTokenRefreshInterval(tokenRefreshInterval);
+                OAuthEndpoint oAuthEndpoint = new OAuthEndpoint();
+                oAuthEndpoint.setId((UUID.randomUUID().toString()));
+                oAuthEndpoint.setTokenApiUrl(tokenApiUrl);
+                oAuthEndpoint.setApiKey(decryptedApiKey);
+                oAuthEndpoint.setApiSecret(decryptedApiSecret);
+                oAuthEndpoint.setGrantType(grantType);
+                oAuthEndpoint.setTokenRefreshInterval(tokenRefreshInterval);
 
-            if (oAuthEndpoint != null) {
-                try {
-                    log.info("Generating access token...");
+                if (oAuthEndpoint != null) {
+                    try {
+                        log.info("Generating access token...");
 
-                    TokenGeneratorScheduledExecutor scheduledExecutor = new TokenGeneratorScheduledExecutor();
-                    scheduledExecutor.schedule(oAuthEndpoint);
+                        TokenGeneratorScheduledExecutor scheduledExecutor = new TokenGeneratorScheduledExecutor();
+                        scheduledExecutor.schedule(oAuthEndpoint);
 
-//                    tokenResponse = OAuthClient.generateToken(oAuthEndpoint.getTokenApiUrl(),
-//                            oAuthEndpoint.getApiKey(), oAuthEndpoint.getApiSecret(), oAuthEndpoint.getGrantType());
-    //                log.info("Access Token generated: "
-    //                        + " [access-token] " + tokenResponse.getAccessToken() + "\n\n");
-                } catch(Exception e) {
-                    log.error("Could not generate access token...", e);
+                        //                    tokenResponse = OAuthClient.generateToken(oAuthEndpoint.getTokenApiUrl(),
+                        //                            oAuthEndpoint.getApiKey(), oAuthEndpoint.getApiSecret(), oAuthEndpoint.getGrantType());
+                        //                log.info("Access Token generated: "
+                        //                        + " [access-token] " + tokenResponse.getAccessToken() + "\n\n");
+                    } catch(Exception e) {
+                        log.error("Could not generate access token...", e);
+                    }
                 }
-            }
 
-//            String accessToken = null;
-//            if (tokenResponse != null) {
-//
-//            } else {
-//                log.debug("Token Response is null...");
-//            }
-            TokenResponse tokenResponse = TokenCache.getInstance().getTokenMap().get(getEndpointId());
-            if (tokenResponse != null) {
-                String accessToken = tokenResponse.getAccessToken();
-                Map<String, Object> transportHeaders = (Map<String, Object>) ((Axis2MessageContext) messageContext)
-                        .getAxis2MessageContext().getProperty("TRANSPORT_HEADERS");
-                transportHeaders.put("Authorization", "Bearer " + accessToken);
-                log.debug("Access token set: " + accessToken);
+                //            String accessToken = null;
+                //            if (tokenResponse != null) {
+                //
+                //            } else {
+                //                log.debug("Token Response is null...");
+                //            }
+                TokenResponse tokenResponse = TokenCache.getInstance().getTokenMap().get(getEndpointId());
+                if (tokenResponse != null) {
+                    String accessToken = tokenResponse.getAccessToken();
+                    Map<String, Object> transportHeaders = (Map<String, Object>) ((Axis2MessageContext) messageContext)
+                            .getAxis2MessageContext().getProperty("TRANSPORT_HEADERS");
+                    transportHeaders.put("Authorization", "Bearer " + accessToken);
+                    log.debug("Access token set: " + accessToken);
+                } else {
+                    log.debug("Token Response is null...");
+                }
             } else {
-                log.debug("Token Response is null...");
+                // TODO - See if any improvements to this can be done
+                log.error("The Token Refresh Interval has not been set correctly in the config...");
             }
         } catch (CryptoException e) {
+            // TODO - Make improvements here as well
             e.printStackTrace();
         }
         return true;
