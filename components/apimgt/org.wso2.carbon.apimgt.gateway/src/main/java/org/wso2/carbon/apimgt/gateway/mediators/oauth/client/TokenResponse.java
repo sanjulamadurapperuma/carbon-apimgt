@@ -20,8 +20,6 @@ package org.wso2.carbon.apimgt.gateway.mediators.oauth.client;
 
 import com.google.gson.annotations.SerializedName;
 
-import java.sql.Timestamp;
-
 public class TokenResponse {
 
     @SerializedName("access_token")
