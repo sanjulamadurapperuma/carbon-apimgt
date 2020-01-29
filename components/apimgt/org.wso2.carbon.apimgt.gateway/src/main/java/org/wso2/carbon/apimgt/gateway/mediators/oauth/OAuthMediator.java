@@ -46,7 +46,6 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
 
     private static final Log log = LogFactory.getLog(OAuthMediator.class);
 
-    private String endpointId = "3421";
 
     static {
         log.info("Initializing OAuth Mediator...");
@@ -103,7 +102,7 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
                     }
                 }
 
-                TokenResponse tokenResponse = TokenCache.getInstance().getTokenMap().get(getEndpointId());
+                TokenResponse tokenResponse = TokenCache.getInstance().getTokenMap().get(oAuthEndpoint.getId());
                 if (tokenResponse != null) {
                     String accessToken = tokenResponse.getAccessToken();
                     Map<String, Object> transportHeaders = (Map<String, Object>) ((Axis2MessageContext) messageContext)
@@ -140,13 +139,5 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             return configProperties;
         }
         return null;
-    }
-
-    public String getEndpointId() {
-        return endpointId;
-    }
-
-    public void setEndpointId(String endpointId) {
-        this.endpointId = endpointId;
     }
 }

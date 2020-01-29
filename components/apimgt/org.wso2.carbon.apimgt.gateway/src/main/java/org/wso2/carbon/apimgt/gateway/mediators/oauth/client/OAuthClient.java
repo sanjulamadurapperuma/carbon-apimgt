@@ -131,7 +131,7 @@ public class OAuthClient {
                     return tokenResponse;
                 } catch (ParseException e) {
                     //TODO - Improve the error message
-                    log.error("ParseException", e);
+                    log.error("Failed to parse the response from the Token Endpoint...", e);
                 } finally {
                     httpPost.releaseConnection();
                 }
