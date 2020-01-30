@@ -19,7 +19,6 @@
 package org.wso2.carbon.apimgt.gateway.mediators.oauth.client;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,18 +37,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.sql.Timestamp;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 public class OAuthClient {
     private static final Log log = LogFactory.getLog(OAuthClient.class);
-    private static final String UTF_8 = "UTF-8";
-    private static final String HTTP_POST = "POST";
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String CONTENT_TYPE_HEADER = "Content-Type";
     private static final String APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
-
-    private static final Gson gson = new GsonBuilder().create();
 
     public static TokenResponse generateToken(String url, String apiKey, String apiSecret,
             String grantType) throws IOException, APIManagementException {
@@ -58,27 +53,7 @@ public class OAuthClient {
         }
 
         HttpPost httpPost = null;
-        // TODO - Code for the grant type password
-        //        if(grantType.equals("password")) {
-        //            String query = String.format("grant_type=password&username=%spassword%s",
-        //                    URLEncoder.encode(username, UTF_8), URLEncoder.encode(password, UTF_8));
-        //            url += "?" + query;
-        //
-        //            URL url_ = new URL(url);
-        //            connection = (HttpURLConnection) url_.openConnection();
-        //            connection.setDoOutput(true);
-        //
-        //            // Set HTTP Method
-        //            connection.setRequestMethod(HTTP_POST);
-        //
-        //            // Set authorization header
-        //            String credentials = Base64.getEncoder().encodeToString((apiKey + ":" + apiSecret).getBytes());
-        //            connection.setRequestProperty(AUTHORIZATION_HEADER, "Basic " + credentials);
-        //            connection.setRequestProperty(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
-        //        } else if(grantType.equals("client_credentials")) {
         if (grantType.equals(APIConstants.OAuthConstants.CLIENT_CREDENTIALS)) {
-            // TODO - Following line excluded because of the OAuth endpoint not accepting parameters
-            //            url += "?grant_type=client_credentials";
             String data = "grant_type=client_credentials";
 
             URL url_ = new URL(url);
@@ -89,11 +64,10 @@ public class OAuthClient {
             try (CloseableHttpClient httpClient = (CloseableHttpClient) APIUtil
                     .getHttpClient(url_.getPort(), url_.getProtocol())) {
                 httpPost.setHeader(AUTHORIZATION_HEADER, "Basic " + credentials);
-                httpPost.setHeader(CONTENT_TYPE_HEADER, "application/x-www-form-urlencoded");
+                httpPost.setHeader(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
                 httpPost.setEntity(new StringEntity(data));
 
                 try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
-                    log.debug("Requesting access token...");
 
                     int responseCode = response.getStatusLine().getStatusCode();
 
@@ -102,7 +76,7 @@ public class OAuthClient {
                                 "Error while accessing the Token URL. Found http status " + response.getStatusLine());
                     }
                     BufferedReader reader = new BufferedReader(
-                            new InputStreamReader(response.getEntity().getContent(), "UTF-8"));
+                            new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8));
                     String inputLine;
                     StringBuilder stringBuilder = new StringBuilder();
 
@@ -110,18 +84,9 @@ public class OAuthClient {
                         stringBuilder.append(inputLine);
                     }
 
-                    JSONObject responseJson = (JSONObject) new JSONParser().parse(stringBuilder.toString());
-                    TokenResponse tokenResponse = new TokenResponse();
-                    tokenResponse.setAccessToken(responseJson.get(APIConstants.OAuthConstants.ACCESS_TOKEN).toString());
-                    // TODO - Handle null pointer when properties are non-existent in JSONObject
-                    // TODO - Uncomment following code block once null pointer check is done for all the fields.
-//                    tokenResponse.setRefreshToken(responseJson.get(APIConstants.OAuthConstants.REFRESH_TOKEN).toString());
-                    tokenResponse.setScope(responseJson.get(APIConstants.OAuthConstants.SCOPE).toString());
-                    tokenResponse.setTokenType(responseJson.get(APIConstants.OAuthConstants.TOKEN_TYPE).toString());
-                    tokenResponse.setExpiresIn(responseJson.get(APIConstants.OAuthConstants.EXPIRES_IN).toString());
+                    TokenResponse tokenResponse = new Gson().fromJson(stringBuilder.toString(), TokenResponse.class);
                     long currentTimeInSeconds = System.currentTimeMillis() / 1000;
-                    long expiryTimeInSeconds = currentTimeInSeconds + Long.parseLong(responseJson.get(APIConstants.
-                            OAuthConstants.EXPIRES_IN).toString());
+                    long expiryTimeInSeconds = currentTimeInSeconds + Long.parseLong(tokenResponse.getExpiresIn());
                     tokenResponse.setValidTill(expiryTimeInSeconds);
 
 
@@ -129,9 +94,6 @@ public class OAuthClient {
                         log.debug("Response: [status-code] " + responseCode + " [message] " + stringBuilder.toString());
                     }
                     return tokenResponse;
-                } catch (ParseException e) {
-                    //TODO - Improve the error message
-                    log.error("Failed to parse the response from the Token Endpoint...", e);
                 } finally {
                     httpPost.releaseConnection();
                 }
