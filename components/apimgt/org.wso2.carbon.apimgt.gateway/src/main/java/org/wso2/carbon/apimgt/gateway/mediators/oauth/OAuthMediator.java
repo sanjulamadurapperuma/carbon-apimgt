@@ -38,6 +38,8 @@ import org.wso2.carbon.core.util.CryptoUtil;
 import java.util.UUID;
 
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 /**
  * OAuth Mediator for generating OAuth tokens for invoking service endpoints secured with OAuth
@@ -45,11 +47,14 @@ import java.util.Map;
 public class OAuthMediator extends AbstractMediator implements ManagedLifecycle {
 
     private static final Log log = LogFactory.getLog(OAuthMediator.class);
+    public static final ScheduledExecutorService executorService;
 
 
     static {
         log.info("Initializing OAuth Mediator...");
 
+         executorService = new ScheduledThreadPoolExecutor(5);
+         log.info("ScheduledThreadPoolExecutor object instantiated...");
     }
 
     // Interface methods are being implemented here
@@ -95,7 +100,7 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
                     try {
                         log.info("Generating access token...");
 
-                        TokenGeneratorScheduledExecutor scheduledExecutor = new TokenGeneratorScheduledExecutor();
+                        TokenGeneratorScheduledExecutor scheduledExecutor = new TokenGeneratorScheduledExecutor(executorService);
                         scheduledExecutor.schedule(oAuthEndpoint);
                     } catch(Exception e) {
                         log.error("Could not generate access token...", e);
@@ -113,7 +118,6 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
                     log.debug("Token Response is null...");
                 }
             } else {
-                // TODO - See if any improvements to this can be done
                 log.error("The Token Refresh Interval has not been set correctly in the config...");
             }
         } catch (CryptoException e) {

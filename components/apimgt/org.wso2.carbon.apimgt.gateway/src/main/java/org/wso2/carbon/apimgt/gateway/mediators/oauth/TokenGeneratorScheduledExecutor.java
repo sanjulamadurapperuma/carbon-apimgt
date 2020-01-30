@@ -20,8 +20,8 @@ public class TokenGeneratorScheduledExecutor {
 
     private ScheduledExecutorService executorService;
 
-    public TokenGeneratorScheduledExecutor() {
-        this.executorService = new ScheduledThreadPoolExecutor(5);
+    public TokenGeneratorScheduledExecutor(ScheduledExecutorService executorService) {
+        this.executorService = executorService;
     }
 
     /**
