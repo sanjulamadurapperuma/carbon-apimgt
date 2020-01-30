@@ -51,10 +51,7 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
 
 
     static {
-        log.info("Initializing OAuth Mediator...");
-
          executorService = new ScheduledThreadPoolExecutor(5);
-         log.info("ScheduledThreadPoolExecutor object instantiated...");
     }
 
     // Interface methods are being implemented here
@@ -98,8 +95,6 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
 
                 if (oAuthEndpoint != null) {
                     try {
-                        log.info("Generating access token...");
-
                         TokenGeneratorScheduledExecutor scheduledExecutor = new TokenGeneratorScheduledExecutor(executorService);
                         scheduledExecutor.schedule(oAuthEndpoint);
                     } catch(Exception e) {
