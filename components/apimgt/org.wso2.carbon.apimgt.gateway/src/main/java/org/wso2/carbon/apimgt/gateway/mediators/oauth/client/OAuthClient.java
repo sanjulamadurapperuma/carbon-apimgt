@@ -86,7 +86,6 @@ public class OAuthClient {
                     long expiryTimeInSeconds = currentTimeInSeconds + Long.parseLong(tokenResponse.getExpiresIn());
                     tokenResponse.setValidTill(expiryTimeInSeconds);
 
-
                     if (log.isDebugEnabled()) {
                         log.debug("Response: [status-code] " + responseCode + " [message] " + stringBuilder.toString());
                     }
