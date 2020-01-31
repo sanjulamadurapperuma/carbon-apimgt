@@ -28,8 +28,7 @@ public class TokenGeneratorScheduledExecutor {
      */
     public void schedule(OAuthEndpoint oAuthEndpoint) {
         try {
-
-            executorService.scheduleAtFixedRate(()->{ log.info("Running scheduler...");
+            executorService.scheduleAtFixedRate(()->{
                 try {
                     TokenResponse previousResponse = TokenCache.getInstance().getTokenMap().get(oAuthEndpoint.getId());
                     if (previousResponse != null) {
