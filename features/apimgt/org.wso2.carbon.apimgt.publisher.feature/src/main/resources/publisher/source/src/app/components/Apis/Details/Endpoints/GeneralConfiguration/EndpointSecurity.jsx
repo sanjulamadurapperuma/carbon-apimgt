@@ -115,7 +115,7 @@ function EndpointSecurity(props) {
         if (!endpointSecurityInfo[field]) {
             setSecurityValidity({ ...securityValidity, [field]: false });
         } else {
-            let validity = false;
+            let validity = true;
             if (field === 'tokenUrl') {
                 validity = validateTokenURL(endpointSecurityInfo[field]);
             }
