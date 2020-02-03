@@ -85,40 +85,43 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             String decryptedApiSecret = new String(cryptoUtil.base64DecodeAndDecrypt(apiSecret));
 
             JSONObject oAuthEndpointSecurityProperties = getOAuthEndpointSecurityProperties();
+            int tokenRefreshInterval;
             if (oAuthEndpointSecurityProperties != null) {
-                int tokenRefreshInterval = Integer.parseInt((String) oAuthEndpointSecurityProperties.get(OAuthConstants.TOKEN_REFRESH_INTERVAL));
-
-                OAuthEndpoint oAuthEndpoint = new OAuthEndpoint();
-                oAuthEndpoint.setId((UUID.randomUUID().toString()));
-                oAuthEndpoint.setTokenApiUrl(tokenApiUrl);
-                oAuthEndpoint.setApiKey(decryptedApiKey);
-                oAuthEndpoint.setApiSecret(decryptedApiSecret);
-                oAuthEndpoint.setGrantType(grantType);
-                oAuthEndpoint.setTokenRefreshInterval(tokenRefreshInterval);
-
-                if (oAuthEndpoint != null) {
-                    try {
-                        log.info("Generating access token...");
-
-                        TokenGeneratorScheduledExecutor scheduledExecutor = new TokenGeneratorScheduledExecutor(executorService);
-                        scheduledExecutor.schedule(oAuthEndpoint);
-                    } catch(Exception e) {
-                        log.error("Could not generate access token...", e);
-                    }
-                }
-
-                TokenResponse tokenResponse = TokenCache.getInstance().getTokenMap().get(oAuthEndpoint.getId());
-                if (tokenResponse != null) {
-                    String accessToken = tokenResponse.getAccessToken();
-                    Map<String, Object> transportHeaders = (Map<String, Object>) ((Axis2MessageContext) messageContext)
-                            .getAxis2MessageContext().getProperty("TRANSPORT_HEADERS");
-                    transportHeaders.put("Authorization", "Bearer " + accessToken);
-                    log.debug("Access token set: " + accessToken);
-                } else {
-                    log.debug("Token Response is null...");
-                }
+                tokenRefreshInterval = Integer.parseInt((String) oAuthEndpointSecurityProperties.
+                        get(OAuthConstants.TOKEN_REFRESH_INTERVAL));
             } else {
-                log.error("The Token Refresh Interval has not been set correctly in the config...");
+                log.info("The Token Refresh Interval has not been set correctly in the config...");
+                tokenRefreshInterval = 20;
+            }
+
+            OAuthEndpoint oAuthEndpoint = new OAuthEndpoint();
+            oAuthEndpoint.setId((UUID.randomUUID().toString()));
+            oAuthEndpoint.setTokenApiUrl(tokenApiUrl);
+            oAuthEndpoint.setApiKey(decryptedApiKey);
+            oAuthEndpoint.setApiSecret(decryptedApiSecret);
+            oAuthEndpoint.setGrantType(grantType);
+            oAuthEndpoint.setTokenRefreshInterval(tokenRefreshInterval);
+
+            if (oAuthEndpoint != null) {
+                try {
+                    log.info("Generating access token...");
+
+                    TokenGeneratorScheduledExecutor scheduledExecutor = new TokenGeneratorScheduledExecutor(executorService);
+                    scheduledExecutor.schedule(oAuthEndpoint);
+                } catch(Exception e) {
+                    log.error("Could not generate access token...", e);
+                }
+            }
+
+            TokenResponse tokenResponse = TokenCache.getInstance().getTokenMap().get(oAuthEndpoint.getId());
+            if (tokenResponse != null) {
+                String accessToken = tokenResponse.getAccessToken();
+                Map<String, Object> transportHeaders = (Map<String, Object>) ((Axis2MessageContext) messageContext)
+                        .getAxis2MessageContext().getProperty("TRANSPORT_HEADERS");
+                transportHeaders.put("Authorization", "Bearer " + accessToken);
+                log.debug("Access token set: " + accessToken);
+            } else {
+                log.debug("Token Response is null...");
             }
         } catch (CryptoException e) {
             log.error(" Error occurred when decrypting the client key and client secret", e);
