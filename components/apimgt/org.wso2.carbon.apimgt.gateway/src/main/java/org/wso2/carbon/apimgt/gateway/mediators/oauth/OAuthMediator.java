@@ -48,6 +48,7 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
 
     private static final Log log = LogFactory.getLog(OAuthMediator.class);
     public static final ScheduledExecutorService executorService;
+    public static final int DEFAULT_TOKEN_REFRESH_INTERVAL = 20;
 
 
     static {
@@ -91,7 +92,7 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
                         get(OAuthConstants.TOKEN_REFRESH_INTERVAL));
             } else {
                 log.info("The Token Refresh Interval has not been set correctly in the config...");
-                tokenRefreshInterval = 20;
+                tokenRefreshInterval = DEFAULT_TOKEN_REFRESH_INTERVAL;
             }
 
             OAuthEndpoint oAuthEndpoint = new OAuthEndpoint();
