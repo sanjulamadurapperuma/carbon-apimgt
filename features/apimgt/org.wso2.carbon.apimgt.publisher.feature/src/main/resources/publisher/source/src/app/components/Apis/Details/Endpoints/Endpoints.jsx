@@ -202,16 +202,34 @@ function Endpoints(props) {
         const { endpointConfig, endpointSecurity } = apiObject;
         if (endpointSecurity) {
             if (endpointSecurity.type === 'OAUTH') {
-                if (endpointSecurity.tokenUrl === null || endpointSecurity.apiKey === null
-                    || endpointSecurity.apiSecret === null) {
-                    return {
-                        isValid: false,
-                        message: intl.formatMessage({
-                            id: 'Apis.Details.Endpoints.Endpoints.missing.security.oauth.client.error',
-                            defaultMessage: 'Endpoint Security Token URL'
-                            + '/API Key/API Secret should not be empty',
-                        }),
-                    };
+                if (endpointSecurity.grantType === 'PASSWORD') {
+                    if (endpointSecurity.tokenUrl === null
+                        || endpointSecurity.apiKey === null
+                        || endpointSecurity.apiSecret === null
+                        || endpointSecurity.username === null
+                        || endpointSecurity.password === null) {
+                        return {
+                            isValid: false,
+                            message: intl.formatMessage({
+                                id: 'Apis.Details.Endpoints.Endpoints.missing.security.oauth.client.error',
+                                defaultMessage: 'Endpoint Security Token URL'
+                                        + '/API Key/API Secret/Username/Password should not be empty',
+                            }),
+                        };
+                    }
+                } else if (endpointSecurity.grantType === 'CLIENT_CREDENTIALS') {
+                    if (endpointSecurity.tokenUrl === null
+                        || endpointSecurity.apiKey === null
+                        || endpointSecurity.apiSecret === null) {
+                        return {
+                            isValid: false,
+                            message: intl.formatMessage({
+                                id: 'Apis.Details.Endpoints.Endpoints.missing.security.oauth.client.error',
+                                defaultMessage: 'Endpoint Security Token URL'
+                                        + '/API Key/API Secret should not be empty',
+                            }),
+                        };
+                    }
                 }
             } else if (endpointSecurity.username === '' || endpointSecurity.password === null) {
                 return {

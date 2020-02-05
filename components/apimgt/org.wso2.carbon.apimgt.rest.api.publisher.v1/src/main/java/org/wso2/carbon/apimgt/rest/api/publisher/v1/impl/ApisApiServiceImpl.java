@@ -608,18 +608,18 @@ public class ApisApiServiceImpl implements ApisApiService {
             if (body.getEndpointSecurity() != null) {
                 APIEndpointSecurityDTO endpointSecurity = body.getEndpointSecurity();
                 if (endpointSecurity.getType().compareTo(APIEndpointSecurityDTO.TypeEnum.OAUTH) == 0) {
-                    if (endpointSecurity.getGrantType().equals(APIConstants.OAuthConstants.CLIENT_CREDENTIALS)) {
-                        String apiKey = endpointSecurity.getApiKey();
-                        String apiSecret = endpointSecurity.getApiSecret();
-                        if (!StringUtils.isEmpty(apiKey) && !StringUtils.isEmpty(apiSecret)) {
-                            CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
-                            String encryptedApiKey = cryptoUtil.encryptAndBase64Encode(apiKey.getBytes());
-                            String encryptedApiSecret = cryptoUtil.encryptAndBase64Encode(apiSecret.getBytes());
-                            endpointSecurity.setApiKey(encryptedApiKey);
-                            endpointSecurity.setApiSecret(encryptedApiSecret);
-                            body.setEndpointSecurity(endpointSecurity);
-                        }
+//                    if (endpointSecurity.getGrantType().equals(APIConstants.OAuthConstants.CLIENT_CREDENTIALS)) {
+                    String apiKey = endpointSecurity.getApiKey();
+                    String apiSecret = endpointSecurity.getApiSecret();
+                    if (!StringUtils.isEmpty(apiKey) && !StringUtils.isEmpty(apiSecret)) {
+                        CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
+                        String encryptedApiKey = cryptoUtil.encryptAndBase64Encode(apiKey.getBytes());
+                        String encryptedApiSecret = cryptoUtil.encryptAndBase64Encode(apiSecret.getBytes());
+                        endpointSecurity.setApiKey(encryptedApiKey);
+                        endpointSecurity.setApiSecret(encryptedApiSecret);
+                        body.setEndpointSecurity(endpointSecurity);
                     }
+//                    }
                 }
             }
 
