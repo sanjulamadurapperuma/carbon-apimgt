@@ -44,58 +44,59 @@ public class OAuthClient {
     private static final String APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
 
     public static TokenResponse generateToken(String url, String apiKey, String apiSecret,
-            String grantType) throws IOException, APIManagementException {
+            String username, String password, String grantType)
+            throws IOException, APIManagementException {
         if(log.isDebugEnabled()) {
             log.debug("Initializing token generation request: [token-endpoint] " + url);
         }
 
         HttpPost httpPost = null;
-        if (grantType.equals(APIConstants.OAuthConstants.CLIENT_CREDENTIALS)) {
-            String data = "grant_type=client_credentials";
+        URL url_ = new URL(url);
+        httpPost = new HttpPost(url);
+        // Set authorization header
+        String credentials = Base64.getEncoder().encodeToString((apiKey + ":" + apiSecret).getBytes());
+        httpPost.setHeader(AUTHORIZATION_HEADER, "Basic " + credentials);
+        httpPost.setHeader(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
 
-            URL url_ = new URL(url);
-            httpPost = new HttpPost(url);
-            // Set authorization header
-            String credentials = Base64.getEncoder().encodeToString((apiKey + ":" + apiSecret).getBytes());
+        try (CloseableHttpClient httpClient = (CloseableHttpClient) APIUtil
+                .getHttpClient(url_.getPort(), url_.getProtocol())) {
+            if (grantType.equals(APIConstants.OAuthConstants.CLIENT_CREDENTIALS)) {
+                String clientCredGrantType = "grant_type=client_credentials";
+                httpPost.setEntity(new StringEntity(clientCredGrantType));
+            } else if (grantType.equals(APIConstants.OAuthConstants.PASSWORD)) {
+                String passwordGrantType = "grant_type=password";
+                httpPost.setEntity(new StringEntity(passwordGrantType));
+                httpPost.setEntity(new StringEntity("username=" + username));
+                httpPost.setEntity(new StringEntity("password=" + password));
+            }
 
-            try (CloseableHttpClient httpClient = (CloseableHttpClient) APIUtil
-                    .getHttpClient(url_.getPort(), url_.getProtocol())) {
-                httpPost.setHeader(AUTHORIZATION_HEADER, "Basic " + credentials);
-                httpPost.setHeader(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
-                httpPost.setEntity(new StringEntity(data));
+            try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+                int responseCode = response.getStatusLine().getStatusCode();
 
-                try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
-
-                    int responseCode = response.getStatusLine().getStatusCode();
-
-                    if (!(responseCode == HttpStatus.SC_OK)) {
-                        throw new APIManagementException(
-                                "Error while accessing the Token URL. Found http status " + response.getStatusLine());
-                    }
-                    BufferedReader reader = new BufferedReader(
-                            new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8));
-                    String inputLine;
-                    StringBuilder stringBuilder = new StringBuilder();
-
-                    while ((inputLine = reader.readLine()) != null) {
-                        stringBuilder.append(inputLine);
-                    }
-
-                    TokenResponse tokenResponse = new Gson().fromJson(stringBuilder.toString(), TokenResponse.class);
-                    long currentTimeInSeconds = System.currentTimeMillis() / 1000;
-                    long expiryTimeInSeconds = currentTimeInSeconds + Long.parseLong(tokenResponse.getExpiresIn());
-                    tokenResponse.setValidTill(expiryTimeInSeconds);
-
-                    if (log.isDebugEnabled()) {
-                        log.debug("Response: [status-code] " + responseCode + " [message] " + stringBuilder.toString());
-                    }
-                    return tokenResponse;
-                } finally {
-                    httpPost.releaseConnection();
+                if (!(responseCode == HttpStatus.SC_OK)) {
+                    throw new APIManagementException("Error while accessing the Token URL. Found http status " + response.getStatusLine());
                 }
+                BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8));
+                String inputLine;
+                StringBuilder stringBuilder = new StringBuilder();
+
+                while ((inputLine = reader.readLine()) != null) {
+                    stringBuilder.append(inputLine);
+                }
+
+                TokenResponse tokenResponse = new Gson().fromJson(stringBuilder.toString(), TokenResponse.class);
+                long currentTimeInSeconds = System.currentTimeMillis() / 1000;
+                long expiryTimeInSeconds = currentTimeInSeconds + Long.parseLong(tokenResponse.getExpiresIn());
+                tokenResponse.setValidTill(expiryTimeInSeconds);
+
+                if (log.isDebugEnabled()) {
+                    log.debug("Response: [status-code] " + responseCode + " [message] " + stringBuilder.toString());
+                }
+                return tokenResponse;
+            } finally {
+                httpPost.releaseConnection();
             }
         }
-        return null;
     }
 
 }

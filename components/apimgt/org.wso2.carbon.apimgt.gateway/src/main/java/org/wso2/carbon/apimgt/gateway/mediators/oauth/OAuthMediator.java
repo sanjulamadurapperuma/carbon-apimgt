@@ -74,10 +74,17 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
 
         CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
         try {
+            String username = null;
+            String password = null;
             String tokenApiUrl = (String) messageContext.getProperty(OAuthConstants.TOKEN_API_URL);
             String apiKey = (String) messageContext.getProperty(OAuthConstants.OAUTH_API_KEY);
             String apiSecret = (String) messageContext.getProperty(OAuthConstants.OAUTH_API_SECRET);
             String grantType = (String) messageContext.getProperty(OAuthConstants.GRANT_TYPE);
+
+            if (grantType.equals("PASSWORD")) {
+                username = (String) messageContext.getProperty(OAuthConstants.OAUTH_USERNAME);
+                password = (String) messageContext.getProperty(OAuthConstants.OAUTH_PASSWORD);
+            }
 
             String decryptedApiKey = new String(cryptoUtil.base64DecodeAndDecrypt(apiKey));
             String decryptedApiSecret = new String(cryptoUtil.base64DecodeAndDecrypt(apiSecret));
@@ -96,6 +103,8 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             oAuthEndpoint.setTokenApiUrl(tokenApiUrl);
             oAuthEndpoint.setApiKey(decryptedApiKey);
             oAuthEndpoint.setApiSecret(decryptedApiSecret);
+            oAuthEndpoint.setUsername(username);
+            oAuthEndpoint.setPassword(password);
             oAuthEndpoint.setGrantType(grantType);
             oAuthEndpoint.setTokenRefreshInterval(tokenRefreshInterval);
 
