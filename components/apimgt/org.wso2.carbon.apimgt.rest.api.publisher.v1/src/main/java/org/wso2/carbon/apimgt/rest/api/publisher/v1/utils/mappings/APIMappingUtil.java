@@ -1021,6 +1021,12 @@ public class APIMappingUtil {
                 try {
                     CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
                     securityDTO.setType(APIEndpointSecurityDTO.TypeEnum.OAUTH);
+                    securityDTO.setUsername(api.getEndpointUTUsername());
+                    if (checkEndpointSecurityPasswordEnabled(tenantDomain)) {
+                        securityDTO.setPassword(api.getEndpointUTPassword());
+                    } else {
+                        securityDTO.setPassword(""); //Do not expose password
+                    }
                     securityDTO.setTokenUrl(api.getTokenUrl());
                     securityDTO.setApiKey(new String(cryptoUtil.base64DecodeAndDecrypt(api.getApiKey())));
                     securityDTO.setApiSecret(new String(cryptoUtil.base64DecodeAndDecrypt(api.getApiSecret())));
