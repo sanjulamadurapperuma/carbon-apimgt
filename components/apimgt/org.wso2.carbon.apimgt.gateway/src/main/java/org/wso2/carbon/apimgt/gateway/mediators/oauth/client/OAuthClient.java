@@ -65,9 +65,8 @@ public class OAuthClient {
                 httpPost.setEntity(new StringEntity(clientCredGrantType));
             } else if (grantType.equals(APIConstants.OAuthConstants.PASSWORD)) {
                 String passwordGrantType = "grant_type=password";
-                httpPost.setEntity(new StringEntity(passwordGrantType));
-                httpPost.setEntity(new StringEntity("username=" + username));
-                httpPost.setEntity(new StringEntity("password=" + password));
+                httpPost.setEntity(new StringEntity(passwordGrantType + "&username="
+                        + username + "&password=" + password));
             }
 
             try (CloseableHttpResponse response = httpClient.execute(httpPost)) {

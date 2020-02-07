@@ -656,17 +656,12 @@ public class APIMappingUtil {
             api.setEndpointUTPassword(securityDTO.getPassword());
             if (APIEndpointSecurityDTO.TypeEnum.DIGEST.equals(securityDTO.getType())) {
                 api.setEndpointAuthDigest(true);
-                api.setEndpointUTUsername(securityDTO.getUsername());
-                api.setEndpointUTPassword(securityDTO.getPassword());
             } else if (APIEndpointSecurityDTO.TypeEnum.OAUTH.equals(securityDTO.getType())) {
                 api.setEndpointOAuth(true);
                 api.setGrantType(securityDTO.getGrantType());
                 api.setTokenUrl(securityDTO.getTokenUrl());
                 api.setApiKey(securityDTO.getApiKey());
                 api.setApiSecret(securityDTO.getApiSecret());
-            } else {
-                api.setEndpointUTUsername(securityDTO.getUsername());
-                api.setEndpointUTPassword(securityDTO.getPassword());
             }
         }
     }

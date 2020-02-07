@@ -1347,35 +1347,6 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                     }
 
                 }
-
-
-                // DO NOT comment out this code, it will break the Endpoint Security toggle in the UI
-//                // TODO - Remove unnecessary code
-//                if((!api.isEndpointSecured() && !api.isEndpointOAuth())) {
-//                    boolean isSecured = Boolean.parseBoolean(
-//                            artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_SECURED));
-//                    boolean isOauthSecured = Boolean.parseBoolean(
-//                            artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_OAUTH));
-//
-//                    String tokenUrl = artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_TOKEN_URL);
-//                    String apiKey = artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_KEY);
-//                    String apiSecret = artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_SECRET);
-//                    String grantType = artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_GRANT_TYPE);
-//
-//                    if (!isSecured && !isOauthSecured) {
-//                        String epAuthType = gatewayManager.getAPIEndpointSecurityType(api, tenantDomain);
-//                        if (APIConstants.APIEndpointSecurityConstants.OAUTH.equalsIgnoreCase(epAuthType)) {
-//                            api.setEndpointSecured(true);
-//                            api.setEndpointOAuth(true);
-//                        } else if (APIConstants.APIEndpointSecurityConstants.BASIC_AUTH.equalsIgnoreCase(epAuthType)) {
-//                            api.setEndpointSecured(true);
-//                        }
-//                        api.setTokenUrl(tokenUrl);
-//                        api.setApiKey(apiKey);
-//                        api.setApiSecret(apiSecret);
-//                        api.setGrantType(grantType);
-//                    }
-//                }
             }
 
             String oldStatus = artifact.getAttribute(APIConstants.API_OVERVIEW_STATUS);
