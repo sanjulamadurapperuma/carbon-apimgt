@@ -21,6 +21,7 @@ package org.wso2.carbon.apimgt.gateway.mediators.oauth;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.synapse.ManagedLifecycle;
 import org.apache.synapse.MessageContext;
 import org.apache.synapse.core.SynapseEnvironment;
@@ -76,14 +77,23 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
         try {
             String username = null;
             String password = null;
+
             String tokenApiUrl = (String) messageContext.getProperty(OAuthConstants.TOKEN_API_URL);
             String apiKey = (String) messageContext.getProperty(OAuthConstants.OAUTH_API_KEY);
             String apiSecret = (String) messageContext.getProperty(OAuthConstants.OAUTH_API_SECRET);
             String grantType = (String) messageContext.getProperty(OAuthConstants.GRANT_TYPE);
 
             if (grantType.equals("PASSWORD")) {
-                username = (String) messageContext.getProperty(OAuthConstants.OAUTH_USERNAME);
-                password = (String) messageContext.getProperty(OAuthConstants.OAUTH_PASSWORD);
+                String usernamePassword = null;
+                String unpw = null;
+                unpw = (String) messageContext.getProperty(OAuthConstants.OAUTH_USERNAMEPASSWORD);
+
+                if (unpw != null) {
+                    usernamePassword = new String(Base64.decodeBase64(unpw.getBytes()));
+                    String[] usernamePasswordSplit = usernamePassword.split(":");
+                    username = usernamePasswordSplit[0];
+                    password = usernamePasswordSplit[1];
+                }
             }
 
             String decryptedApiKey = new String(cryptoUtil.base64DecodeAndDecrypt(apiKey));
