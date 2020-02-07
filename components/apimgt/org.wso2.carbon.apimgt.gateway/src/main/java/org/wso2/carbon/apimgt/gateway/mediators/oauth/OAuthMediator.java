@@ -84,8 +84,8 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             String grantType = (String) messageContext.getProperty(OAuthConstants.GRANT_TYPE);
 
             if (grantType.equals("PASSWORD")) {
-                String usernamePassword = null;
-                String unpw = null;
+                String usernamePassword;
+                String unpw;
                 unpw = (String) messageContext.getProperty(OAuthConstants.OAUTH_USERNAMEPASSWORD);
 
                 if (unpw != null) {
