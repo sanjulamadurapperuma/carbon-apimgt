@@ -448,6 +448,7 @@ function EndpointOverview(props) {
                 username: null,
                 password: null,
                 grantType: null,
+                httpMethod: null,
                 tokenUrl: null,
                 apiKey: null,
                 apiSecret: null,
