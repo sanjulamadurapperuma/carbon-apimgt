@@ -21,6 +21,23 @@ import { FormattedMessage, injectIntl } from 'react-intl';
 import { isRestricted } from 'AppData/AuthManager';
 import APIContext from 'AppComponents/Apis/Details/components/ApiContext';
 import APIValidation from 'AppData/APIValidation';
+import FormControl from '@material-ui/core/FormControl';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import FormLabel from '@material-ui/core/FormLabel';
+import Radio from '@material-ui/core/Radio';
+import RadioGroup from '@material-ui/core/RadioGroup';
+import { withStyles } from '@material-ui/core/styles';
+
+const styles = () => ({
+    FormControl: {
+        padding: 0,
+        width: '100%',
+    },
+    radioWrapper: {
+        display: 'flex',
+        flexDirection: 'row',
+    },
+});
 
 /**
  * The base component for advanced endpoint configurations.
@@ -29,17 +46,23 @@ import APIValidation from 'AppData/APIValidation';
  */
 function EndpointSecurity(props) {
     const { api } = useContext(APIContext);
-    const { intl, securityInfo, onChangeEndpointAuth } = props;
+    const {
+        intl, securityInfo, onChangeEndpointAuth, classes,
+    } = props;
     const [endpointSecurityInfo, setEndpointSecurityInfo] = useState({
         type: 'BASIC',
         username: '',
         password: '',
         tokenUrl: '',
+        httpMethod: 'post',
         apiKey: '',
         apiSecret: '',
         grantType: '',
     });
     const [securityValidity, setSecurityValidity] = useState();
+    const handleHttpMethodChange = (event) => {
+        setEndpointSecurityInfo({ ...endpointSecurityInfo, httpMethod: event.target.value });
+    };
 
     const authTypes = [
         {
@@ -85,12 +108,13 @@ function EndpointSecurity(props) {
         const tmpSecurity = {};
         if (securityInfo !== null) {
             const {
-                type, username, password, grantType, tokenUrl, apiKey, apiSecret,
+                type, username, password, grantType, httpMethod, tokenUrl, apiKey, apiSecret,
             } = securityInfo;
             tmpSecurity.type = type;
             tmpSecurity.username = username;
             tmpSecurity.password = password === '' ? '**********' : password;
             tmpSecurity.grantType = grantType;
+            tmpSecurity.httpMethod = httpMethod;
             tmpSecurity.tokenUrl = tokenUrl;
             tmpSecurity.apiKey = apiKey;
             tmpSecurity.apiSecret = apiSecret;
@@ -147,43 +171,6 @@ function EndpointSecurity(props) {
             {(endpointSecurityInfo.type === 'OAUTH')
             && (
                 <>
-                    {/* <Grid item xs={6}>
-                        <TextField
-                            disabled={isRestricted(['apim:api_create'], api)}
-                            required
-                            fullWidth
-                            error={securityValidity && securityValidity.grantType === false}
-                            helperText={
-                                securityValidity && securityValidity.grantType === false ? (
-                                    <FormattedMessage
-                                        id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                        + 'EndpointSecurity.no.grantType.error'}
-                                        defaultMessage='Grant Type should not be empty'
-                                    />
-                                ) : (
-                                    <FormattedMessage
-                                        id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                        + 'EndpointSecurity.grantType.message'}
-                                        defaultMessage='Enter Grant Type'
-                                    />
-                                )
-                            }
-                            variant='outlined'
-                            id='auth-grantType'
-                            label={(
-                                <FormattedMessage
-                                    id='Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.grant.type.input'
-                                    defaultMessage='Grant Type'
-                                />
-                            )}
-                            onChange={(event) => setEndpointSecurityInfo(
-                                { ...endpointSecurityInfo, grantType: event.target.value },
-                            )}
-                            value={endpointSecurityInfo.grantType}
-                            onBlur={() => validateAndUpdateSecurityInfo('grantType')}
-                        />
-                    </Grid> */}
-
                     <Grid item xs={6}>
                         <TextField
                             disabled={isRestricted(['apim:api_create'], api)}
@@ -217,6 +204,82 @@ function EndpointSecurity(props) {
                     {(endpointSecurityInfo.grantType === 'CLIENT_CREDENTIALS'
                     || endpointSecurityInfo.grantType === 'PASSWORD') && (
                         <>
+                            <Grid item xs={6}>
+                                {/* <TextField
+                                    disabled={isRestricted(['apim:api_create'], api)}
+                                    required
+                                    fullWidth
+                                    error={securityValidity && securityValidity.tokenUrl === false}
+                                    helperText={
+                                        securityValidity && securityValidity.tokenUrl === false ? (
+                                            <FormattedMessage
+                                                id={'Apis.Details.Endpoints.GeneralConfiguration'
+                                        + '.EndpointSecurity.no.tokenUrl.error'}
+                                                defaultMessage='Token URL should not be empty or formatted incorrectly'
+                                            />
+                                        ) : (
+                                            <FormattedMessage
+                                                id={'Apis.Details.Endpoints.GeneralConfiguration.'
+                                        + 'EndpointSecurity.tokenUrl.message'}
+                                                defaultMessage='Enter Token URL'
+                                            />
+                                        )
+                                    }
+                                    variant='outlined'
+                                    id='auth-tokenUrl'
+                                    label={(
+                                        <FormattedMessage
+                                            id={'Apis.Details.Endpoints.GeneralConfiguration.'
+                                            + 'EndpointSecurity.token.url.input'}
+                                            defaultMessage='Token URL'
+                                        />
+                                    )}
+                                    onChange={(event) => setEndpointSecurityInfo(
+                                        { ...endpointSecurityInfo, tokenUrl: event.target.value },
+                                    )}
+                                    value={endpointSecurityInfo.tokenUrl}
+                                    onBlur={() => validateAndUpdateSecurityInfo('tokenUrl')}
+                                /> */}
+                                <FormControl className={classes.FormControl}>
+                                    <FormLabel component='legend'>HTTP Method: </FormLabel>
+                                    <RadioGroup
+                                        aria-label='HTTP Method'
+                                        name='httpMethod'
+                                        className={classes.radioWrapper}
+                                        value={endpointSecurityInfo.httpMethod}
+                                        onChange={(event) => setEndpointSecurityInfo(
+                                            { ...endpointSecurityInfo, httpMethod: event.target.value },
+                                        )}
+                                    >
+                                        <FormControlLabel
+                                            control={<Radio color='primary' />}
+                                            value='get'
+                                            label={(
+                                                <FormattedMessage
+                                                    id={'Apis.Details.Endpoints.GeneralConfiguration'
+                                                    + '.EndpointSecurity.Get'}
+                                                    defaultMessage='GET'
+                                                />
+                                            )}
+                                            className={classes.radioGroup}
+                                        />
+                                        <FormControlLabel
+                                            control={(<Radio color='primary' />)}
+                                            value='post'
+                                            label={(
+                                                <FormattedMessage
+                                                    id={'Apis.Details.Endpoints.GeneralConfiguration'
+                                                    + '.EndpointSecurity.Post'}
+                                                    defaultMessage='POST'
+                                                />
+                                            )}
+                                            className={classes.radioGroup}
+                                            defaultChecked
+                                        />
+                                    </RadioGroup>
+                                </FormControl>
+                            </Grid>
+
                             <Grid item xs={6}>
                                 <TextField
                                     disabled={isRestricted(['apim:api_create'], api)}
@@ -425,4 +488,4 @@ EndpointSecurity.propTypes = {
     onChangeEndpointAuth: PropTypes.func.isRequired,
 };
 
-export default injectIntl(EndpointSecurity);
+export default withStyles(styles)(injectIntl(EndpointSecurity));
