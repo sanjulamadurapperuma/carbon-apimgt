@@ -61,9 +61,6 @@ function EndpointSecurity(props) {
         grantType: '',
     });
     const [securityValidity, setSecurityValidity] = useState();
-    const handleHttpMethodChange = (event) => {
-        setEndpointSecurityInfo({ ...endpointSecurityInfo, httpMethod: event.target.value });
-    };
 
     const authTypes = [
         {
@@ -253,6 +250,7 @@ function EndpointSecurity(props) {
                                         onChange={(event) => setEndpointSecurityInfo(
                                             { ...endpointSecurityInfo, httpMethod: event.target.value },
                                         )}
+                                        onBlur={() => validateAndUpdateSecurityInfo('httpMethod')}
                                     >
                                         <FormControlLabel
                                             control={<Radio color='primary' />}
