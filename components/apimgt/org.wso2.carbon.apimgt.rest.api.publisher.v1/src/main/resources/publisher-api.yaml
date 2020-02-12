@@ -8249,6 +8249,9 @@ definitions:
       grantType:
         type: string
         example: client_credentials
+      httpMethod:
+        type: string
+        example: get
       tokenUrl:
         type: string
         example: http://localhost:8244/token

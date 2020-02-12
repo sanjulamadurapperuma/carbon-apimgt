@@ -304,6 +304,7 @@ public final class APIConstants {
     public static final String API_OVERVIEW_ENDPOINT_PASSWORD = "overview_endpointPpassword";
     public static final String API_OVERVIEW_ENDPOINT_OAUTH = "overview_endpointOAuth";
     public static final String API_OVERVIEW_ENDPOINT_GRANT_TYPE = "overview_grantType";
+    public static final String API_OVERVIEW_ENDPOINT_HTTP_METHOD = "overview_httpMethod";
     public static final String API_OVERVIEW_ENDPOINT_TOKEN_URL = "overview_endpointTokenUrl";
     public static final String API_OVERVIEW_ENDPOINT_API_KEY = "overview_apiKey";
     public static final String API_OVERVIEW_ENDPOINT_API_SECRET = "overview_apiSecret";
@@ -1122,10 +1123,10 @@ public final class APIConstants {
     public static class OAuthConstants {
         public static final String OAUTH = "OAUTH";
         public static final String OAUTH_ID = "id";
+        public static final String OAUTH_HTTP_METHOD = "httpMethod";
         public static final String TOKEN_API_URL = "tokenUrl";
         public static final String OAUTH_API_KEY = "apiKey";
         public static final String OAUTH_API_SECRET = "apiSecret";
-        public static final String OAUTH_USERNAME = "username";
         public static final String OAUTH_USERNAMEPASSWORD = "usernamePassword";
         public static final String GRANT_TYPE = "grantType";
         public static final String CLIENT_CREDENTIALS = "CLIENT_CREDENTIALS";

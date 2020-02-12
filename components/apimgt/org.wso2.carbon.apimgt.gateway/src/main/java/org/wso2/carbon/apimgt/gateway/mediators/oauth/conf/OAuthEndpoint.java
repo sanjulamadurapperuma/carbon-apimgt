@@ -3,6 +3,7 @@ package org.wso2.carbon.apimgt.gateway.mediators.oauth.conf;
 public class OAuthEndpoint {
 
     private String id;
+    private String httpMethod;
     private String tokenApiUrl;
     private String apiKey;
     private String apiSecret;
@@ -17,6 +18,14 @@ public class OAuthEndpoint {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getHttpMethod() {
+        return httpMethod;
+    }
+
+    public void setHttpMethod(String httpMethod) {
+        this.httpMethod = httpMethod;
     }
 
     public String getTokenApiUrl() {

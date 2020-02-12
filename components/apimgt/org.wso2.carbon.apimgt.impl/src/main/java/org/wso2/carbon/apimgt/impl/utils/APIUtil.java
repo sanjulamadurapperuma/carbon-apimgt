@@ -392,6 +392,7 @@ public final class APIUtil {
             }
             api.setEndpointOAuth(Boolean.parseBoolean(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_OAUTH)));
             api.setGrantType(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_GRANT_TYPE));
+            api.setHttpMethod(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_HTTP_METHOD));
             api.setTokenUrl(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_TOKEN_URL));
             api.setApiKey(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_KEY));
             api.setApiSecret(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_SECRET));
@@ -572,6 +573,7 @@ public final class APIUtil {
             }
             api.setEndpointOAuth(Boolean.parseBoolean(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_OAUTH)));
             api.setGrantType(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_GRANT_TYPE));
+            api.setHttpMethod(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_HTTP_METHOD));
             api.setTokenUrl(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_TOKEN_URL));
             api.setApiKey(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_KEY));
             api.setApiSecret(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_SECRET));
@@ -3349,6 +3351,7 @@ public final class APIUtil {
             }
             api.setEndpointOAuth(Boolean.parseBoolean(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_OAUTH)));
             api.setGrantType(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_GRANT_TYPE));
+            api.setHttpMethod(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_HTTP_METHOD));
             api.setTokenUrl(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_TOKEN_URL));
             api.setApiKey(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_KEY));
             api.setApiSecret(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_SECRET));

@@ -78,6 +78,7 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             String username = null;
             String password = null;
 
+            String httpMethod = (String) messageContext.getProperty(OAuthConstants.OAUTH_HTTP_METHOD);
             String tokenApiUrl = (String) messageContext.getProperty(OAuthConstants.TOKEN_API_URL);
             String apiKey = (String) messageContext.getProperty(OAuthConstants.OAUTH_API_KEY);
             String apiSecret = (String) messageContext.getProperty(OAuthConstants.OAUTH_API_SECRET);
@@ -110,6 +111,7 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
 
             OAuthEndpoint oAuthEndpoint = new OAuthEndpoint();
             oAuthEndpoint.setId((UUID.randomUUID().toString()));
+            oAuthEndpoint.setHttpMethod(httpMethod);
             oAuthEndpoint.setTokenApiUrl(tokenApiUrl);
             oAuthEndpoint.setApiKey(decryptedApiKey);
             oAuthEndpoint.setApiSecret(decryptedApiSecret);
