@@ -318,7 +318,6 @@ public class ApisApiServiceImpl implements ApisApiService {
                 RestApiUtil.handleBadRequest("Endpoint URLs should be valid web socket URLs", log);
             }
 
-            // TODO - See if the OAuth client key and secret has to be encrypted when creating an API
             // AWS Lambda: secret key encryption while creating the API
             if (body.getEndpointConfig() != null) {
                 LinkedHashMap endpointConfig = (LinkedHashMap) body.getEndpointConfig();
@@ -642,7 +641,6 @@ public class ApisApiServiceImpl implements ApisApiService {
             if (body.getEndpointSecurity() != null) {
                 APIEndpointSecurityDTO endpointSecurity = body.getEndpointSecurity();
                 if (endpointSecurity.getType().compareTo(APIEndpointSecurityDTO.TypeEnum.OAUTH) == 0) {
-//                    if (endpointSecurity.getGrantType().equals(APIConstants.OAuthConstants.CLIENT_CREDENTIALS)) {
                     String apiKey = endpointSecurity.getApiKey();
                     String apiSecret = endpointSecurity.getApiSecret();
                     if (!StringUtils.isEmpty(apiKey) && !StringUtils.isEmpty(apiSecret)) {
@@ -653,7 +651,6 @@ public class ApisApiServiceImpl implements ApisApiService {
                         endpointSecurity.setApiSecret(encryptedApiSecret);
                         body.setEndpointSecurity(endpointSecurity);
                     }
-//                    }
                 }
             }
 
