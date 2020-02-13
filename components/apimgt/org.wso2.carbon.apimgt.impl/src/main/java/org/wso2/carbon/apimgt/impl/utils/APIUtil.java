@@ -1171,6 +1171,7 @@ public final class APIUtil {
             artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_USERNAME, api.getEndpointUTUsername());
             artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_PASSWORD, api.getEndpointUTPassword());
             artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_OAUTH, Boolean.toString(api.isEndpointOAuth()));
+            artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_HTTP_METHOD, api.getHttpMethod());
             artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_GRANT_TYPE, api.getGrantType());
             artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_TOKEN_URL, api.getTokenUrl());
             artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_KEY, api.getApiKey());
