@@ -489,6 +489,9 @@ public final class APIConstants {
     public static final String APP_SKIP_CONSENT_DISPLAY = "Skip Consent";
     public static final String APP_SKIP_CONSENT_NAME = "skipConsent";
     public static final String APP_SKIP_CONSENT_VALUE = "true";
+    public static final String APP_SKIP_LOGOUT_CONSENT_DISPLAY = "Skip Logout Consent";
+    public static final String APP_SKIP_LOGOUT_CONSENT_NAME = "skipLogoutConsent";
+    public static final String APP_SKIP_LOGOUT_CONSENT_VALUE = "true";
     public static final String RECEIVER_URL = "receiverURL";
     public static final String AUTHENTICATOR_URL = "authenticatorURL";
     public static final String USERNAME = "username";
@@ -915,7 +918,7 @@ public final class APIConstants {
     public static final String GATEWAY_BASIC_AUTH_RESOURCE_CACHE_NAME = "gatewayBasicAuthResourceCache";
     public static final String GATEWAY_CERTIFICATE_CACHE_NAME = "gatewayCertificateCache";
     public static final String GATEWAY_API_KEY_CACHE_NAME = "gatewayApiKeyCache";
-    public static final String GATEWAY_API_KEY_KEY_CACHE_NAME = "gatewayApiKeyKeyCache";
+    public static final String GATEWAY_API_KEY_DATA_CACHE_NAME = "gatewayApiKeyKeyCache";
     public static final String GATEWAY_INVALID_API_KEY_CACHE_NAME = "gatewayInvalidApiKeyCache";
     public static final String GATEWAY_TOKEN_CACHE_NAME = "GATEWAY_TOKEN_CACHE";
     public static final String GATEWAY_INVALID_TOKEN_CACHE_NAME = "GATEWAY_INVALID_TOKEN_CACHE";
@@ -1371,6 +1374,7 @@ public final class APIConstants {
     public static final String REST_API_SCOPE_NAME = "Name";
     public static final String REST_API_SCOPE_ROLE = "Roles";
     public static final String REST_API_SCOPES_CONFIG = "RESTAPIScopes";
+    public static final String REST_API_ROLE_MAPPINGS_CONFIG = "RoleMappings";
     public static final String APIM_SUBSCRIBE_SCOPE = "apim:subscribe";
 
     public static final String HTTPS_PROTOCOL = "https";
@@ -1944,4 +1948,21 @@ public final class APIConstants {
     public static final String DELETED_STATUS = "DELETED";
     public static final String ACTION_STRING = "action";
     public static final String PAYLOAD_STRING = "payload";
+
+    public static class CertificateReLoaderConfiguration {
+
+        public static final String CERTIFICATE_RELOADER_CONFIGURATION_ROOT = "CertificateReLoaderConfiguration";
+        public static final String PERIOD = CERTIFICATE_RELOADER_CONFIGURATION_ROOT + ".Period";
+    }
+
+    public static class MutualSSL {
+
+        public static final String MUTUAL_SSL_CONFIG_ROOT = "MutualSSL";
+        public static final String CLIENT_CERTIFICATE_HEADER = MUTUAL_SSL_CONFIG_ROOT + ".ClientCertificateHeader";
+        public static final String ENABLE_CLIENT_CERTIFICATE_VALIDATION = MUTUAL_SSL_CONFIG_ROOT +
+                ".EnableClientCertificateValidation";
+    }
+
+    public static final String DEFAULT_SCOPE_TYPE = "OAUTH2";
+    public static final String DEFAULT_BINDING_TYPE = "DEFAULT";
 }
