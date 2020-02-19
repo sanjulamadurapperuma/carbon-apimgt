@@ -21,6 +21,7 @@ import { FormattedMessage, injectIntl } from 'react-intl';
 import { isRestricted } from 'AppData/AuthManager';
 import APIContext from 'AppComponents/Apis/Details/components/ApiContext';
 import APIValidation from 'AppData/APIValidation';
+import Button from '@material-ui/core/Button';
 import FormControl from '@material-ui/core/FormControl';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import FormLabel from '@material-ui/core/FormLabel';
@@ -60,6 +61,51 @@ function EndpointSecurity(props) {
         grantType: '',
     });
     const [securityValidity, setSecurityValidity] = useState();
+    // TODO - Remove this if not needed
+    const [optionalPayload, setOptionalPayload] = useState([]);
+
+    const OptionalParameter = () => {
+        return (
+            <>
+                <Grid item xs={5}>
+                    <TextField
+                        fullWidth
+                        required
+                        id='outlined-required'
+                        label={intl.formatMessage({
+                            id: 'Apis.Details.Endpoints.GeneralConfiguration.Endpoints.property.textfield.name',
+                            defaultMessage: 'Property Name',
+                        })}
+                        variant='outlined'
+                    />
+                </Grid>
+                <Grid item xs={5}>
+                    <TextField
+                        fullWidth
+                        required
+                        id='outlined-required'
+                        label={intl.formatMessage({
+                            id: 'Apis.Details.Endpoints.GeneralConfiguration.Endpoints.property.textfield.value',
+                            defaultMessage: 'Property Value',
+                        })}
+                        variant='outlined'
+                    />
+                </Grid>
+                <Grid item xs={2}>
+                    <Button
+                        variant='contained'
+                        color='primary'
+                    >
+                        <FormattedMessage
+                            id={'Apis.Details.Endpoints.GeneralConfiguration'
+                                + '.Endpoints.property.button.delete'}
+                            defaultMessage='Delete'
+                        />
+                    </Button>
+                </Grid>
+            </>
+        );
+    };
 
     const authTypes = [
         {
@@ -141,342 +187,373 @@ function EndpointSecurity(props) {
         }
         onChangeEndpointAuth(endpointSecurityInfo[field], field);
     };
+
+    const addParameterButtonClick = () => {
+        setOptionalPayload([...optionalPayload, <OptionalParameter />]);
+    };
     return (
-        <Grid container direction='row' spacing={2}>
-            <Grid item xs={6}>
-                <TextField
-                    disabled={isRestricted(['apim:api_create'], api)}
-                    fullWidth
-                    select
-                    value={endpointSecurityInfo.type}
-                    variant='outlined'
-                    onChange={(event) => {
-                        onChangeEndpointAuth(event.target.value, 'type');
-                    }}
-                    inputProps={{
-                        name: 'key',
-                        id: 'auth-type-select',
-                    }}
-                >
-                    {authTypes.map((type) => (
-                        <MenuItem value={type.key}>{type.value}</MenuItem>
-                    ))}
-                </TextField>
-            </Grid>
-            <Grid item xs={6} />
+        <>
+            <Grid container direction='row' spacing={2}>
+                <Grid item xs={6}>
+                    <TextField
+                        disabled={isRestricted(['apim:api_create'], api)}
+                        fullWidth
+                        select
+                        value={endpointSecurityInfo.type}
+                        variant='outlined'
+                        onChange={(event) => {
+                            onChangeEndpointAuth(event.target.value, 'type');
+                        }}
+                        inputProps={{
+                            name: 'key',
+                            id: 'auth-type-select',
+                        }}
+                    >
+                        {authTypes.map((type) => (
+                            <MenuItem value={type.key}>{type.value}</MenuItem>
+                        ))}
+                    </TextField>
+                </Grid>
+                <Grid item xs={6} />
 
-            {(endpointSecurityInfo.type === 'OAUTH')
-            && (
-                <>
-                    <Grid item xs={6}>
-                        <TextField
-                            disabled={isRestricted(['apim:api_create'], api)}
-                            required
-                            fullWidth
-                            select
-                            label={(
-                                <FormattedMessage
-                                    id='Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.grant.type.input'
-                                    defaultMessage='Grant Type'
-                                />
-                            )}
-                            variant='outlined'
-                            onChange={(event) => setEndpointSecurityInfo(
-                                { ...endpointSecurityInfo, grantType: event.target.value },
-                            )}
-                            value={endpointSecurityInfo.grantType}
-                            inputProps={{
-                                name: 'key',
-                                id: 'grant-type-select',
-                            }}
-                            onBlur={() => validateAndUpdateSecurityInfo('grantType')}
-                        >
-                            {grantTypes.map((type) => (
-                                <MenuItem value={type.key}>{type.value}</MenuItem>
-                            ))}
-                        </TextField>
-                    </Grid>
+                {(endpointSecurityInfo.type === 'OAUTH')
+                && (
+                    <>
+                        <Grid item xs={6}>
+                            <TextField
+                                disabled={isRestricted(['apim:api_create'], api)}
+                                required
+                                fullWidth
+                                select
+                                label={(
+                                    <FormattedMessage
+                                        id={'Apis.Details.Endpoints.GeneralConfiguration'
+                                        + '.EndpointSecurity.grant.type.input'}
+                                        defaultMessage='Grant Type'
+                                    />
+                                )}
+                                variant='outlined'
+                                onChange={(event) => setEndpointSecurityInfo(
+                                    { ...endpointSecurityInfo, grantType: event.target.value },
+                                )}
+                                value={endpointSecurityInfo.grantType}
+                                inputProps={{
+                                    name: 'key',
+                                    id: 'grant-type-select',
+                                }}
+                                onBlur={() => validateAndUpdateSecurityInfo('grantType')}
+                            >
+                                {grantTypes.map((type) => (
+                                    <MenuItem value={type.key}>{type.value}</MenuItem>
+                                ))}
+                            </TextField>
+                        </Grid>
 
 
-                    {(endpointSecurityInfo.grantType === 'CLIENT_CREDENTIALS'
-                    || endpointSecurityInfo.grantType === 'PASSWORD') && (
-                        <>
-                            <Grid item xs={6}>
-                                {/* <TextField
-                                    disabled={isRestricted(['apim:api_create'], api)}
-                                    required
-                                    fullWidth
-                                    error={securityValidity && securityValidity.tokenUrl === false}
-                                    helperText={
-                                        securityValidity && securityValidity.tokenUrl === false ? (
-                                            <FormattedMessage
-                                                id={'Apis.Details.Endpoints.GeneralConfiguration'
-                                        + '.EndpointSecurity.no.tokenUrl.error'}
-                                                defaultMessage='Token URL should not be empty or formatted incorrectly'
+                        {(endpointSecurityInfo.grantType === 'CLIENT_CREDENTIALS'
+                        || endpointSecurityInfo.grantType === 'PASSWORD') && (
+                            <>
+                                <Grid item xs={6}>
+                                    <FormControl className={classes.FormControl}>
+                                        <FormLabel component='legend'>HTTP Method: </FormLabel>
+                                        <RadioGroup
+                                            aria-label='HTTP Method'
+                                            name='httpMethod'
+                                            className={classes.radioWrapper}
+                                            value={endpointSecurityInfo.httpMethod}
+                                            onClick={(event) => setEndpointSecurityInfo(
+                                                { ...endpointSecurityInfo, httpMethod: event.target.value },
+                                            )}
+                                            onBlur={() => validateAndUpdateSecurityInfo('httpMethod')}
+                                        >
+                                            <FormControlLabel
+                                                control={<Radio color='primary' />}
+                                                value='get'
+                                                label={(
+                                                    <FormattedMessage
+                                                        id={'Apis.Details.Endpoints.GeneralConfiguration'
+                                                        + '.EndpointSecurity.Get'}
+                                                        defaultMessage='GET'
+                                                    />
+                                                )}
+                                                className={classes.radioGroup}
                                             />
-                                        ) : (
+                                            <FormControlLabel
+                                                control={(<Radio color='primary' />)}
+                                                value='post'
+                                                label={(
+                                                    <FormattedMessage
+                                                        id={'Apis.Details.Endpoints.GeneralConfiguration'
+                                                        + '.EndpointSecurity.Post'}
+                                                        defaultMessage='POST'
+                                                    />
+                                                )}
+                                                className={classes.radioGroup}
+                                                defaultChecked
+                                            />
+                                        </RadioGroup>
+                                    </FormControl>
+                                </Grid>
+
+                                <Grid item xs={6}>
+                                    <TextField
+                                        disabled={isRestricted(['apim:api_create'], api)}
+                                        required
+                                        fullWidth
+                                        error={securityValidity && securityValidity.tokenUrl === false}
+                                        helperText={
+                                            securityValidity && securityValidity.tokenUrl === false ? (
+                                                <FormattedMessage
+                                                    id={'Apis.Details.Endpoints.GeneralConfiguration'
+                                            + '.EndpointSecurity.no.tokenUrl.error'}
+                                                    defaultMessage={'Token URL should not be empty'
+                                                    + ' or formatted incorrectly'}
+                                                />
+                                            ) : (
+                                                <FormattedMessage
+                                                    id={'Apis.Details.Endpoints.GeneralConfiguration.'
+                                            + 'EndpointSecurity.tokenUrl.message'}
+                                                    defaultMessage='Enter Token URL'
+                                                />
+                                            )
+                                        }
+                                        variant='outlined'
+                                        id='auth-tokenUrl'
+                                        label={(
                                             <FormattedMessage
                                                 id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                        + 'EndpointSecurity.tokenUrl.message'}
-                                                defaultMessage='Enter Token URL'
+                                                + 'EndpointSecurity.token.url.input'}
+                                                defaultMessage='Token URL'
                                             />
-                                        )
-                                    }
-                                    variant='outlined'
-                                    id='auth-tokenUrl'
-                                    label={(
-                                        <FormattedMessage
-                                            id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                            + 'EndpointSecurity.token.url.input'}
-                                            defaultMessage='Token URL'
-                                        />
-                                    )}
-                                    onChange={(event) => setEndpointSecurityInfo(
-                                        { ...endpointSecurityInfo, tokenUrl: event.target.value },
-                                    )}
-                                    value={endpointSecurityInfo.tokenUrl}
-                                    onBlur={() => validateAndUpdateSecurityInfo('tokenUrl')}
-                                /> */}
-                                <FormControl className={classes.FormControl}>
-                                    <FormLabel component='legend'>HTTP Method: </FormLabel>
-                                    <RadioGroup
-                                        aria-label='HTTP Method'
-                                        name='httpMethod'
-                                        className={classes.radioWrapper}
-                                        value={endpointSecurityInfo.httpMethod}
-                                        onChange={(event) => setEndpointSecurityInfo(
-                                            { ...endpointSecurityInfo, httpMethod: event.target.value },
                                         )}
-                                        onBlur={() => validateAndUpdateSecurityInfo('httpMethod')}
-                                    >
-                                        <FormControlLabel
-                                            control={<Radio color='primary' />}
-                                            value='get'
-                                            label={(
+                                        onChange={(event) => setEndpointSecurityInfo(
+                                            { ...endpointSecurityInfo, tokenUrl: event.target.value },
+                                        )}
+                                        value={endpointSecurityInfo.tokenUrl}
+                                        onBlur={() => validateAndUpdateSecurityInfo('tokenUrl')}
+                                    />
+                                </Grid>
+
+                                <Grid item xs={6}>
+                                    <TextField
+                                        disabled={isRestricted(['apim:api_create'], api)}
+                                        required
+                                        fullWidth
+                                        // error={securityValidity && securityValidity.tokenUrl === false}
+                                        // helperText={
+                                        //     securityValidity && securityValidity.tokenUrl === false ? (
+                                        //         <FormattedMessage
+                                        //             id={'Apis.Details.Endpoints.GeneralConfiguration'
+                                        //     + '.EndpointSecurity.no.tokenUrl.error'}
+                                        //             defaultMessage={'Token URL should not be empty'
+                                        //              + ' or formatted incorrectly'}
+                                        //         />
+                                        //     ) : (
+                                        //         <FormattedMessage
+                                        //             id={'Apis.Details.Endpoints.GeneralConfiguration.'
+                                        //     + 'EndpointSecurity.tokenUrl.message'}
+                                        //             defaultMessage='Enter Token URL'
+                                        //         />
+                                        //     )
+                                        // }
+                                        variant='outlined'
+                                        id='auth-optionalParam'
+                                        label={(
+                                            <FormattedMessage
+                                                id={'Apis.Details.Endpoints.GeneralConfiguration.'
+                                                + 'EndpointSecurity.optionalParam.input'}
+                                                defaultMessage='Optional Parameters'
+                                            />
+                                        )}
+                                        // onChange={(event) => setEndpointSecurityInfo(
+                                        //     { ...endpointSecurityInfo, tokenUrl: event.target.value },
+                                        // )}
+                                        // value={endpointSecurityInfo.tokenUrl}
+                                        // onBlur={() => validateAndUpdateSecurityInfo('tokenUrl')}
+                                    />
+                                </Grid>
+
+                                <Grid item xs={6}>
+                                    <TextField
+                                        disabled={isRestricted(['apim:api_create'], api)}
+                                        required
+                                        fullWidth
+                                        error={securityValidity && securityValidity.apiKey === false}
+                                        helperText={
+                                            securityValidity && securityValidity.apiKey === false ? (
                                                 <FormattedMessage
-                                                    id={'Apis.Details.Endpoints.GeneralConfiguration'
-                                                    + '.EndpointSecurity.Get'}
-                                                    defaultMessage='GET'
+                                                    id={'Apis.Details.Endpoints.GeneralConfiguration.'
+                                            + 'EndpointSecurity.no.apiKey.error'}
+                                                    defaultMessage='API Key should not be empty'
                                                 />
-                                            )}
-                                            className={classes.radioGroup}
-                                        />
-                                        <FormControlLabel
-                                            control={(<Radio color='primary' />)}
-                                            value='post'
-                                            label={(
+                                            ) : (
                                                 <FormattedMessage
-                                                    id={'Apis.Details.Endpoints.GeneralConfiguration'
-                                                    + '.EndpointSecurity.Post'}
-                                                    defaultMessage='POST'
+                                                    id={'Apis.Details.Endpoints.GeneralConfiguration.'
+                                                    + 'EndpointSecurity.apiKey.message'}
+                                                    defaultMessage='Enter API Key'
                                                 />
-                                            )}
-                                            className={classes.radioGroup}
-                                            defaultChecked
-                                        />
-                                    </RadioGroup>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid item xs={6}>
-                                <TextField
-                                    disabled={isRestricted(['apim:api_create'], api)}
-                                    required
-                                    fullWidth
-                                    error={securityValidity && securityValidity.tokenUrl === false}
-                                    helperText={
-                                        securityValidity && securityValidity.tokenUrl === false ? (
-                                            <FormattedMessage
-                                                id={'Apis.Details.Endpoints.GeneralConfiguration'
-                                        + '.EndpointSecurity.no.tokenUrl.error'}
-                                                defaultMessage='Token URL should not be empty or formatted incorrectly'
-                                            />
-                                        ) : (
+                                            )
+                                        }
+                                        variant='outlined'
+                                        id='auth-apiKey'
+                                        label={(
                                             <FormattedMessage
                                                 id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                        + 'EndpointSecurity.tokenUrl.message'}
-                                                defaultMessage='Enter Token URL'
+                                                + 'EndpointSecurity.api.key.input'}
+                                                defaultMessage='API Key'
                                             />
-                                        )
-                                    }
-                                    variant='outlined'
-                                    id='auth-tokenUrl'
-                                    label={(
-                                        <FormattedMessage
-                                            id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                            + 'EndpointSecurity.token.url.input'}
-                                            defaultMessage='Token URL'
-                                        />
-                                    )}
-                                    onChange={(event) => setEndpointSecurityInfo(
-                                        { ...endpointSecurityInfo, tokenUrl: event.target.value },
-                                    )}
-                                    value={endpointSecurityInfo.tokenUrl}
-                                    onBlur={() => validateAndUpdateSecurityInfo('tokenUrl')}
-                                />
-                            </Grid>
-
-                            <Grid item xs={6}>
-                                <TextField
-                                    disabled={isRestricted(['apim:api_create'], api)}
-                                    required
-                                    fullWidth
-                                    error={securityValidity && securityValidity.apiKey === false}
-                                    helperText={
-                                        securityValidity && securityValidity.apiKey === false ? (
-                                            <FormattedMessage
-                                                id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                        + 'EndpointSecurity.no.apiKey.error'}
-                                                defaultMessage='API Key should not be empty'
-                                            />
-                                        ) : (
-                                            <FormattedMessage
-                                                id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                                + 'EndpointSecurity.apiKey.message'}
-                                                defaultMessage='Enter API Key'
-                                            />
-                                        )
-                                    }
-                                    variant='outlined'
-                                    id='auth-apiKey'
-                                    label={(
-                                        <FormattedMessage
-                                            id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                            + 'EndpointSecurity.api.key.input'}
-                                            defaultMessage='API Key'
-                                        />
-                                    )}
-                                    onChange={(event) => setEndpointSecurityInfo(
-                                        { ...endpointSecurityInfo, apiKey: event.target.value },
-                                    )}
-                                    value={endpointSecurityInfo.apiKey}
-                                    onBlur={() => validateAndUpdateSecurityInfo('apiKey')}
-                                />
-                            </Grid>
-
-                            <Grid item xs={6}>
-                                <TextField
-                                    disabled={isRestricted(['apim:api_create'], api)}
-                                    required
-                                    fullWidth
-                                    error={securityValidity && securityValidity.apiSecret === false}
-                                    helperText={
-                                        securityValidity && securityValidity.apiSecret === false ? (
-                                            <FormattedMessage
-                                                id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                        + 'EndpointSecurity.no.apiSecret.error'}
-                                                defaultMessage='API Secret should not be empty'
-                                            />
-                                        ) : (
-                                            <FormattedMessage
-                                                id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                        + 'EndpointSecurity.apiSecret.message'}
-                                                defaultMessage='Enter API Secret'
-                                            />
-                                        )
-                                    }
-                                    variant='outlined'
-                                    id='auth-apiSecret'
-                                    label={(
-                                        <FormattedMessage
-                                            id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                            + 'EndpointSecurity.api.secret.input'}
-                                            defaultMessage='API Secret'
-                                        />
-                                    )}
-                                    onChange={(event) => setEndpointSecurityInfo(
-                                        { ...endpointSecurityInfo, apiSecret: event.target.value },
-                                    )}
-                                    value={endpointSecurityInfo.apiSecret}
-                                    onBlur={() => validateAndUpdateSecurityInfo('apiSecret')}
-                                />
-                            </Grid>
-                        </>
-                    )}
-                </>
-            )}
-
-            {(endpointSecurityInfo.type === 'BASIC'
-            || endpointSecurityInfo.type === 'DIGEST'
-            || endpointSecurityInfo.grantType === 'PASSWORD') && (
-                <>
-                    <Grid item xs={6}>
-                        <TextField
-                            disabled={isRestricted(['apim:api_create'], api)}
-                            required
-                            fullWidth
-                            error={securityValidity && securityValidity.username === false}
-                            helperText={
-                                securityValidity && securityValidity.username === false ? (
-                                    <FormattedMessage
-                                        id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                        + 'EndpointSecurity.no.username.error'}
-                                        defaultMessage='Username should not be empty'
+                                        )}
+                                        onChange={(event) => setEndpointSecurityInfo(
+                                            { ...endpointSecurityInfo, apiKey: event.target.value },
+                                        )}
+                                        value={endpointSecurityInfo.apiKey}
+                                        onBlur={() => validateAndUpdateSecurityInfo('apiKey')}
                                     />
-                                ) : (
-                                    <FormattedMessage
-                                        id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                        + 'EndpointSecurity.username.message'}
-                                        defaultMessage='Enter Username'
+                                </Grid>
+
+                                <Grid item xs={6}>
+                                    <TextField
+                                        disabled={isRestricted(['apim:api_create'], api)}
+                                        required
+                                        fullWidth
+                                        error={securityValidity && securityValidity.apiSecret === false}
+                                        helperText={
+                                            securityValidity && securityValidity.apiSecret === false ? (
+                                                <FormattedMessage
+                                                    id={'Apis.Details.Endpoints.GeneralConfiguration.'
+                                            + 'EndpointSecurity.no.apiSecret.error'}
+                                                    defaultMessage='API Secret should not be empty'
+                                                />
+                                            ) : (
+                                                <FormattedMessage
+                                                    id={'Apis.Details.Endpoints.GeneralConfiguration.'
+                                            + 'EndpointSecurity.apiSecret.message'}
+                                                    defaultMessage='Enter API Secret'
+                                                />
+                                            )
+                                        }
+                                        variant='outlined'
+                                        id='auth-apiSecret'
+                                        label={(
+                                            <FormattedMessage
+                                                id={'Apis.Details.Endpoints.GeneralConfiguration.'
+                                                + 'EndpointSecurity.api.secret.input'}
+                                                defaultMessage='API Secret'
+                                            />
+                                        )}
+                                        onChange={(event) => setEndpointSecurityInfo(
+                                            { ...endpointSecurityInfo, apiSecret: event.target.value },
+                                        )}
+                                        value={endpointSecurityInfo.apiSecret}
+                                        onBlur={() => validateAndUpdateSecurityInfo('apiSecret')}
                                     />
-                                )
-                            }
-                            variant='outlined'
-                            id='auth-userName'
-                            label={(
-                                <FormattedMessage
-                                    id='Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.user.name.input'
-                                    defaultMessage='Username'
-                                />
-                            )}
-                            onChange={(event) => setEndpointSecurityInfo(
-                                { ...endpointSecurityInfo, username: event.target.value },
-                            )}
-                            value={endpointSecurityInfo.username}
-                            onBlur={() => validateAndUpdateSecurityInfo('username')}
+                                </Grid>
+                            </>
+                        )}
+                    </>
+                )}
+
+                {(endpointSecurityInfo.type === 'BASIC'
+                || endpointSecurityInfo.type === 'DIGEST'
+                || endpointSecurityInfo.grantType === 'PASSWORD') && (
+                    <>
+                        <Grid item xs={6}>
+                            <TextField
+                                disabled={isRestricted(['apim:api_create'], api)}
+                                required
+                                fullWidth
+                                error={securityValidity && securityValidity.username === false}
+                                helperText={
+                                    securityValidity && securityValidity.username === false ? (
+                                        <FormattedMessage
+                                            id={'Apis.Details.Endpoints.GeneralConfiguration.'
+                                            + 'EndpointSecurity.no.username.error'}
+                                            defaultMessage='Username should not be empty'
+                                        />
+                                    ) : (
+                                        <FormattedMessage
+                                            id={'Apis.Details.Endpoints.GeneralConfiguration.'
+                                            + 'EndpointSecurity.username.message'}
+                                            defaultMessage='Enter Username'
+                                        />
+                                    )
+                                }
+                                variant='outlined'
+                                id='auth-userName'
+                                label={(
+                                    <FormattedMessage
+                                        id={'Apis.Details.Endpoints.GeneralConfiguration'
+                                        + '.EndpointSecurity.user.name.input'}
+                                        defaultMessage='Username'
+                                    />
+                                )}
+                                onChange={(event) => setEndpointSecurityInfo(
+                                    { ...endpointSecurityInfo, username: event.target.value },
+                                )}
+                                value={endpointSecurityInfo.username}
+                                onBlur={() => validateAndUpdateSecurityInfo('username')}
+                            />
+                        </Grid>
+
+                        <Grid item xs={6}>
+                            <TextField
+                                disabled={isRestricted(['apim:api_create'], api)}
+                                required
+                                fullWidth
+                                error={securityValidity && securityValidity.password === false}
+                                helperText={
+                                    securityValidity && securityValidity.password === false ? (
+                                        <FormattedMessage
+                                            id={'Apis.Details.Endpoints.GeneralConfiguration.'
+                                            + 'EndpointSecurity.no.password.error'}
+                                            defaultMessage='Password should not be empty'
+                                        />
+                                    ) : (
+                                        <FormattedMessage
+                                            id={'Apis.Details.Endpoints.GeneralConfiguration.'
+                                            + 'EndpointSecurity.password.message'}
+                                            defaultMessage='Enter Password'
+                                        />
+                                    )
+                                }
+                                variant='outlined'
+                                type='password'
+                                id='auth-password'
+                                label={(
+                                    <FormattedMessage
+                                        id='Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.password.input'
+                                        defaultMessage='Password'
+                                    />
+                                )}
+                                value={endpointSecurityInfo.password}
+                                onChange={(event) => setEndpointSecurityInfo(
+                                    { ...endpointSecurityInfo, password: event.target.value },
+                                )}
+                                onBlur={() => validateAndUpdateSecurityInfo('password')}
+                            />
+                        </Grid>
+                    </>
+                )}
+            </Grid>
+
+            <Grid container direction='row' spacing={2}>
+                <Grid item xs={6}>
+                    <Button
+                        variant='contained'
+                        color='primary'
+                        onClick={addParameterButtonClick}
+                    >
+                        <FormattedMessage
+                            id={'Apis.Details.Endpoints.GeneralConfiguration'
+                                + '.Endpoints.property.button.add'}
+                            defaultMessage='Add New Parameter'
                         />
-                    </Grid>
-
-                    <Grid item xs={6}>
-                        <TextField
-                            disabled={isRestricted(['apim:api_create'], api)}
-                            required
-                            fullWidth
-                            error={securityValidity && securityValidity.password === false}
-                            helperText={
-                                securityValidity && securityValidity.password === false ? (
-                                    <FormattedMessage
-                                        id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                        + 'EndpointSecurity.no.password.error'}
-                                        defaultMessage='Password should not be empty'
-                                    />
-                                ) : (
-                                    <FormattedMessage
-                                        id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                        + 'EndpointSecurity.password.message'}
-                                        defaultMessage='Enter Password'
-                                    />
-                                )
-                            }
-                            variant='outlined'
-                            type='password'
-                            id='auth-password'
-                            label={(
-                                <FormattedMessage
-                                    id='Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.password.input'
-                                    defaultMessage='Password'
-                                />
-                            )}
-                            value={endpointSecurityInfo.password}
-                            onChange={(event) => setEndpointSecurityInfo(
-                                { ...endpointSecurityInfo, password: event.target.value },
-                            )}
-                            onBlur={() => validateAndUpdateSecurityInfo('password')}
-                        />
-                    </Grid>
-                </>
-            )}
-        </Grid>
+                    </Button>
+                </Grid>
+                <Grid item xs={6} />
+                {optionalPayload}
+            </Grid>
+        </>
     );
 }
 
