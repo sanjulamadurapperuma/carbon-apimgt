@@ -28,6 +28,16 @@ import FormLabel from '@material-ui/core/FormLabel';
 import Radio from '@material-ui/core/Radio';
 import RadioGroup from '@material-ui/core/RadioGroup';
 import { withStyles } from '@material-ui/core/styles';
+import AddCircle from '@material-ui/icons/AddCircle';
+import isEmpty from 'lodash.isempty';
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
+import Alert from 'AppComponents/Shared/Alert';
+import cloneDeep from 'lodash.clonedeep';
+import EditableParameterRow from './EditableParameterRow';
 
 const styles = () => ({
     FormControl: {
@@ -62,50 +72,158 @@ function EndpointSecurity(props) {
     });
     const [securityValidity, setSecurityValidity] = useState();
     // TODO - Remove this if not needed
-    const [optionalPayload, setOptionalPayload] = useState([]);
+    // TODO - Change this to optionalParameters or additionalParameters
+    // TODO - Replace the curly braces with json object from api/endpointsecurity properties
+    const payload = cloneDeep({});
+    const [optionalPayload, setOptionalPayload] = useState(payload);
 
-    const OptionalParameter = () => {
-        return (
-            <>
-                <Grid item xs={5}>
-                    <TextField
-                        fullWidth
-                        required
-                        id='outlined-required'
-                        label={intl.formatMessage({
-                            id: 'Apis.Details.Endpoints.GeneralConfiguration.Endpoints.property.textfield.name',
-                            defaultMessage: 'Property Name',
-                        })}
-                        variant='outlined'
-                    />
-                </Grid>
-                <Grid item xs={5}>
-                    <TextField
-                        fullWidth
-                        required
-                        id='outlined-required'
-                        label={intl.formatMessage({
-                            id: 'Apis.Details.Endpoints.GeneralConfiguration.Endpoints.property.textfield.value',
-                            defaultMessage: 'Property Value',
-                        })}
-                        variant='outlined'
-                    />
-                </Grid>
-                <Grid item xs={2}>
-                    <Button
-                        variant='contained'
-                        color='primary'
-                    >
-                        <FormattedMessage
-                            id={'Apis.Details.Endpoints.GeneralConfiguration'
-                                + '.Endpoints.property.button.delete'}
-                            defaultMessage='Delete'
-                        />
-                    </Button>
-                </Grid>
-            </>
-        );
+    // Implementation of useState variables for parameter name and value
+    const [showAddParameter, setShowAddParameter] = useState(false);
+    const [parameterName, setParameterName] = useState(null);
+    const [parameterValue, setParameterValue] = useState(null);
+    const [updating, setUpdating] = useState(false);
+    const [editing, setEditing] = useState(false);
+    const [isOptionalParametersStale, setIsOptionalParametersStale] = useState(false);
+    const iff = (condition, then, otherwise) => (condition ? then : otherwise);
+
+    const toggleAddParameter = () => {
+        setShowAddParameter(!showAddParameter);
     };
+    const handleParameterChange = (name) => (event) => {
+        const { value } = event.target;
+        if (name === 'parameterName') {
+            setParameterName(value);
+        } else if (name === 'parameterValue') {
+            setParameterValue(value);
+        }
+    };
+
+    const validateEmpty = (itemValue) => {
+        if (itemValue === null) {
+            return false;
+        } else if (itemValue === '') {
+            return true;
+        } else {
+            return false;
+        }
+    };
+
+    const handleSubmit = () => {
+        setUpdating(true);
+        // TODO - Remove if not needed
+    };
+
+    const handleDelete = (optionalParameters, oldName) => {
+        const optionalParametersCopy = JSON.parse(JSON.stringify(optionalPayload));
+
+        if (Object.prototype.hasOwnProperty.call(optionalParametersCopy, oldName)) {
+            delete optionalParametersCopy[oldName];
+        }
+        setOptionalPayload(optionalParametersCopy);
+
+        if (optionalParametersCopy !== optionalPayload) {
+            setIsOptionalParametersStale(true);
+        }
+    };
+
+    const handleUpdateList = (oldRow, newRow) => {
+        const optionalParametersCopy = JSON.parse(JSON.stringify(optionalPayload));
+
+        const { oldName, oldValue } = oldRow;
+        const { newName, newValue } = newRow;
+
+        if (Object.prototype.hasOwnProperty.call(optionalParametersCopy, newName) && oldName === newName) {
+            // Only the value is updated
+            if (newValue && oldValue !== newValue) {
+                optionalParametersCopy[oldName] = newValue;
+            }
+        } else {
+            delete optionalParametersCopy[oldName];
+            optionalParametersCopy[newName] = newValue;
+        }
+        setOptionalPayload(optionalParametersCopy);
+    };
+
+    const handleAddToList = () => {
+        const optionalParametersCopy = JSON.parse(JSON.stringify(optionalPayload));
+        if (optionalParametersCopy[parameterName] != null) {
+            Alert.warning('Parameter Name already exists');
+        } else {
+            optionalParametersCopy[parameterName] = parameterValue;
+            setOptionalPayload(optionalParametersCopy);
+            setParameterName(null);
+            setParameterValue(null);
+        }
+    };
+
+    const handleKeyDown = (event) => {
+        if (event.key === 'Enter') {
+            handleAddToList();
+        }
+    };
+
+    const renderOptionalParameters = () => {
+        const items = [];
+        for (const name in optionalPayload) {
+            if (Object.prototype.hasOwnProperty.call(optionalPayload, name)) {
+                items.push(<EditableParameterRow
+                    oldName={name}
+                    oldValue={optionalPayload[name]}
+                    handleUpdateList={handleUpdateList}
+                    handleDelete={handleDelete}
+                    optionalParameters={optionalPayload}
+                    {...props}
+                    setEditing={setEditing}
+                    isRestricted={isRestricted}
+                    api={api}
+                />);
+            }
+        }
+        return items;
+    };
+
+    // const OptionalParameter = () => {
+    //     return (
+    //         <>
+    //             <Grid item xs={5}>
+    //                 <TextField
+    //                     fullWidth
+    //                     required
+    //                     id='outlined-required'
+    //                     label={intl.formatMessage({
+    //                         id: 'Apis.Details.Endpoints.GeneralConfiguration.Endpoints.property.textfield.name',
+    //                         defaultMessage: 'Property Name',
+    //                     })}
+    //                     variant='outlined'
+    //                 />
+    //             </Grid>
+    //             <Grid item xs={5}>
+    //                 <TextField
+    //                     fullWidth
+    //                     required
+    //                     id='outlined-required'
+    //                     label={intl.formatMessage({
+    //                         id: 'Apis.Details.Endpoints.GeneralConfiguration.Endpoints.property.textfield.value',
+    //                         defaultMessage: 'Property Value',
+    //                     })}
+    //                     variant='outlined'
+    //                 />
+    //             </Grid>
+    //             <Grid item xs={2}>
+    //                 <Button
+    //                     variant='contained'
+    //                     color='primary'
+    //                 >
+    //                     <FormattedMessage
+    //                         id={'Apis.Details.Endpoints.GeneralConfiguration'
+    //                             + '.Endpoints.property.button.delete'}
+    //                         defaultMessage='Delete'
+    //                     />
+    //                 </Button>
+    //             </Grid>
+    //         </>
+    //     );
+    // };
 
     const authTypes = [
         {
@@ -188,9 +306,9 @@ function EndpointSecurity(props) {
         onChangeEndpointAuth(endpointSecurityInfo[field], field);
     };
 
-    const addParameterButtonClick = () => {
-        setOptionalPayload([...optionalPayload, <OptionalParameter />]);
-    };
+    // const addParameterButtonClick = () => {
+    //     setOptionalPayload([...optionalPayload, <OptionalParameter />]);
+    // };
     return (
         <>
             <Grid container direction='row' spacing={2}>
@@ -536,7 +654,7 @@ function EndpointSecurity(props) {
                 )}
             </Grid>
 
-            <Grid container direction='row' spacing={2}>
+            {/* <Grid container direction='row' spacing={2}>
                 <Grid item xs={6}>
                     <Button
                         variant='contained'
@@ -552,7 +670,132 @@ function EndpointSecurity(props) {
                 </Grid>
                 <Grid item xs={6} />
                 {optionalPayload}
+            </Grid> */}
+            <Grid item xs={6}>
+                <Button
+                    size='medium'
+                    className={classes.button}
+                    onClick={toggleAddParameter}
+                    disabled={isRestricted(['apim:api_create', 'apim:api_publish'], api)}
+                >
+                    <AddCircle className={classes.buttonIcon} />
+                    <FormattedMessage
+                        id='Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.add.new.parameter'
+                        defaultMessage='Add New Parameter'
+                    />
+                </Button>
             </Grid>
+            <Grid item xs={12} />
+            {(!isEmpty(optionalPayload) || showAddParameter || isOptionalParametersStale) && (
+                <Grid item xs={12}>
+                    <Table className={classes.table}>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>
+                                    <FormattedMessage
+                                        id={'Apis.Details.Endpoints.GeneralConfiguration'
+                                        + '.EndpointSecurity.label.parameter.name'}
+                                        defaultMessage='Parameter Name'
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormattedMessage
+                                        id={'Apis.Details.Endpoints.GeneralConfiguration'
+                                        + '.EndpointSecurity.label.parameter.value'}
+                                        defaultMessage='Parameter Value'
+                                    />
+                                </TableCell>
+                                <TableCell />
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {showAddParameter
+                            && (
+                                <>
+                                    <TableRow>
+                                        <TableCell>
+                                            <TextField
+                                                fullWidth
+                                                required
+                                                id='outlined-required'
+                                                label={intl.formatMessage({
+                                                    id: 'Apis.Details.Endpoints.GeneralConfiguration'
+                                                    + '.EndpointSecurity.input.parameter.name',
+                                                    defaultMessage: 'Parameter Name',
+                                                })}
+                                                margin='normal'
+                                                variant='outlined'
+                                                className={classes.addParameter}
+                                                value={parameterName === null ? '' : parameterName}
+                                                onChange={handleParameterChange('parameterName')}
+                                                onKeyDown={handleKeyDown('parameterName')}
+                                                helperText={validateEmpty(parameterName)
+                                                    ? 'Invalid parameter name' : ''}
+                                                error={validateEmpty(parameterName)}
+                                                disabled={isRestricted(
+                                                    ['apim:api_create', 'apim:api_publish'],
+                                                    api,
+                                                )}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <TextField
+                                                fullWidth
+                                                required
+                                                id='outlined-required'
+                                                label={intl.formatMessage({
+                                                    id: 'Apis.Details.Endpoints.GeneralConfiguration'
+                                                        + '.EndpointSecurity.input.parameter.value',
+                                                    defaultMessage: 'Parameter Value',
+                                                })}
+                                                margin='normal'
+                                                variant='outlined'
+                                                className={classes.addParameter}
+                                                value={parameterValue === null ? '' : parameterValue}
+                                                onChange={handleParameterChange('parameterValue')}
+                                                onKeyDown={handleKeyDown('parameterValue')}
+                                                error={validateEmpty(parameterValue)}
+                                                disabled={isRestricted(
+                                                    ['apim:api_create', 'apim:api_publish'],
+                                                    api,
+                                                )}
+                                            />
+                                        </TableCell>
+                                        <TableCell align='right'>
+                                            <Button
+                                                variant='contained'
+                                                color='primary'
+                                                disabled={
+                                                    !parameterValue
+                                                            || !parameterName
+                                                            || isRestricted(
+                                                                ['apim:api_create', 'apim:api_publish'], api,
+                                                            )
+                                                }
+                                                onClick={handleAddToList}
+                                                className={classes.marginRight}
+                                            >
+                                                <FormattedMessage
+                                                    id='Apis.Details.Properties.Properties.add'
+                                                    defaultMessage='Add'
+                                                />
+                                            </Button>
+
+                                            <Button onClick={toggleAddParameter}>
+                                                <FormattedMessage
+                                                    id='Apis.Details.Properties.Properties.cancel'
+                                                    defaultMessage='Cancel'
+                                                />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                </>
+                            )}
+                            {renderOptionalParameters()}
+                        </TableBody>
+                    </Table>
+                </Grid>
+            )}
         </>
     );
 }
