@@ -31,9 +31,10 @@ import { withStyles } from '@material-ui/core/styles';
 import AddCircle from '@material-ui/icons/AddCircle';
 import isEmpty from 'lodash.isempty';
 import Table from '@material-ui/core/Table';
+import TableHead from '@material-ui/core/TableHead';
+
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
-import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Alert from 'AppComponents/Shared/Alert';
 import cloneDeep from 'lodash.clonedeep';
@@ -47,6 +48,18 @@ const styles = () => ({
     radioWrapper: {
         display: 'flex',
         flexDirection: 'row',
+    },
+    addParameter: {
+        marginRight: '16px',
+    },
+    marginRight: {
+        marginRight: '8px',
+    },
+    buttonIcon: {
+        marginRight: '16px',
+    },
+    button: {
+        marginTop: '20px',
     },
 });
 
@@ -182,49 +195,6 @@ function EndpointSecurity(props) {
         return items;
     };
 
-    // const OptionalParameter = () => {
-    //     return (
-    //         <>
-    //             <Grid item xs={5}>
-    //                 <TextField
-    //                     fullWidth
-    //                     required
-    //                     id='outlined-required'
-    //                     label={intl.formatMessage({
-    //                         id: 'Apis.Details.Endpoints.GeneralConfiguration.Endpoints.property.textfield.name',
-    //                         defaultMessage: 'Property Name',
-    //                     })}
-    //                     variant='outlined'
-    //                 />
-    //             </Grid>
-    //             <Grid item xs={5}>
-    //                 <TextField
-    //                     fullWidth
-    //                     required
-    //                     id='outlined-required'
-    //                     label={intl.formatMessage({
-    //                         id: 'Apis.Details.Endpoints.GeneralConfiguration.Endpoints.property.textfield.value',
-    //                         defaultMessage: 'Property Value',
-    //                     })}
-    //                     variant='outlined'
-    //                 />
-    //             </Grid>
-    //             <Grid item xs={2}>
-    //                 <Button
-    //                     variant='contained'
-    //                     color='primary'
-    //                 >
-    //                     <FormattedMessage
-    //                         id={'Apis.Details.Endpoints.GeneralConfiguration'
-    //                             + '.Endpoints.property.button.delete'}
-    //                         defaultMessage='Delete'
-    //                     />
-    //                 </Button>
-    //             </Grid>
-    //         </>
-    //     );
-    // };
-
     const authTypes = [
         {
             key: 'BASIC',
@@ -306,9 +276,6 @@ function EndpointSecurity(props) {
         onChangeEndpointAuth(endpointSecurityInfo[field], field);
     };
 
-    // const addParameterButtonClick = () => {
-    //     setOptionalPayload([...optionalPayload, <OptionalParameter />]);
-    // };
     return (
         <>
             <Grid container direction='row' spacing={2}>
@@ -452,44 +419,7 @@ function EndpointSecurity(props) {
                                     />
                                 </Grid>
 
-                                <Grid item xs={6}>
-                                    <TextField
-                                        disabled={isRestricted(['apim:api_create'], api)}
-                                        required
-                                        fullWidth
-                                        // error={securityValidity && securityValidity.tokenUrl === false}
-                                        // helperText={
-                                        //     securityValidity && securityValidity.tokenUrl === false ? (
-                                        //         <FormattedMessage
-                                        //             id={'Apis.Details.Endpoints.GeneralConfiguration'
-                                        //     + '.EndpointSecurity.no.tokenUrl.error'}
-                                        //             defaultMessage={'Token URL should not be empty'
-                                        //              + ' or formatted incorrectly'}
-                                        //         />
-                                        //     ) : (
-                                        //         <FormattedMessage
-                                        //             id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                        //     + 'EndpointSecurity.tokenUrl.message'}
-                                        //             defaultMessage='Enter Token URL'
-                                        //         />
-                                        //     )
-                                        // }
-                                        variant='outlined'
-                                        id='auth-optionalParam'
-                                        label={(
-                                            <FormattedMessage
-                                                id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                                + 'EndpointSecurity.optionalParam.input'}
-                                                defaultMessage='Optional Parameters'
-                                            />
-                                        )}
-                                        // onChange={(event) => setEndpointSecurityInfo(
-                                        //     { ...endpointSecurityInfo, tokenUrl: event.target.value },
-                                        // )}
-                                        // value={endpointSecurityInfo.tokenUrl}
-                                        // onBlur={() => validateAndUpdateSecurityInfo('tokenUrl')}
-                                    />
-                                </Grid>
+                                <Grid item xs={6} />
 
                                 <Grid item xs={6}>
                                     <TextField
@@ -654,23 +584,6 @@ function EndpointSecurity(props) {
                 )}
             </Grid>
 
-            {/* <Grid container direction='row' spacing={2}>
-                <Grid item xs={6}>
-                    <Button
-                        variant='contained'
-                        color='primary'
-                        onClick={addParameterButtonClick}
-                    >
-                        <FormattedMessage
-                            id={'Apis.Details.Endpoints.GeneralConfiguration'
-                                + '.Endpoints.property.button.add'}
-                            defaultMessage='Add New Parameter'
-                        />
-                    </Button>
-                </Grid>
-                <Grid item xs={6} />
-                {optionalPayload}
-            </Grid> */}
             <Grid item xs={6}>
                 <Button
                     size='medium'
@@ -685,7 +598,9 @@ function EndpointSecurity(props) {
                     />
                 </Button>
             </Grid>
+
             <Grid item xs={12} />
+
             {(!isEmpty(optionalPayload) || showAddParameter || isOptionalParametersStale) && (
                 <Grid item xs={12}>
                     <Table className={classes.table}>
