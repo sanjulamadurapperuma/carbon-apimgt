@@ -1,5 +1,7 @@
 package org.wso2.carbon.apimgt.gateway.mediators.oauth.conf;
 
+import org.json.simple.JSONObject;
+
 public class OAuthEndpoint {
 
     private String id;
@@ -10,6 +12,7 @@ public class OAuthEndpoint {
     private String username;
     private String password;
     private String grantType;
+    private JSONObject customParameters;
     private int tokenRefreshInterval;
 
     public String getId() {
@@ -74,6 +77,14 @@ public class OAuthEndpoint {
 
     public void setGrantType(String grantType) {
         this.grantType = grantType;
+    }
+
+    public JSONObject getCustomParameters() {
+        return customParameters;
+    }
+
+    public void setCustomParameters(JSONObject customParameters) {
+        this.customParameters = customParameters;
     }
 
     public int getTokenRefreshInterval() {
