@@ -425,6 +425,12 @@ public final class APIUtil {
             api.setTokenUrl(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_TOKEN_URL));
             api.setApiKey(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_KEY));
             api.setApiSecret(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_SECRET));
+            String customParameters = artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_CUSTOM_PARAMETERS);
+            if (StringUtils.isNotBlank(customParameters)) {
+                JSONParser jsonParser = new JSONParser();
+                JSONObject jsonObject = (JSONObject) jsonParser.parse(customParameters);
+                api.setCustomParameters(jsonObject);
+            }
             api.setTransports(artifact.getAttribute(APIConstants.API_OVERVIEW_TRANSPORTS));
             api.setInSequence(artifact.getAttribute(APIConstants.API_OVERVIEW_INSEQUENCE));
             api.setOutSequence(artifact.getAttribute(APIConstants.API_OVERVIEW_OUTSEQUENCE));
@@ -521,6 +527,9 @@ public final class APIUtil {
             throw new APIManagementException(msg, e);
         } catch (UserStoreException e) {
             String msg = "Failed to get User Realm of API Provider";
+            throw new APIManagementException(msg, e);
+        } catch (ParseException e) {
+            String msg = "Failed to parse OAuth Custom Parameters";
             throw new APIManagementException(msg, e);
         }
         return api;
@@ -624,6 +633,12 @@ public final class APIUtil {
             api.setTokenUrl(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_TOKEN_URL));
             api.setApiKey(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_KEY));
             api.setApiSecret(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_SECRET));
+            String customParameters = artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_CUSTOM_PARAMETERS);
+            if (StringUtils.isNotBlank(customParameters)) {
+                JSONParser jsonParser = new JSONParser();
+                JSONObject jsonObject = (JSONObject) jsonParser.parse(customParameters);
+                api.setCustomParameters(jsonObject);
+            }
             api.setTransports(artifact.getAttribute(APIConstants.API_OVERVIEW_TRANSPORTS));
             api.setInSequence(artifact.getAttribute(APIConstants.API_OVERVIEW_INSEQUENCE));
             api.setOutSequence(artifact.getAttribute(APIConstants.API_OVERVIEW_OUTSEQUENCE));
@@ -1231,6 +1246,10 @@ public final class APIUtil {
             artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_TOKEN_URL, api.getTokenUrl());
             artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_KEY, api.getApiKey());
             artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_SECRET, api.getApiSecret());
+            if (api.getCustomParameters() != null) {
+                artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_CUSTOM_PARAMETERS,
+                        api.getCustomParameters().toJSONString());
+            }
             artifact.setAttribute(APIConstants.API_OVERVIEW_TRANSPORTS, api.getTransports());
             artifact.setAttribute(APIConstants.API_OVERVIEW_INSEQUENCE, api.getInSequence());
             artifact.setAttribute(APIConstants.API_OVERVIEW_OUTSEQUENCE, api.getOutSequence());
@@ -3424,6 +3443,12 @@ public final class APIUtil {
             api.setTokenUrl(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_TOKEN_URL));
             api.setApiKey(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_KEY));
             api.setApiSecret(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_SECRET));
+            String customParameters = artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_CUSTOM_PARAMETERS);
+            if (StringUtils.isNotBlank(customParameters)) {
+                JSONParser jsonParser = new JSONParser();
+                JSONObject jsonObject = (JSONObject) jsonParser.parse(customParameters);
+                api.setCustomParameters(jsonObject);
+            }
             api.setTransports(artifact.getAttribute(APIConstants.API_OVERVIEW_TRANSPORTS));
 
             api.setEndpointConfig(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_CONFIG));
@@ -3508,6 +3533,9 @@ public final class APIUtil {
         } catch (UserStoreException e) {
             String msg = "Failed to get User Realm of API Provider";
             throw new APIManagementException(msg, e);
+        } catch (ParseException e) {
+            // TODO
+            e.printStackTrace();
         }
         return api;
     }

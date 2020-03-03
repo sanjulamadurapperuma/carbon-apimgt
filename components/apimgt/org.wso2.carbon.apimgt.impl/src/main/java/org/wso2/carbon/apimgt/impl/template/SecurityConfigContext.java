@@ -177,6 +177,12 @@ public class SecurityConfigContext extends ConfigContextDecorator {
             context.put("endpoint_security", endpointSecurityModelMap);
         }
         context.put("isSecureVaultEnabled", isSecureVaultEnabled);
+        context.put("httpMethod", api.getHttpMethod());
+        context.put("grantType", api.getGrantType());
+        context.put("tokenUrl", api.getTokenUrl());
+        context.put("apiKey", api.getApiKey());
+        context.put("apiSecret", api.getApiSecret());
+        context.put("customParameters", api.getCustomParameters());
         return context;
     }
 

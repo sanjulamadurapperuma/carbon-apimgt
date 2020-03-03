@@ -98,6 +98,7 @@ public class API implements Serializable {
     private String tokenUrl;
     private String apiKey;
     private String apiSecret;
+    private JSONObject customParameters;
 
     private String transports;
     private String inSequence;
@@ -670,52 +671,102 @@ public class API implements Serializable {
         this.endpointUTPassword = endpointUTPassword;
     }
 
+    /**
+     * @return the endpointOAuth
+     */
     public boolean isEndpointOAuth() {
         return endpointOAuth;
     }
 
+    /**
+     * @param endpointOAuth the endpointOAuth to set
+     */
     public void setEndpointOAuth(boolean endpointOAuth) {
         this.endpointOAuth = endpointOAuth;
     }
 
+    /**
+     * @return the httpMethod
+     */
     public String getHttpMethod() {
         return httpMethod;
     }
 
+    /**
+     * @param httpMethod the httpMethod to set
+     */
     public void setHttpMethod(String httpMethod) {
         this.httpMethod = httpMethod;
     }
 
+    /**
+     * @return the grantType
+     */
     public String getGrantType() {
         return grantType;
     }
 
+    /**
+     * @param grantType the grantType to set
+     */
     public void setGrantType(String grantType) {
         this.grantType = grantType;
     }
 
+    /**
+     * @return the tokenUrl
+     */
     public String getTokenUrl() {
         return tokenUrl;
     }
 
+    /**
+     * @param tokenUrl the tokenUrl to set
+     */
     public void setTokenUrl(String tokenUrl) {
         this.tokenUrl = tokenUrl;
     }
 
+    /**
+     * @return the apiKey
+     */
     public String getApiKey() {
         return apiKey;
     }
 
+    /**
+     * @param apiKey the apiKey to set
+     */
     public void setApiKey(String apiKey) {
         this.apiKey = apiKey;
     }
 
+    /**
+     * @return the apiSecret
+     */
     public String getApiSecret() {
         return apiSecret;
     }
 
+    /**
+     * @param apiSecret the apiSecret to set
+     */
     public void setApiSecret(String apiSecret) {
         this.apiSecret = apiSecret;
+    }
+
+    /**
+     * @return the customParameters
+     */
+    public JSONObject getCustomParameters() {
+        return customParameters;
+    }
+
+    /**
+     * @param customParameters the customParameters to set
+     */
+    public void setCustomParameters(JSONObject customParameters) {
+        this.customParameters = customParameters;
     }
 
     /**
