@@ -3534,8 +3534,8 @@ public final class APIUtil {
             String msg = "Failed to get User Realm of API Provider";
             throw new APIManagementException(msg, e);
         } catch (ParseException e) {
-            // TODO
-            e.printStackTrace();
+            String msg = "Couldn't create json object from Swagger object for custom OAuth header.";
+            throw new APIManagementException(msg, e);
         }
         return api;
     }
