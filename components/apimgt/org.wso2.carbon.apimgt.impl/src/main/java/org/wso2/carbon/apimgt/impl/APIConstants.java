@@ -316,6 +316,7 @@ public final class APIConstants {
     public static final String API_OVERVIEW_ENDPOINT_TOKEN_URL = "overview_endpointTokenUrl";
     public static final String API_OVERVIEW_ENDPOINT_API_KEY = "overview_apiKey";
     public static final String API_OVERVIEW_ENDPOINT_API_SECRET = "overview_apiSecret";
+    public static final String API_OVERVIEW_ENDPOINT_CUSTOM_PARAMETERS = "overview_customParameters";
     public static final String API_OVERVIEW_TRANSPORTS = "overview_transports";
     public static final String API_OVERVIEW_INSEQUENCE = "overview_inSequence";
     public static final String API_OVERVIEW_OUTSEQUENCE = "overview_outSequence";

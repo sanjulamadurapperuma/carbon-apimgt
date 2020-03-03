@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /**
  * Copyright (c)  WSO2 Inc. (http://wso2.com) All Rights Reserved.
  *
@@ -94,6 +95,7 @@ function EndpointSecurity(props) {
     const [showAddParameter, setShowAddParameter] = useState(false);
     const [parameterName, setParameterName] = useState(null);
     const [parameterValue, setParameterValue] = useState(null);
+    // TODO - Remove unused constants
     const [updating, setUpdating] = useState(false);
     const [editing, setEditing] = useState(false);
     const [isOptionalParametersStale, setIsOptionalParametersStale] = useState(false);
