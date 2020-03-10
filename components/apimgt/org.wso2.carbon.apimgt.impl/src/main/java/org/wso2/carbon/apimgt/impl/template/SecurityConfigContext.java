@@ -56,7 +56,7 @@ public class SecurityConfigContext extends ConfigContextDecorator {
         context.put("tokenUrl", api.getTokenUrl());
         context.put("apiKey", api.getApiKey());
         context.put("apiSecret", api.getApiSecret());
-        context.put("customParameters", api.getCustomParameters());
+        context.put("customParameters", api.getCustomParameters().toString());
         
         return context;
     }
