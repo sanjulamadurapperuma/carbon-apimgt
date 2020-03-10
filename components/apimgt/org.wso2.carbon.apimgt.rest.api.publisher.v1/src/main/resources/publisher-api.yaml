@@ -8721,6 +8721,10 @@ definitions:
       apiSecret:
         type: string
         example: 3KQt5bvgoesIS7TRj58IsoqlIgIa
+      customParameters:
+        type: object
+        descriptiom: JSON string of custom parameters
+        example: '{ scope: "admin", User-Agent: "wso2" }'
 
   #-----------------------------------------------------
   # API Business Information resource

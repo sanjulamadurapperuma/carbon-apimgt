@@ -56,6 +56,7 @@ public enum TypeEnum {
     private String tokenUrl = null;
     private String apiKey = null;
     private String apiSecret = null;
+    private Object customParameters = null;
 
   /**
    * Accepts one of the following, basic, digest or oauth.
@@ -194,6 +195,23 @@ public enum TypeEnum {
     this.apiSecret = apiSecret;
   }
 
+  /**
+   **/
+  public APIEndpointSecurityDTO customParameters(Object customParameters) {
+    this.customParameters = customParameters;
+    return this;
+  }
+
+  
+  @ApiModelProperty(example = "\"{ scope: \\\"admin\\\", User-Agent: \\\"wso2\\\" }\"", value = "")
+  @JsonProperty("customParameters")
+  public Object getCustomParameters() {
+    return customParameters;
+  }
+  public void setCustomParameters(Object customParameters) {
+    this.customParameters = customParameters;
+  }
+
 
   @Override
   public boolean equals(java.lang.Object o) {
@@ -211,12 +229,13 @@ public enum TypeEnum {
         Objects.equals(httpMethod, apIEndpointSecurity.httpMethod) &&
         Objects.equals(tokenUrl, apIEndpointSecurity.tokenUrl) &&
         Objects.equals(apiKey, apIEndpointSecurity.apiKey) &&
-        Objects.equals(apiSecret, apIEndpointSecurity.apiSecret);
+        Objects.equals(apiSecret, apIEndpointSecurity.apiSecret) &&
+        Objects.equals(customParameters, apIEndpointSecurity.customParameters);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, username, password, grantType, httpMethod, tokenUrl, apiKey, apiSecret);
+    return Objects.hash(type, username, password, grantType, httpMethod, tokenUrl, apiKey, apiSecret, customParameters);
   }
 
   @Override
@@ -232,6 +251,7 @@ public enum TypeEnum {
     sb.append("    tokenUrl: ").append(toIndentedString(tokenUrl)).append("\n");
     sb.append("    apiKey: ").append(toIndentedString(apiKey)).append("\n");
     sb.append("    apiSecret: ").append(toIndentedString(apiSecret)).append("\n");
+    sb.append("    customParameters: ").append(toIndentedString(customParameters)).append("\n");
     sb.append("}");
     return sb.toString();
   }
