@@ -74,6 +74,7 @@ function EndpointSecurity(props) {
     const {
         intl, securityInfo, onChangeEndpointAuth, classes,
     } = props;
+
     const [endpointSecurityInfo, setEndpointSecurityInfo] = useState({
         type: 'BASIC',
         username: '',
@@ -83,13 +84,18 @@ function EndpointSecurity(props) {
         apiKey: '',
         apiSecret: '',
         grantType: '',
+        customParameters: {},
     });
+
     const [securityValidity, setSecurityValidity] = useState();
     // TODO - Remove this if not needed
     // TODO - Change this to optionalParameters or additionalParameters
     // TODO - Replace the curly braces with json object from api/endpointsecurity properties
-    const payload = cloneDeep({});
-    const [optionalPayload, setOptionalPayload] = useState(payload);
+    // const payload = cloneDeep(Object.prototype.hasOwnProperty.call(endpointSecurityInfo, 'customParameters')
+    // ? endpointSecurityInfo.customParameters : {});
+    const payload = cloneDeep(endpointSecurityInfo.customParameters !== null
+        ? endpointSecurityInfo.customParameters : {});
+    const [optionalPayload, setOptionalPayload] = useState({});
 
     // Implementation of useState variables for parameter name and value
     const [showAddParameter, setShowAddParameter] = useState(false);
@@ -99,7 +105,14 @@ function EndpointSecurity(props) {
     const [updating, setUpdating] = useState(false);
     const [editing, setEditing] = useState(false);
     const [isOptionalParametersStale, setIsOptionalParametersStale] = useState(false);
+    // TODO - The following is not being used, remove if not needed
     const iff = (condition, then, otherwise) => (condition ? then : otherwise);
+
+    useEffect(() => {
+        if (payload !== null || payload !== undefined) {
+            setOptionalPayload(payload);
+        }
+    }, [props]);
 
     const toggleAddParameter = () => {
         setShowAddParameter(!showAddParameter);
@@ -129,7 +142,7 @@ function EndpointSecurity(props) {
     };
 
     const handleDelete = (optionalParameters, oldName) => {
-        const optionalParametersCopy = JSON.parse(JSON.stringify(optionalPayload));
+        const optionalParametersCopy = optionalPayload;
 
         if (Object.prototype.hasOwnProperty.call(optionalParametersCopy, oldName)) {
             delete optionalParametersCopy[oldName];
@@ -139,10 +152,13 @@ function EndpointSecurity(props) {
         if (optionalParametersCopy !== optionalPayload) {
             setIsOptionalParametersStale(true);
         }
+
+        setEndpointSecurityInfo({ ...endpointSecurityInfo, customParameters: optionalParametersCopy });
+        onChangeEndpointAuth(optionalParametersCopy, 'customParameters');
     };
 
     const handleUpdateList = (oldRow, newRow) => {
-        const optionalParametersCopy = JSON.parse(JSON.stringify(optionalPayload));
+        const optionalParametersCopy = optionalPayload;
 
         const { oldName, oldValue } = oldRow;
         const { newName, newValue } = newRow;
@@ -157,11 +173,13 @@ function EndpointSecurity(props) {
             optionalParametersCopy[newName] = newValue;
         }
         setOptionalPayload(optionalParametersCopy);
+        setEndpointSecurityInfo({ ...endpointSecurityInfo, customParameters: optionalParametersCopy });
+        onChangeEndpointAuth(optionalParametersCopy, 'customParameters');
     };
 
     const handleAddToList = () => {
-        const optionalParametersCopy = JSON.parse(JSON.stringify(optionalPayload));
-        if (optionalParametersCopy[parameterName] != null) {
+        const optionalParametersCopy = optionalPayload;
+        if (Object.prototype.hasOwnProperty.call(optionalParametersCopy, parameterName)) {
             Alert.warning('Parameter Name already exists');
         } else {
             optionalParametersCopy[parameterName] = parameterValue;
@@ -169,6 +187,8 @@ function EndpointSecurity(props) {
             setParameterName(null);
             setParameterValue(null);
         }
+        setEndpointSecurityInfo({ ...endpointSecurityInfo, customParameters: optionalParametersCopy });
+        onChangeEndpointAuth(optionalParametersCopy, 'customParameters');
     };
 
     const handleKeyDown = (event) => {
@@ -241,7 +261,7 @@ function EndpointSecurity(props) {
         const tmpSecurity = {};
         if (securityInfo !== null) {
             const {
-                type, username, password, grantType, httpMethod, tokenUrl, apiKey, apiSecret,
+                type, username, password, grantType, httpMethod, tokenUrl, apiKey, apiSecret, customParameters,
             } = securityInfo;
             tmpSecurity.type = type;
             tmpSecurity.username = username;
@@ -251,6 +271,7 @@ function EndpointSecurity(props) {
             tmpSecurity.tokenUrl = tokenUrl;
             tmpSecurity.apiKey = apiKey;
             tmpSecurity.apiSecret = apiSecret;
+            tmpSecurity.customParameters = customParameters;
         }
         setEndpointSecurityInfo(tmpSecurity);
     }, [props]);
@@ -586,20 +607,23 @@ function EndpointSecurity(props) {
                 )}
             </Grid>
 
-            <Grid item xs={6}>
-                <Button
-                    size='medium'
-                    className={classes.button}
-                    onClick={toggleAddParameter}
-                    disabled={isRestricted(['apim:api_create', 'apim:api_publish'], api)}
-                >
-                    <AddCircle className={classes.buttonIcon} />
-                    <FormattedMessage
-                        id='Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.add.new.parameter'
-                        defaultMessage='Add New Parameter'
-                    />
-                </Button>
-            </Grid>
+            {endpointSecurityInfo.type === 'OAUTH'
+            && (
+                <Grid item xs={6}>
+                    <Button
+                        size='medium'
+                        className={classes.button}
+                        onClick={toggleAddParameter}
+                        disabled={isRestricted(['apim:api_create', 'apim:api_publish'], api)}
+                    >
+                        <AddCircle className={classes.buttonIcon} />
+                        <FormattedMessage
+                            id='Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.add.new.parameter'
+                            defaultMessage='Add New Parameter'
+                        />
+                    </Button>
+                </Grid>
+            )}
 
             <Grid item xs={12} />
 
