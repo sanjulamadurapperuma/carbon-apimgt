@@ -126,8 +126,8 @@ public class ApiKeyAuthenticator implements Authenticator {
                         APISecurityConstants.API_AUTH_INVALID_CREDENTIALS_MESSAGE , e);
             }
             // Check if the decoded header contains type as 'JWT'.
-            if (decodedHeader.getType() != JOSEObjectType.JWT) {
-                if (log.isDebugEnabled()){
+            if (!decodedHeader.getType().equals(JOSEObjectType.JWT)) {
+                if (log.isDebugEnabled()) {
                     log.debug("Invalid Api Key token type. Api Key: " + GatewayUtils.getMaskedToken(splitToken[0]));
                 }
                 log.error("Invalid Api Key token type.");
@@ -154,7 +154,7 @@ public class ApiKeyAuthenticator implements Authenticator {
             String matchingResource = (String) synCtx.getProperty(APIConstants.API_ELECTED_RESOURCE);
 
             OpenAPI openAPI = (OpenAPI) synCtx.getProperty(APIMgtGatewayConstants.OPEN_API_OBJECT);
-            if (openAPI == null) {
+            if (openAPI == null && !APIConstants.GRAPHQL_API.equals(synCtx.getProperty(APIConstants.API_TYPE))) {
                 log.error("Swagger is missing in the gateway. " +
                         "Therefore, Api Key authentication cannot be performed.");
                 return new AuthenticationResponse(false, isMandatory, true,

@@ -32,6 +32,8 @@ import javax.xml.namespace.QName;
  */
 public final class APIConstants {
 
+    public static final String STRING = "string";
+    public static final String OBJECT = "object";
     //key value of the provider rxt
     public static final String PROVIDER_KEY = "provider";
 
@@ -239,10 +241,12 @@ public final class APIConstants {
     public static final String HEADER_ACCEPT = "Accept";
     public static final String HEADER_CONTENT_TYPE = "Content-Type";
     public static final String HEADER_API_TOKEN = "X-API-KEY";
+    public static final String HEADER_USER_AGENT = "User-Agent";
     public static final String MULTIPART_FORM_BOUNDARY = "X-WSO2-BOUNDARY";
     public static final String MULTIPART_LINE_FEED = "\r\n";
     public static final String BASE_AUDIT_URL = "https://platform.42crunch.com/api/v1/apis";
     public static final String MULTIPART_CONTENT_TYPE = "multipart/form-data; boundary=";
+    public static final String USER_AGENT_APIM = "WSO2-APIM";
     public static final String DATA = "data";
     public static final String ATTR = "attr";
     public static final String GRADE = "grade";
@@ -1260,10 +1264,9 @@ public final class APIConstants {
     public static final String SWAGGER_X_AMZN_RESOURCE_TIMEOUT = "x-amzn-resource-timeout";
     public static final String SWAGGER_X_AUTH_TYPE = "x-auth-type";
     public static final String SWAGGER_X_THROTTLING_TIER = "x-throttling-tier";
+    public static final String SWAGGER_X_THROTTLING_BANDWIDTH = "x-throttling-bandwidth";
     public static final String SWAGGER_X_MEDIATION_SCRIPT = "x-mediation-script";
     public static final String SWAGGER_X_WSO2_SECURITY = "x-wso2-security";
-    public static final String SWAGGER_X_WSO2_APP_SECURITY = "x-wso2-application-security";
-    public static final String SWAGGER_X_WSO2_RESPONSE_CACHE = "x-wso2-response-cache";
     public static final String WSO2_APP_SECURITY_TYPES = "security-types";
     public static final String OPTIONAL = "optional";
     public static final String MANDATORY = "mandatory";
@@ -1335,6 +1338,9 @@ public final class APIConstants {
     public static final String X_WSO2_SANDBOX_ENDPOINTS = "x-wso2-sandbox-endpoints";
     public static final String X_WSO2_BASEPATH = "x-wso2-basePath";
     public static final String X_WSO2_TRANSPORTS = "x-wso2-transports";
+    public static final String X_WSO2_MUTUAL_SSL = "x-wso2-mutual-ssl";
+    public static final String X_WSO2_APP_SECURITY = "x-wso2-application-security";
+    public static final String X_WSO2_RESPONSE_CACHE = "x-wso2-response-cache";
     public static final String X_WSO2_ENDPOINT_TYPE = "type";
 
     //API Constants
@@ -1381,6 +1387,11 @@ public final class APIConstants {
     public static final String ENDPOINT_SECURITY_TYPE_DIGEST = "digest";
     public static final String ENDPOINT_SECURITY_USERNAME = "username";
     public static final String ENDPOINT_SECURITY_CONFIG = "securityConfig";
+    public static final String ENDPOINT_SECURITY = "endpoint_security";
+    public static final String ENDPOINT_SECURITY_PRODUCTION = "production";
+    public static final String ENDPOINT_SECURITY_SANDBOX = "sandbox";
+    public static final String ENDPOINT_SECURITY_PASSWORD = "password";
+    public static final String ENDPOINT_SECURITY_ENABLED = "enabled";
 
     public static final String API_ENDPOINT_CONFIG_TIMEOUT = "timeout";
     public static final String API_ENDPOINT_CONFIG_PROTOCOL_TYPE = "endpoint_type";
@@ -1699,6 +1710,8 @@ public final class APIConstants {
         public static final String API_VERSION = "version";
         public static final String API_PUBLISHER = "publisher";
         public static final String API_NAME = "name";
+        public static final String QUOTA_TYPE = "tierQuotaType";
+        public static final String QUOTA_TYPE_BANDWIDTH = "bandwidthVolume";
     }
 
     public static final String SIGNATURE_ALGORITHM_RS256 = "RS256";
@@ -1828,8 +1841,18 @@ public final class APIConstants {
         public static final String NONE = "None";
     }
 
-    public static class Monetization {
+    public static class Analytics {
+        public static final String API_NAME = "apiName";
+        public static final String API_VERSION = "apiVersion";
+        public static final String API_CREATOR = "apiCreator";
+        public static final String API_CREATOR_TENANT_DOMAIN = "apiCreatorTenantDomain";
+        public static final String APPLICATION_ID = "applicationId";
+        public static final String RECORDS_DELIMITER = "records";
+    }
 
+    public static class Monetization {
+        public static final String MONETIZATION_USAGE_RECORD_APP = "APIM_MONETIZATION_SUMMARY";
+        public static final String MONETIZATION_USAGE_RECORD_AGG = "MonetizationAgg";
         public static final String USAGE_PUBLISH_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
         public static final String USAGE_PUBLISH_TIME_ZONE = "UTC";
         public static final String COMPLETED = "COMPLETED";
@@ -1893,13 +1916,11 @@ public final class APIConstants {
     public static final String USER_NAME = "username";
 
     public static class RestApiConstants {
-        public static final String STORE_CONTEXT = "/store";
-        public static final String REST_API_PUBLISHER_VERSION_1 = "v1.0";
         public static final String REST_API_DEFAULT_VERSION = "v1";
         public static final String REST_API_OLD_VERSION = "v0.16";
         public static final String REST_API_PUBLISHER_CONTEXT = "/api/am/publisher/";
         public static final String REST_API_PUBLISHER_CONTEXT_FULL_1 =
-                REST_API_PUBLISHER_CONTEXT + REST_API_PUBLISHER_VERSION_1;
+                REST_API_PUBLISHER_CONTEXT + REST_API_DEFAULT_VERSION;
         public static final String REST_API_ADMIN_CONTEXT = "/api/am/admin/";
         public static final String REST_API_ADMIN_VERSION = "v0.16";
         public static final String REST_API_ADMIN_CONTEXT_FULL_0 = REST_API_ADMIN_CONTEXT + REST_API_ADMIN_VERSION;

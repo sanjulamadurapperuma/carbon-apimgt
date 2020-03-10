@@ -86,6 +86,7 @@ import org.wso2.carbon.apimgt.impl.factory.KeyManagerHolder;
 import org.wso2.carbon.apimgt.impl.importexport.APIImportExportException;
 import org.wso2.carbon.apimgt.impl.importexport.ExportFormat;
 import org.wso2.carbon.apimgt.impl.importexport.utils.APIExportUtil;
+import org.wso2.carbon.apimgt.impl.utils.APIVersionStringComparator;
 import org.wso2.carbon.apimgt.impl.utils.CertificateMgtUtils;
 import org.wso2.carbon.apimgt.impl.wsdl.SequenceGenerator;
 import org.wso2.carbon.apimgt.impl.wsdl.model.WSDLValidationResponse;
@@ -869,6 +870,7 @@ public class ApisApiServiceImpl implements ApisApiService {
                 // Set the header properties of the request
                 httpGet.setHeader(APIConstants.HEADER_ACCEPT, APIConstants.APPLICATION_JSON_MEDIA_TYPE);
                 httpGet.setHeader(APIConstants.HEADER_API_TOKEN, apiToken);
+                httpGet.setHeader(APIConstants.HEADER_USER_AGENT, APIConstants.USER_AGENT_APIM);
                 // Code block for the processing of the response
                 try (CloseableHttpResponse response = getHttpClient.execute(httpGet)) {
                     if (isDebugEnabled) {
@@ -931,6 +933,7 @@ public class ApisApiServiceImpl implements ApisApiService {
             httpPut.setHeader(APIConstants.HEADER_ACCEPT, APIConstants.APPLICATION_JSON_MEDIA_TYPE);
             httpPut.setHeader(APIConstants.HEADER_CONTENT_TYPE, APIConstants.APPLICATION_JSON_MEDIA_TYPE);
             httpPut.setHeader(APIConstants.HEADER_API_TOKEN, apiToken);
+            httpPut.setHeader(APIConstants.HEADER_USER_AGENT, APIConstants.USER_AGENT_APIM);
             httpPut.setEntity(new StringEntity(jsonBody.toJSONString()));
             // Code block for processing the response
             try (CloseableHttpResponse response = httpClient.execute(httpPut)) {
@@ -964,6 +967,7 @@ public class ApisApiServiceImpl implements ApisApiService {
                 APIConstants.MULTIPART_CONTENT_TYPE + APIConstants.MULTIPART_FORM_BOUNDARY);
         httpConn.setRequestProperty(APIConstants.HEADER_ACCEPT, APIConstants.APPLICATION_JSON_MEDIA_TYPE);
         httpConn.setRequestProperty(APIConstants.HEADER_API_TOKEN, apiToken);
+        httpConn.setRequestProperty(APIConstants.HEADER_USER_AGENT, APIConstants.USER_AGENT_APIM);
         outputStream = httpConn.getOutputStream();
         writer = new PrintWriter(new OutputStreamWriter(outputStream, "UTF-8"), true);
         // Name property
@@ -1508,8 +1512,6 @@ public class ApisApiServiceImpl implements ApisApiService {
 
             //deletes the API
             apiProvider.deleteAPI(apiIdentifier, apiId);
-            KeyManager keyManager = KeyManagerHolder.getKeyManagerInstance();
-            keyManager.deleteRegisteredResourceByAPIId(apiId);
             return Response.ok().build();
         } catch (APIManagementException e) {
             //Auth failure occurs when cross tenant accessing APIs. Sends 404, since we don't need to expose the existence of the resource
@@ -2037,7 +2039,22 @@ public class ApisApiServiceImpl implements ApisApiService {
                 String errorMessage = "Error while getting lifecycle state for API : " + apiId;
                 RestApiUtil.handleInternalServerError(errorMessage, log);
             }
-            return APIMappingUtil.fromLifecycleModelToDTO(apiLCData);
+
+            boolean apiOlderVersionExist = false;
+            // check whether other versions of the current API exists
+            APIDTO currentAPI = getAPIByID(apiId);
+            APIVersionStringComparator comparator = new APIVersionStringComparator();
+            Set<String> versions = apiProvider.getAPIVersions(
+                    APIUtil.replaceEmailDomain(currentAPI.getProvider()), currentAPI.getName());
+
+            for (String tempVersion : versions) {
+                if (comparator.compare(tempVersion, currentAPI.getVersion()) < 0) {
+                    apiOlderVersionExist = true;
+                    break;
+                }
+            }
+
+            return APIMappingUtil.fromLifecycleModelToDTO(apiLCData, apiOlderVersionExist);
         } catch (APIManagementException e) {
             //Auth failure occurs when cross tenant accessing APIs. Sends 404, since we don't need to expose the existence of the resource
             if (RestApiUtil.isDueToResourceNotFound(e) || RestApiUtil.isDueToAuthorizationFailure(e)) {
