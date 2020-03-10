@@ -28,6 +28,8 @@ import org.apache.synapse.core.SynapseEnvironment;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
 import org.apache.synapse.mediators.AbstractMediator;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.wso2.carbon.apimgt.gateway.mediators.oauth.client.TokenResponse;
 import org.wso2.carbon.apimgt.gateway.mediators.oauth.conf.OAuthEndpoint;
 import org.wso2.carbon.apimgt.impl.APIConstants;
@@ -83,6 +85,9 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             String apiKey = (String) messageContext.getProperty(OAuthConstants.OAUTH_API_KEY);
             String apiSecret = (String) messageContext.getProperty(OAuthConstants.OAUTH_API_SECRET);
             String grantType = (String) messageContext.getProperty(OAuthConstants.GRANT_TYPE);
+            String customParametersString = (String) messageContext.getProperty(OAuthConstants.OAUTH_CUSTOM_PARAMETERS);
+            JSONParser parser = new JSONParser();
+            JSONObject customParameters = (JSONObject) parser.parse(customParametersString);
 
             if (grantType.equals("PASSWORD")) {
                 String usernamePassword;
@@ -103,7 +108,8 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             JSONObject oAuthEndpointSecurityProperties = getOAuthEndpointSecurityProperties();
             int tokenRefreshInterval;
             if (oAuthEndpointSecurityProperties != null) {
-                tokenRefreshInterval = Integer.parseInt((String) oAuthEndpointSecurityProperties.get(OAuthConstants.TOKEN_REFRESH_INTERVAL));
+                tokenRefreshInterval = Integer.parseInt((String) oAuthEndpointSecurityProperties
+                        .get(OAuthConstants.TOKEN_REFRESH_INTERVAL));
             } else {
                 log.error("The Token Refresh Interval has not been set correctly in the config...");
                 tokenRefreshInterval = DEFAULT_TOKEN_REFRESH_INTERVAL;
@@ -119,10 +125,12 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             oAuthEndpoint.setPassword(password);
             oAuthEndpoint.setGrantType(grantType);
             oAuthEndpoint.setTokenRefreshInterval(tokenRefreshInterval);
+            oAuthEndpoint.setCustomParameters(customParameters);
 
             if (oAuthEndpoint != null) {
                 try {
-                    TokenGeneratorScheduledExecutor scheduledExecutor = new TokenGeneratorScheduledExecutor(executorService);
+                    TokenGeneratorScheduledExecutor scheduledExecutor =
+                            new TokenGeneratorScheduledExecutor(executorService);
                     scheduledExecutor.schedule(oAuthEndpoint);
                 } catch(Exception e) {
                     log.error("Could not generate access token...", e);
@@ -141,6 +149,8 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             }
         } catch (CryptoException e) {
             log.error(" Error occurred when decrypting the client key and client secret", e);
+        } catch (ParseException e) {
+            log.error("Failed to parse OAuth Custom Parameters", e);
         }
         return true;
     }

@@ -54,7 +54,7 @@ public class TokenGeneratorScheduledExecutor {
     private void generateToken(OAuthEndpoint oAuthEndpoint) throws IOException, APIManagementException {
         TokenResponse tokenResponse = OAuthClient.generateToken(oAuthEndpoint.getHttpMethod(), oAuthEndpoint.getTokenApiUrl(),
                 oAuthEndpoint.getApiKey(), oAuthEndpoint.getApiSecret(), oAuthEndpoint.getUsername(),
-                oAuthEndpoint.getPassword(), oAuthEndpoint.getGrantType());
+                oAuthEndpoint.getPassword(), oAuthEndpoint.getGrantType(), oAuthEndpoint.getCustomParameters());
         assert tokenResponse != null;
         TokenCache.getInstance().getTokenMap().put(oAuthEndpoint.getId(), tokenResponse);
     }
