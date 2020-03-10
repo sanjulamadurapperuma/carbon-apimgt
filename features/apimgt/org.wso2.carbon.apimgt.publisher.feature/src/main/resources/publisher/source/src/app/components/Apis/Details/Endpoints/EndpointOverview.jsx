@@ -452,6 +452,7 @@ function EndpointOverview(props) {
                 tokenUrl: null,
                 apiKey: null,
                 apiSecret: null,
+                customParameters: null,
             } : null;
         setEndpointSecurityInfo(tmpSecurityInfo);
         endpointsDispatcher({ action: 'endpointSecurity', value: tmpSecurityInfo });
