@@ -606,9 +606,14 @@ public final class APIUtil {
             api.setApiSecret(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_SECRET));
             String customParameters = artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_CUSTOM_PARAMETERS);
             if (StringUtils.isNotBlank(customParameters)) {
-                JSONParser jsonParser = new JSONParser();
-                JSONObject jsonObject = (JSONObject) jsonParser.parse(customParameters);
-                api.setCustomParameters(jsonObject);
+                try {
+                    JSONParser jsonParser = new JSONParser();
+                    JSONObject jsonObject = (JSONObject) jsonParser.parse(customParameters);
+                    api.setCustomParameters(jsonObject);
+                } catch (ParseException e) {
+                    String msg = "Failed to parse OAuth Custom Parameters";
+                    throw new APIManagementException(msg, e);
+                }
             }
             api.setTransports(artifact.getAttribute(APIConstants.API_OVERVIEW_TRANSPORTS));
             api.setInSequence(artifact.getAttribute(APIConstants.API_OVERVIEW_INSEQUENCE));

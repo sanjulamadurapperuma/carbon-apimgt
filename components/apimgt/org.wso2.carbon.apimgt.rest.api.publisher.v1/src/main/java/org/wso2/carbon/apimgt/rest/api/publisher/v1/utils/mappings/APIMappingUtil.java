@@ -18,6 +18,7 @@
 package org.wso2.carbon.apimgt.rest.api.publisher.v1.utils.mappings;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -663,6 +664,18 @@ public class APIMappingUtil {
                 api.setTokenUrl(securityDTO.getTokenUrl());
                 api.setApiKey(securityDTO.getApiKey());
                 api.setApiSecret(securityDTO.getApiSecret());
+                if (securityDTO.getCustomParameters() != null) {
+                    Gson gson = new Gson();
+                    JSONParser parser = new JSONParser();
+                    JSONObject customParameters = null;
+                    try {
+                        customParameters = (JSONObject) parser.parse(gson
+                                .toJson(securityDTO.getCustomParameters()));
+                    } catch (ParseException e) {
+                        log.error("Cannot parse OAuth Custom Parameters", e);
+                    }
+                    api.setCustomParameters(customParameters);
+                }
             }
         }
     }
@@ -1028,6 +1041,7 @@ public class APIMappingUtil {
                     securityDTO.setApiKey(new String(cryptoUtil.base64DecodeAndDecrypt(api.getApiKey())));
                     securityDTO.setApiSecret(new String(cryptoUtil.base64DecodeAndDecrypt(api.getApiSecret())));
                     securityDTO.setGrantType(api.getGrantType());
+                    securityDTO.setCustomParameters(api.getCustomParameters());
                 } catch (CryptoException e) {
                     String msg = "Failed to decrypt API Key and API Secret for OAuth Endpoint";
                     throw new APIManagementException(msg, e);
