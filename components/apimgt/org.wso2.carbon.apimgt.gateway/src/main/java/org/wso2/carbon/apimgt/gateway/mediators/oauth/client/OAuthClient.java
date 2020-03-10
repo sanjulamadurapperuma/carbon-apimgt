@@ -27,6 +27,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.json.simple.JSONObject;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
@@ -49,7 +50,7 @@ public class OAuthClient {
     private static final String PASSWORD_GRANT_TYPE = "grant_type=password";
 
     public static TokenResponse generateToken(String httpMethod, String url, String apiKey, String apiSecret,
-            String username, String password, String grantType)
+            String username, String password, String grantType, JSONObject customParameters)
             throws IOException, APIManagementException {
         if(log.isDebugEnabled()) {
             log.debug("Initializing token generation request: [token-endpoint] " + url);
@@ -60,7 +61,7 @@ public class OAuthClient {
 
         if (httpMethod.equals("post")) {
             url_ = new URL(url);
-
+            StringBuilder payload = new StringBuilder();
             try (CloseableHttpClient httpClient = (CloseableHttpClient) APIUtil
                     .getHttpClient(url_.getPort(), url_.getProtocol())) {
                 HttpPost httpPost = new HttpPost(url);
@@ -68,11 +69,16 @@ public class OAuthClient {
                 httpPost.setHeader(AUTHORIZATION_HEADER, "Basic " + credentials);
                 httpPost.setHeader(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
                 if (grantType.equals(APIConstants.OAuthConstants.CLIENT_CREDENTIALS)) {
-                    httpPost.setEntity(new StringEntity(CLIENT_CRED_GRANT_TYPE));
+                    payload.append(CLIENT_CRED_GRANT_TYPE);
                 } else if (grantType.equals(APIConstants.OAuthConstants.PASSWORD)) {
-                    httpPost.setEntity(new StringEntity(PASSWORD_GRANT_TYPE + "&username="
-                            + username + "&password=" + password));
+                    payload.append(PASSWORD_GRANT_TYPE + "&username=")
+                            .append(username).append("&password=")
+                            .append(password);
                 }
+
+                payload = appendCustomParameters(customParameters, payload);
+
+                httpPost.setEntity(new StringEntity(payload.toString()));
 
                 try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
                     return getTokenResponse(response);
@@ -81,9 +87,11 @@ public class OAuthClient {
                 }
             }
         } else if (httpMethod.equals("get")) {
-            String query;
+            StringBuilder query = new StringBuilder();
             if (grantType.equals(APIConstants.OAuthConstants.CLIENT_CREDENTIALS)) {
-                query = "?" + CLIENT_CRED_GRANT_TYPE;
+                query.append("?" + CLIENT_CRED_GRANT_TYPE);
+
+                query = appendCustomParameters(customParameters, query);
                 url += query;
                 url_ = new URL(url);
 
@@ -99,8 +107,10 @@ public class OAuthClient {
                     }
                 }
             } else if (grantType.equals(APIConstants.OAuthConstants.PASSWORD)) {
-                query = String.format(PASSWORD_GRANT_TYPE + "&username=%s&password=%s",
-                        URLEncoder.encode(username, UTF_8), URLEncoder.encode(password, UTF_8));
+                query.append(String.format(PASSWORD_GRANT_TYPE + "&username=%s&password=%s",
+                        URLEncoder.encode(username, UTF_8), URLEncoder.encode(password, UTF_8)));
+
+                query = appendCustomParameters(customParameters, query);
                 url += query;
                 url_ = new URL(url);
 
@@ -118,6 +128,16 @@ public class OAuthClient {
             }
         }
         return null;
+    }
+
+    private static StringBuilder appendCustomParameters(JSONObject customParameters, StringBuilder string) {
+        if (customParameters != null) {
+            for(Object keyStr : customParameters.keySet()) {
+                Object keyValue = customParameters.get(keyStr);
+                string.append("&").append(keyStr).append("=").append(keyValue);
+            }
+        }
+        return string;
     }
 
     private static TokenResponse getTokenResponse(CloseableHttpResponse response)
