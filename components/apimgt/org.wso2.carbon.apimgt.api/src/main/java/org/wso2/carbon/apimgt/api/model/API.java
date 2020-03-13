@@ -93,7 +93,6 @@ public class API implements Serializable {
     private boolean endpointAuthDigest = false;
     private String endpointUTUsername;
     private String endpointUTPassword;
-    private String httpMethod;
     private String grantType;
     private String tokenUrl;
     private String apiKey;
@@ -679,20 +678,6 @@ public class API implements Serializable {
      */
     public void setEndpointOAuth(boolean endpointOAuth) {
         this.endpointOAuth = endpointOAuth;
-    }
-
-    /**
-     * @return the httpMethod
-     */
-    public String getHttpMethod() {
-        return httpMethod;
-    }
-
-    /**
-     * @param httpMethod the httpMethod to set
-     */
-    public void setHttpMethod(String httpMethod) {
-        this.httpMethod = httpMethod;
     }
 
     /**

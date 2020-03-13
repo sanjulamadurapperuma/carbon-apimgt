@@ -105,10 +105,17 @@ public class SecurityConfigContext extends ConfigContextDecorator {
                 endpointSecurityModel.setEnabled(true);
                 endpointSecurityModel.setUsername(api.getEndpointUTUsername());
                 endpointSecurityModel.setPassword(api.getEndpointUTPassword());
-                if (!api.isEndpointAuthDigest()) {
-                    endpointSecurityModel.setType(APIConstants.ENDPOINT_SECURITY_TYPE_BASIC);
-                } else {
+                if (api.isEndpointAuthDigest()) {
                     endpointSecurityModel.setType(APIConstants.ENDPOINT_SECURITY_TYPE_DIGEST);
+                } else if (api.isEndpointOAuth()) {
+                    endpointSecurityModel.setType(APIConstants.ENDPOINT_SECURITY_TYPE_OAUTH);
+                    endpointSecurityModel.setGrantType(api.getGrantType());
+                    endpointSecurityModel.setTokenUrl(api.getTokenUrl());
+                    endpointSecurityModel.setApiKey(api.getApiKey());
+                    endpointSecurityModel.setApiSecret(api.getApiSecret());
+                    endpointSecurityModel.setCustomParameters(api.getCustomParameters().toString());
+                } else {
+                    endpointSecurityModel.setType(APIConstants.ENDPOINT_SECURITY_TYPE_BASIC);
                 }
                 endpointSecurityModel.setAlias(alias);
                 String unpw = api.getEndpointUTUsername() + ":" + api.getEndpointUTPassword();
@@ -116,6 +123,7 @@ public class SecurityConfigContext extends ConfigContextDecorator {
                 endpointSecurityModelMap.put(APIConstants.ENDPOINT_SECURITY_PRODUCTION, endpointSecurityModel);
                 endpointSecurityModelMap.put(APIConstants.ENDPOINT_SECURITY_SANDBOX, endpointSecurityModel);
             } else {
+                // TODO - Check if the oauth implementation should be included here.
                 if (StringUtils.isNotEmpty(api.getEndpointConfig())) {
                     if (productionEndpointSecurity != null) {
                         EndpointSecurityModel endpointSecurityModel = new ObjectMapper()
@@ -169,6 +177,15 @@ public class SecurityConfigContext extends ConfigContextDecorator {
                                         .concat(endpointSecurityModel.getPassword())
                                         .getBytes())));
                         endpointSecurityModel.setAlias(alias.concat("--").concat(endpointSecurityEntry.getKey()));
+
+                        if (endpointSecurityEntry.getValue().getType()
+                                .equals(APIConstants.ENDPOINT_SECURITY_TYPE_OAUTH)) {
+                            endpointSecurityModel.setGrantType(endpointSecurityEntry.getValue().getGrantType());
+                            endpointSecurityModel.setTokenUrl(endpointSecurityEntry.getValue().getTokenUrl());
+                            endpointSecurityModel.setApiKey(endpointSecurityEntry.getValue().getApiKey());
+                            endpointSecurityModel.setApiSecret(endpointSecurityEntry.getValue().getApiSecret());
+                            endpointSecurityModel.setCustomParameters(endpointSecurityEntry.getValue().getCustomParameters());
+                        }
                     }
                     stringEndpointSecurityModelMap.put(endpointSecurityEntry.getKey(), endpointSecurityModel);
                 }

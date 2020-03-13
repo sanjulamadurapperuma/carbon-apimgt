@@ -52,7 +52,6 @@ public enum TypeEnum {
     private String username = null;
     private String password = null;
     private String grantType = null;
-    private String httpMethod = null;
     private String tokenUrl = null;
     private String apiKey = null;
     private String apiSecret = null;
@@ -125,23 +124,6 @@ public enum TypeEnum {
   }
   public void setGrantType(String grantType) {
     this.grantType = grantType;
-  }
-
-  /**
-   **/
-  public APIEndpointSecurityDTO httpMethod(String httpMethod) {
-    this.httpMethod = httpMethod;
-    return this;
-  }
-
-  
-  @ApiModelProperty(example = "get", value = "")
-  @JsonProperty("httpMethod")
-  public String getHttpMethod() {
-    return httpMethod;
-  }
-  public void setHttpMethod(String httpMethod) {
-    this.httpMethod = httpMethod;
   }
 
   /**
@@ -226,7 +208,6 @@ public enum TypeEnum {
         Objects.equals(username, apIEndpointSecurity.username) &&
         Objects.equals(password, apIEndpointSecurity.password) &&
         Objects.equals(grantType, apIEndpointSecurity.grantType) &&
-        Objects.equals(httpMethod, apIEndpointSecurity.httpMethod) &&
         Objects.equals(tokenUrl, apIEndpointSecurity.tokenUrl) &&
         Objects.equals(apiKey, apIEndpointSecurity.apiKey) &&
         Objects.equals(apiSecret, apIEndpointSecurity.apiSecret) &&
@@ -235,7 +216,7 @@ public enum TypeEnum {
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, username, password, grantType, httpMethod, tokenUrl, apiKey, apiSecret, customParameters);
+    return Objects.hash(type, username, password, grantType, tokenUrl, apiKey, apiSecret, customParameters);
   }
 
   @Override
@@ -247,7 +228,6 @@ public enum TypeEnum {
     sb.append("    username: ").append(toIndentedString(username)).append("\n");
     sb.append("    password: ").append(toIndentedString(password)).append("\n");
     sb.append("    grantType: ").append(toIndentedString(grantType)).append("\n");
-    sb.append("    httpMethod: ").append(toIndentedString(httpMethod)).append("\n");
     sb.append("    tokenUrl: ").append(toIndentedString(tokenUrl)).append("\n");
     sb.append("    apiKey: ").append(toIndentedString(apiKey)).append("\n");
     sb.append("    apiSecret: ").append(toIndentedString(apiSecret)).append("\n");

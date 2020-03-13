@@ -1141,7 +1141,6 @@ public final class APIConstants {
     public static class OAuthConstants {
         public static final String OAUTH = "OAUTH";
         public static final String OAUTH_ID = "id";
-        public static final String OAUTH_HTTP_METHOD = "httpMethod";
         public static final String TOKEN_API_URL = "tokenUrl";
         public static final String OAUTH_API_KEY = "apiKey";
         public static final String OAUTH_API_SECRET = "apiSecret";
@@ -1392,12 +1391,15 @@ public final class APIConstants {
     public static final String ENDPOINT_SECURITY_TYPE = "type";
     public static final String ENDPOINT_SECURITY_TYPE_BASIC = "basic";
     public static final String ENDPOINT_SECURITY_TYPE_DIGEST = "digest";
+    public static final String ENDPOINT_SECURITY_TYPE_OAUTH = "oauth";
     public static final String ENDPOINT_SECURITY_USERNAME = "username";
     public static final String ENDPOINT_SECURITY_CONFIG = "securityConfig";
     public static final String ENDPOINT_SECURITY = "endpoint_security";
     public static final String ENDPOINT_SECURITY_PRODUCTION = "production";
     public static final String ENDPOINT_SECURITY_SANDBOX = "sandbox";
     public static final String ENDPOINT_SECURITY_PASSWORD = "password";
+    public static final String ENDPOINT_SECURITY_API_KEY = "apiKey";
+    public static final String ENDPOINT_SECURITY_API_SECRET = "apiSecret";
     public static final String ENDPOINT_SECURITY_ENABLED = "enabled";
 
     public static final String API_ENDPOINT_CONFIG_TIMEOUT = "timeout";

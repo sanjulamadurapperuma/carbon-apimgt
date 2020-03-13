@@ -49,7 +49,7 @@ public class OAuthClient {
     private static final String CLIENT_CRED_GRANT_TYPE = "grant_type=client_credentials";
     private static final String PASSWORD_GRANT_TYPE = "grant_type=password";
 
-    public static TokenResponse generateToken(String httpMethod, String url, String apiKey, String apiSecret,
+    public static TokenResponse generateToken(String url, String apiKey, String apiSecret,
             String username, String password, String grantType, JSONObject customParameters)
             throws IOException, APIManagementException {
         if(log.isDebugEnabled()) {
@@ -59,75 +59,32 @@ public class OAuthClient {
         URL url_;
         String credentials = Base64.getEncoder().encodeToString((apiKey + ":" + apiSecret).getBytes());
 
-        if (httpMethod.equals("post")) {
-            url_ = new URL(url);
-            StringBuilder payload = new StringBuilder();
-            try (CloseableHttpClient httpClient = (CloseableHttpClient) APIUtil
-                    .getHttpClient(url_.getPort(), url_.getProtocol())) {
-                HttpPost httpPost = new HttpPost(url);
-                // Set authorization header
-                httpPost.setHeader(AUTHORIZATION_HEADER, "Basic " + credentials);
-                httpPost.setHeader(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
-                if (grantType.equals(APIConstants.OAuthConstants.CLIENT_CREDENTIALS)) {
-                    payload.append(CLIENT_CRED_GRANT_TYPE);
-                } else if (grantType.equals(APIConstants.OAuthConstants.PASSWORD)) {
-                    payload.append(PASSWORD_GRANT_TYPE + "&username=")
-                            .append(username).append("&password=")
-                            .append(password);
-                }
-
-                payload = appendCustomParameters(customParameters, payload);
-
-                httpPost.setEntity(new StringEntity(payload.toString()));
-
-                try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
-                    return getTokenResponse(response);
-                } finally {
-                    httpPost.releaseConnection();
-                }
-            }
-        } else if (httpMethod.equals("get")) {
-            StringBuilder query = new StringBuilder();
+        url_ = new URL(url);
+        StringBuilder payload = new StringBuilder();
+        try (CloseableHttpClient httpClient = (CloseableHttpClient) APIUtil
+                .getHttpClient(url_.getPort(), url_.getProtocol())) {
+            HttpPost httpPost = new HttpPost(url);
+            // Set authorization header
+            httpPost.setHeader(AUTHORIZATION_HEADER, "Basic " + credentials);
+            httpPost.setHeader(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
             if (grantType.equals(APIConstants.OAuthConstants.CLIENT_CREDENTIALS)) {
-                query.append("?" + CLIENT_CRED_GRANT_TYPE);
-
-                query = appendCustomParameters(customParameters, query);
-                url += query;
-                url_ = new URL(url);
-
-                try (CloseableHttpClient httpClient = (CloseableHttpClient) APIUtil
-                        .getHttpClient(url_.getPort(), url_.getProtocol())) {
-                    HttpGet httpGet = new HttpGet(url);
-                    // Set authorization header
-                    httpGet.setHeader(AUTHORIZATION_HEADER, "Basic " + credentials);
-                    httpGet.setHeader(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
-
-                    try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-                        return getTokenResponse(response);
-                    }
-                }
+                payload.append(CLIENT_CRED_GRANT_TYPE);
             } else if (grantType.equals(APIConstants.OAuthConstants.PASSWORD)) {
-                query.append(String.format(PASSWORD_GRANT_TYPE + "&username=%s&password=%s",
-                        URLEncoder.encode(username, UTF_8), URLEncoder.encode(password, UTF_8)));
+                payload.append(PASSWORD_GRANT_TYPE + "&username=")
+                        .append(username).append("&password=")
+                        .append(password);
+            }
 
-                query = appendCustomParameters(customParameters, query);
-                url += query;
-                url_ = new URL(url);
+            payload = appendCustomParameters(customParameters, payload);
 
-                try (CloseableHttpClient httpClient = (CloseableHttpClient) APIUtil
-                        .getHttpClient(url_.getPort(), url_.getProtocol())) {
-                    HttpGet httpGet = new HttpGet(url);
-                    // Set authorization header
-                    httpGet.setHeader(AUTHORIZATION_HEADER, "Basic " + credentials);
-                    httpGet.setHeader(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
+            httpPost.setEntity(new StringEntity(payload.toString()));
 
-                    try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-                        return getTokenResponse(response);
-                    }
-                }
+            try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
+                return getTokenResponse(response);
+            } finally {
+                httpPost.releaseConnection();
             }
         }
-        return null;
     }
 
     private static StringBuilder appendCustomParameters(JSONObject customParameters, StringBuilder string) {
