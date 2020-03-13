@@ -262,13 +262,12 @@ function EndpointSecurity(props) {
         let tmpSecurity = {};
         if (securityInfo !== null) {
             const {
-                type, username, password, grantType, httpMethod, tokenUrl, apiKey, apiSecret, customParameters,
+                type, username, password, grantType, tokenUrl, apiKey, apiSecret, customParameters,
             } = securityInfo;
             tmpSecurity.type = type;
             tmpSecurity.username = username;
             tmpSecurity.password = password === '' ? '**********' : password;
             tmpSecurity.grantType = grantType;
-            tmpSecurity.httpMethod = httpMethod;
             tmpSecurity.tokenUrl = tokenUrl;
             tmpSecurity.apiKey = apiKey;
             tmpSecurity.apiSecret = apiSecret;
@@ -363,7 +362,7 @@ function EndpointSecurity(props) {
                         {(endpointSecurityInfo.grantType === 'CLIENT_CREDENTIALS'
                         || endpointSecurityInfo.grantType === 'PASSWORD') && (
                             <>
-                                <Grid item xs={6}>
+                                {/* <Grid item xs={6}>
                                     <FormControl className={classes.FormControl}>
                                         <FormLabel component='legend'>HTTP Method: </FormLabel>
                                         <RadioGroup
@@ -403,7 +402,7 @@ function EndpointSecurity(props) {
                                             />
                                         </RadioGroup>
                                     </FormControl>
-                                </Grid>
+                                </Grid> */}
 
                                 <Grid item xs={6}>
                                     <TextField
@@ -443,8 +442,6 @@ function EndpointSecurity(props) {
                                         onBlur={() => validateAndUpdateSecurityInfo('tokenUrl')}
                                     />
                                 </Grid>
-
-                                <Grid item xs={6} />
 
                                 <Grid item xs={6}>
                                     <TextField

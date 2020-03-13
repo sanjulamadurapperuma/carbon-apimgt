@@ -1601,6 +1601,7 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
     }
 
     private void updateEndpointSecurity(API oldApi, API api) throws APIManagementException {
+        // TODO - Check if there has to be checks for oauth in the first if statement as well
         try {
             if (api.isEndpointSecured() && StringUtils.isBlank(api.getEndpointUTPassword()) &&
                     !StringUtils.isBlank(oldApi.getEndpointUTPassword())) {
@@ -1609,6 +1610,17 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                 }
                 api.setEndpointUTUsername(oldApi.getEndpointUTUsername());
                 api.setEndpointUTPassword(oldApi.getEndpointUTPassword());
+
+                // TODO - Check validity of the following
+
+                if (api.isEndpointOAuth()) {
+                    api.setGrantType(oldApi.getGrantType());
+                    api.setTokenUrl(oldApi.getTokenUrl());
+                    api.setApiKey(oldApi.getApiKey());
+                    api.setApiSecret(oldApi.getApiSecret());
+                    api.setCustomParameters(oldApi.getCustomParameters());
+                }
+
                 if (log.isDebugEnabled()) {
                     log.debug("Using the previous username and password for endpoint security");
                 }
@@ -1636,6 +1648,13 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                                         StringUtils.isBlank(endpointSecurity.getPassword())) {
                                     endpointSecurity.setUsername(oldEndpointSecurity.getUsername());
                                     endpointSecurity.setPassword(oldEndpointSecurity.getPassword());
+                                    if (endpointSecurity.getType().equals(APIConstants.ENDPOINT_SECURITY_TYPE_OAUTH)) {
+                                        endpointSecurity.setGrantType(oldEndpointSecurity.getGrantType());
+                                        endpointSecurity.setTokenUrl(oldEndpointSecurity.getTokenUrl());
+                                        endpointSecurity.setApiKey(oldEndpointSecurity.getApiKey());
+                                        endpointSecurity.setApiSecret(oldEndpointSecurity.getApiSecret());
+                                        endpointSecurity.setCustomParameters(oldEndpointSecurity.getCustomParameters());
+                                    }
                                 }
                                 endpointSecurityJson.replace(APIConstants.ENDPOINT_SECURITY_PRODUCTION, new JSONParser()
                                         .parse(new ObjectMapper().writeValueAsString(endpointSecurity)));
@@ -1653,6 +1672,13 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                                         StringUtils.isBlank(endpointSecurity.getPassword())) {
                                     endpointSecurity.setUsername(oldEndpointSecurity.getUsername());
                                     endpointSecurity.setPassword(oldEndpointSecurity.getPassword());
+                                    if (endpointSecurity.getType().equals(APIConstants.ENDPOINT_SECURITY_TYPE_OAUTH)) {
+                                        endpointSecurity.setGrantType(oldEndpointSecurity.getGrantType());
+                                        endpointSecurity.setTokenUrl(oldEndpointSecurity.getTokenUrl());
+                                        endpointSecurity.setApiKey(oldEndpointSecurity.getApiKey());
+                                        endpointSecurity.setApiSecret(oldEndpointSecurity.getApiSecret());
+                                        endpointSecurity.setCustomParameters(oldEndpointSecurity.getCustomParameters());
+                                    }
                                 }
                                 endpointSecurityJson.replace(APIConstants.ENDPOINT_SECURITY_SANDBOX,
                                         new JSONParser()

@@ -730,7 +730,6 @@ public class APIMappingUtil {
                 api.setEndpointAuthDigest(true);
             } else if (APIEndpointSecurityDTO.TypeEnum.OAUTH.equals(securityDTO.getType())) {
                 api.setEndpointOAuth(true);
-                api.setHttpMethod(securityDTO.getHttpMethod());
                 api.setGrantType(securityDTO.getGrantType());
                 api.setTokenUrl(securityDTO.getTokenUrl());
                 api.setApiKey(securityDTO.getApiKey());
@@ -1112,7 +1111,6 @@ public class APIMappingUtil {
                     } else {
                         securityDTO.setPassword(""); //Do not expose password
                     }
-                    securityDTO.setHttpMethod(api.getHttpMethod());
                     securityDTO.setTokenUrl(api.getTokenUrl());
                     securityDTO.setApiKey(new String(cryptoUtil.base64DecodeAndDecrypt(api.getApiKey())));
                     securityDTO.setApiSecret(new String(cryptoUtil.base64DecodeAndDecrypt(api.getApiSecret())));
@@ -2618,6 +2616,11 @@ public class APIMappingUtil {
                     (JSONObject) endpointSecurityElement.get(APIConstants.ENDPOINT_SECURITY_SANDBOX);
             if (sandboxEndpointSecurity.get(APIConstants.ENDPOINT_SECURITY_PASSWORD) != null){
                 sandboxEndpointSecurity.put(APIConstants.ENDPOINT_SECURITY_PASSWORD,"");
+//                if (sandboxEndpointSecurity.get(APIConstants.ENDPOINT_SECURITY_TYPE)
+//                        .equals(APIConstants.ENDPOINT_SECURITY_TYPE_OAUTH)) {
+//                    sandboxEndpointSecurity.put(APIConstants.ENDPOINT_SECURITY_API_KEY, "");
+//                    sandboxEndpointSecurity.put(APIConstants.ENDPOINT_SECURITY_API_SECRET, "");
+//                }
             }
         }
         if (endpointSecurityElement.get(APIConstants.ENDPOINT_SECURITY_PRODUCTION) != null) {
@@ -2625,6 +2628,11 @@ public class APIMappingUtil {
                     (JSONObject) endpointSecurityElement.get(APIConstants.ENDPOINT_SECURITY_PRODUCTION);
             if (productionEndpointSecurity.get(APIConstants.ENDPOINT_SECURITY_PASSWORD) != null) {
                 productionEndpointSecurity.put(APIConstants.ENDPOINT_SECURITY_PASSWORD, "");
+//                if (productionEndpointSecurity.get(APIConstants.ENDPOINT_SECURITY_TYPE)
+//                        .equals(APIConstants.ENDPOINT_SECURITY_TYPE_OAUTH)) {
+//                    productionEndpointSecurity.put(APIConstants.ENDPOINT_SECURITY_API_KEY, "");
+//                    productionEndpointSecurity.put(APIConstants.ENDPOINT_SECURITY_API_SECRET, "");
+//                }
             }
         }
         return endpointSecurityElement;

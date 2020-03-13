@@ -17,6 +17,8 @@
  */
 package org.wso2.carbon.apimgt.api.model;
 
+import org.json.simple.JSONObject;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,6 +31,16 @@ public class EndpointSecurity {
     private boolean enabled = false;
 
     private String username = null;
+
+    private String grantType = null;
+
+    private String tokenUrl = null;
+
+    private String apiKey = null;
+
+    private String apiSecret = null;
+
+    private String customParameters = null;
 
     private Map additionalProperties = new HashMap();
 
@@ -72,6 +84,46 @@ public class EndpointSecurity {
         this.username = username;
     }
 
+    public String getGrantType() {
+        return grantType;
+    }
+
+    public void setGrantType(String grantType) {
+        this.grantType = grantType;
+    }
+
+    public String getTokenUrl() {
+        return tokenUrl;
+    }
+
+    public void setTokenUrl(String tokenUrl) {
+        this.tokenUrl = tokenUrl;
+    }
+
+    public String getApiKey() {
+        return apiKey;
+    }
+
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
+    }
+
+    public String getApiSecret() {
+        return apiSecret;
+    }
+
+    public void setApiSecret(String apiSecret) {
+        this.apiSecret = apiSecret;
+    }
+
+    public String getCustomParameters() {
+        return customParameters;
+    }
+
+    public void setCustomParameters(String customParameters) {
+        this.customParameters = customParameters;
+    }
+
     public Map getAdditionalProperties() {
 
         return additionalProperties;
@@ -84,11 +136,9 @@ public class EndpointSecurity {
 
     @Override
     public String toString() {
-
-        return "EndpointSecurity{" +
-                "type='" + type + '\'' +
-                ", enabled=" + enabled +
-                ", username='" + username + '\'' +
-                '}';
+        return "EndpointSecurity{" + "password='" + password + '\'' + ", type='" + type + '\'' + ", enabled=" + enabled
+                + ", username='" + username + '\'' + ", grantType='" + grantType + '\'' + ", tokenUrl='" + tokenUrl
+                + '\'' + ", apiKey='" + apiKey + '\'' + ", apiSecret='" + apiSecret + '\'' + ", customParameters="
+                + customParameters + ", additionalProperties=" + additionalProperties + '}';
     }
 }
