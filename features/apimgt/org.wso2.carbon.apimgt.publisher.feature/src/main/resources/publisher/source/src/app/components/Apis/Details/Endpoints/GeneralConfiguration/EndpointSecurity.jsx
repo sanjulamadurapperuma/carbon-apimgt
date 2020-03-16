@@ -23,17 +23,11 @@ import { isRestricted } from 'AppData/AuthManager';
 import APIContext from 'AppComponents/Apis/Details/components/ApiContext';
 import APIValidation from 'AppData/APIValidation';
 import Button from '@material-ui/core/Button';
-import FormControl from '@material-ui/core/FormControl';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
-import FormLabel from '@material-ui/core/FormLabel';
-import Radio from '@material-ui/core/Radio';
-import RadioGroup from '@material-ui/core/RadioGroup';
 import { withStyles } from '@material-ui/core/styles';
 import AddCircle from '@material-ui/icons/AddCircle';
 import isEmpty from 'lodash.isempty';
 import Table from '@material-ui/core/Table';
 import TableHead from '@material-ui/core/TableHead';
-
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
@@ -89,11 +83,7 @@ function EndpointSecurity(props) {
     });
 
     const [securityValidity, setSecurityValidity] = useState();
-    // TODO - Remove this if not needed
     // TODO - Change this to optionalParameters or additionalParameters
-    // TODO - Replace the curly braces with json object from api/endpointsecurity properties
-    // const payload = cloneDeep(Object.prototype.hasOwnProperty.call(endpointSecurityInfo, 'customParameters')
-    // ? endpointSecurityInfo.customParameters : {});
     const payload = cloneDeep(endpointSecurityInfo.customParameters !== null
         ? endpointSecurityInfo.customParameters : {});
     const [optionalPayload, setOptionalPayload] = useState({});
@@ -102,13 +92,8 @@ function EndpointSecurity(props) {
     const [showAddParameter, setShowAddParameter] = useState(false);
     const [parameterName, setParameterName] = useState(null);
     const [parameterValue, setParameterValue] = useState(null);
-    // TODO - Remove unused constants
-    const [updating, setUpdating] = useState(false);
     const [editing, setEditing] = useState(false);
     const [isOptionalParametersStale, setIsOptionalParametersStale] = useState(false);
-    // TODO - The following is not being used, remove if not needed
-    const iff = (condition, then, otherwise) => (condition ? then : otherwise);
-
     useEffect(() => {
         if (payload !== null || payload !== undefined) {
             setOptionalPayload(payload);
@@ -135,11 +120,6 @@ function EndpointSecurity(props) {
         } else {
             return false;
         }
-    };
-
-    const handleSubmit = () => {
-        setUpdating(true);
-        // TODO - Remove if not needed
     };
 
     const handleDelete = (optionalParameters, oldName) => {
@@ -362,48 +342,6 @@ function EndpointSecurity(props) {
                         {(endpointSecurityInfo.grantType === 'CLIENT_CREDENTIALS'
                         || endpointSecurityInfo.grantType === 'PASSWORD') && (
                             <>
-                                {/* <Grid item xs={6}>
-                                    <FormControl className={classes.FormControl}>
-                                        <FormLabel component='legend'>HTTP Method: </FormLabel>
-                                        <RadioGroup
-                                            aria-label='HTTP Method'
-                                            name='httpMethod'
-                                            className={classes.radioWrapper}
-                                            value={endpointSecurityInfo.httpMethod}
-                                            onClick={(event) => setEndpointSecurityInfo(
-                                                { ...endpointSecurityInfo, httpMethod: event.target.value },
-                                            )}
-                                            onBlur={() => validateAndUpdateSecurityInfo('httpMethod')}
-                                        >
-                                            <FormControlLabel
-                                                control={<Radio color='primary' />}
-                                                value='get'
-                                                label={(
-                                                    <FormattedMessage
-                                                        id={'Apis.Details.Endpoints.GeneralConfiguration'
-                                                        + '.EndpointSecurity.Get'}
-                                                        defaultMessage='GET'
-                                                    />
-                                                )}
-                                                className={classes.radioGroup}
-                                            />
-                                            <FormControlLabel
-                                                control={(<Radio color='primary' />)}
-                                                value='post'
-                                                label={(
-                                                    <FormattedMessage
-                                                        id={'Apis.Details.Endpoints.GeneralConfiguration'
-                                                        + '.EndpointSecurity.Post'}
-                                                        defaultMessage='POST'
-                                                    />
-                                                )}
-                                                className={classes.radioGroup}
-                                                defaultChecked
-                                            />
-                                        </RadioGroup>
-                                    </FormControl>
-                                </Grid> */}
-
                                 <Grid item xs={6}>
                                     <TextField
                                         disabled={isRestricted(['apim:api_create'], api)}
