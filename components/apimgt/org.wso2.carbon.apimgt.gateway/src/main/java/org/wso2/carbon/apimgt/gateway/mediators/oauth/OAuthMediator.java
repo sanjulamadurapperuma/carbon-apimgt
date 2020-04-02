@@ -53,7 +53,6 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
     public static final ScheduledExecutorService executorService;
     public static final int DEFAULT_TOKEN_REFRESH_INTERVAL = 20;
 
-
     static {
          executorService = new ScheduledThreadPoolExecutor(5);
     }
@@ -85,6 +84,7 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             String apiSecret = (String) messageContext.getProperty(OAuthConstants.OAUTH_API_SECRET);
             String grantType = (String) messageContext.getProperty(OAuthConstants.GRANT_TYPE);
             String customParametersString = (String) messageContext.getProperty(OAuthConstants.OAUTH_CUSTOM_PARAMETERS);
+
             JSONParser parser = new JSONParser();
             JSONObject customParameters = (JSONObject) parser.parse(customParametersString);
 
@@ -130,6 +130,8 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
                     TokenGeneratorScheduledExecutor scheduledExecutor =
                             new TokenGeneratorScheduledExecutor(executorService);
                     scheduledExecutor.schedule(oAuthEndpoint);
+                    // Thread sleep to allow enough time for Token to be added to TokenCache
+                    Thread.sleep(1000);
                 } catch(Exception e) {
                     log.error("Could not generate access token...", e);
                 }
