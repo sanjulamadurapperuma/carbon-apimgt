@@ -1601,7 +1601,6 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
     }
 
     private void updateEndpointSecurity(API oldApi, API api) throws APIManagementException {
-        // TODO - Check if there has to be checks for oauth in the first if statement as well
         try {
             if (api.isEndpointSecured() && StringUtils.isBlank(api.getEndpointUTPassword()) &&
                     !StringUtils.isBlank(oldApi.getEndpointUTPassword())) {
@@ -1610,8 +1609,6 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                 }
                 api.setEndpointUTUsername(oldApi.getEndpointUTUsername());
                 api.setEndpointUTPassword(oldApi.getEndpointUTPassword());
-
-                // TODO - Check validity of the following
 
                 if (api.isEndpointOAuth()) {
                     api.setGrantType(oldApi.getGrantType());

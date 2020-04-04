@@ -113,7 +113,11 @@ public class SecurityConfigContext extends ConfigContextDecorator {
                     endpointSecurityModel.setTokenUrl(api.getTokenUrl());
                     endpointSecurityModel.setApiKey(api.getApiKey());
                     endpointSecurityModel.setApiSecret(api.getApiSecret());
-                    endpointSecurityModel.setCustomParameters(api.getCustomParameters().toString());
+                    if (api.getCustomParameters() != null) {
+                        endpointSecurityModel.setCustomParameters(api.getCustomParameters().toString());
+                    } else {
+                        endpointSecurityModel.setCustomParameters("");
+                    }
                 } else {
                     endpointSecurityModel.setType(APIConstants.ENDPOINT_SECURITY_TYPE_BASIC);
                 }
