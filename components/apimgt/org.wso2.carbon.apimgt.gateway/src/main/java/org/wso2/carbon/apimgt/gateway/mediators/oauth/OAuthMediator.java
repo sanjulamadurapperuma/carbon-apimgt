@@ -86,7 +86,10 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             String customParametersString = (String) messageContext.getProperty(OAuthConstants.OAUTH_CUSTOM_PARAMETERS);
 
             JSONParser parser = new JSONParser();
-            JSONObject customParameters = (JSONObject) parser.parse(customParametersString);
+            JSONObject customParameters = null;
+            if (customParametersString != null && !customParametersString.equals("")) {
+                customParameters = (JSONObject) parser.parse(customParametersString);
+            }
 
             if (grantType.equals("PASSWORD")) {
                 String usernamePassword;

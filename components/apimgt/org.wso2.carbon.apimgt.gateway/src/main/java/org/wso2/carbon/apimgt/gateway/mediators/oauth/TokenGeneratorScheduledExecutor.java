@@ -36,7 +36,7 @@ public class TokenGeneratorScheduledExecutor {
                         long currentTimeInSeconds = System.currentTimeMillis() / 1000;
                         long timeDifference = validTill - currentTimeInSeconds;
 
-                        if (timeDifference <= 0) {
+                        if (timeDifference <= 1) {
                             generateToken(oAuthEndpoint);
                         }
                     } else {

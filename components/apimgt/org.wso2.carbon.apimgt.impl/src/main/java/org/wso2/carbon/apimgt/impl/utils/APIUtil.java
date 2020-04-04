@@ -10392,7 +10392,11 @@ public final class APIUtil {
                     productionEndpointSecurity.setTokenUrl(api.getTokenUrl());
                     productionEndpointSecurity.setApiKey(api.getApiKey());
                     productionEndpointSecurity.setApiSecret(api.getApiSecret());
-                    productionEndpointSecurity.setCustomParameters(api.getCustomParameters().toString());
+                    if (api.getCustomParameters() != null) {
+                        productionEndpointSecurity.setCustomParameters(api.getCustomParameters().toString());
+                    } else {
+                        productionEndpointSecurity.setCustomParameters("");
+                    }
                 } else {
                     productionEndpointSecurity.setType(APIConstants.ENDPOINT_SECURITY_TYPE_BASIC.toUpperCase());
                 }
