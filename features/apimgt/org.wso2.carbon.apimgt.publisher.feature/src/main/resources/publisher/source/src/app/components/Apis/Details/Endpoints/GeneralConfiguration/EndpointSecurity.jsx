@@ -66,9 +66,8 @@ const styles = () => ({
 function EndpointSecurity(props) {
     const { api } = useContext(APIContext);
     const {
-        intl, securityInfo, onChangeEndpointAuth, classes,
+        intl, securityInfo, onChangeEndpointAuth, classes, isProduction,
     } = props;
-
     const [endpointSecurityInfo, setEndpointSecurityInfo] = useState({
         type: 'BASIC',
         username: '',
@@ -238,10 +237,12 @@ function EndpointSecurity(props) {
         },
     ];
     useEffect(() => {
-        const tmpSecurity = {};
+        let tmpSecurity = {};
         if (securityInfo !== null) {
+            tmpSecurity = { ...securityInfo };
             const {
-                type, username, password, grantType, tokenUrl, apiKey, apiSecret, customParameters,
+                type, username, password, grantType, tokenUrl,
+                apiKey, apiSecret, customParameters,
             } = securityInfo;
             tmpSecurity.type = type;
             tmpSecurity.username = username;
@@ -255,27 +256,26 @@ function EndpointSecurity(props) {
         setEndpointSecurityInfo(tmpSecurity);
     }, [props]);
 
-    const validateTokenURL = (value) => {
-        const state = APIValidation.url.required().validate(value).error;
-        // state 'null' means the URL is valid.
-        if (state === null) {
-            return true;
-        } else {
-            return false;
-        }
-    };
 
     const validateAndUpdateSecurityInfo = (field) => {
         if (!endpointSecurityInfo[field]) {
             setSecurityValidity({ ...securityValidity, [field]: false });
         } else {
-            let validity = true;
-            if (field === 'tokenUrl') {
-                validity = validateTokenURL(endpointSecurityInfo[field]);
-            }
-            setSecurityValidity({ ...securityValidity, [field]: validity });
+            setSecurityValidity({ ...securityValidity, [field]: true });
         }
-        onChangeEndpointAuth(endpointSecurityInfo[field], field);
+        const type = isProduction ? 'production' : 'sandbox';
+        onChangeEndpointAuth(endpointSecurityInfo, type);
+    };
+
+    const validateTokenURL = () => {
+        // const state = APIValidation.url.required().validate(value).error;
+        // state 'null' means the URL is valid.
+        // if (state === null) {
+        //     setSecurityValidity({ ...securityValidity, ['tokenUrl']: true});
+        // } else {
+        //     setSecurityValidity({ ...securityValidity, ['tokenUrl']: false});
+        // }
+        validateAndUpdateSecurityInfo(isProduction);
     };
 
     return (
@@ -286,15 +286,19 @@ function EndpointSecurity(props) {
                         disabled={isRestricted(['apim:api_create'], api)}
                         fullWidth
                         select
-                        value={endpointSecurityInfo.type}
+                        value={endpointSecurityInfo && endpointSecurityInfo.type}
                         variant='outlined'
                         onChange={(event) => {
-                            onChangeEndpointAuth(event.target.value, 'type');
+                            setEndpointSecurityInfo({
+                                ...endpointSecurityInfo,
+                                type: event.target.value,
+                            });
                         }}
                         inputProps={{
                             name: 'key',
                             id: 'auth-type-select',
                         }}
+                        onBlur={() => validateAndUpdateSecurityInfo(isProduction)}
                     >
                         {authTypes.map((type) => (
                             <MenuItem value={type.key}>{type.value}</MenuItem>
@@ -375,7 +379,7 @@ function EndpointSecurity(props) {
                                             { ...endpointSecurityInfo, tokenUrl: event.target.value },
                                         )}
                                         value={endpointSecurityInfo.tokenUrl}
-                                        onBlur={() => validateAndUpdateSecurityInfo('tokenUrl')}
+                                        onBlur={() => validateTokenURL()}
                                     />
                                 </Grid>
 
@@ -497,7 +501,7 @@ function EndpointSecurity(props) {
                                     { ...endpointSecurityInfo, username: event.target.value },
                                 )}
                                 value={endpointSecurityInfo.username}
-                                onBlur={() => validateAndUpdateSecurityInfo('username')}
+                                onBlur={() => validateAndUpdateSecurityInfo(isProduction)}
                             />
                         </Grid>
 
@@ -535,7 +539,7 @@ function EndpointSecurity(props) {
                                 onChange={(event) => setEndpointSecurityInfo(
                                     { ...endpointSecurityInfo, password: event.target.value },
                                 )}
-                                onBlur={() => validateAndUpdateSecurityInfo('password')}
+                                onBlur={() => validateAndUpdateSecurityInfo(isProduction)}
                             />
                         </Grid>
                     </>

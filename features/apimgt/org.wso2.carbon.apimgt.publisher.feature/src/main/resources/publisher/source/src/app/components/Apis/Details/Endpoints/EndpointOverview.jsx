@@ -148,6 +148,20 @@ function EndpointOverview(props) {
     });
     const [endpointCategory, setEndpointCategory] = useState({ sandbox: false, prod: false });
     const [typeChangeConfirmation, setTypeChangeConfirmation] = useState({ openDialog: false });
+    const endpointSecurityInformation = {
+        production: {
+            enabled: false,
+            type: 'BASIC',
+            username: '',
+            password: '',
+        },
+        sandbox: {
+            enabled: false,
+            type: 'BASIC',
+            username: '',
+            password: '',
+        },
+    };
 
     /**
      * Method to get the type of the endpoint. (HTTP/REST or HTTP/SOAP)
@@ -234,7 +248,11 @@ function EndpointOverview(props) {
         setSupportedEndpointType(supportedTypeLists);
         setEpConfig(endpointConfig);
         setEndpointType(epType);
-        setEndpointSecurityInfo(endpointSecurity);
+        if (endpointConfig.endpoint_security) {
+            setEndpointSecurityInfo(endpointConfig.endpoint_security);
+        } else {
+            setEndpointSecurityInfo(endpointSecurity);
+        }
     }, [props]);
 
     const getEndpoints = (type) => {
@@ -421,6 +439,7 @@ function EndpointOverview(props) {
     };
 
     /**
+<<<<<<< HEAD
      * Handles the endpoint security toggle action.
      * */
     const handleToggleEndpointSecurity = () => {
@@ -440,6 +459,8 @@ function EndpointOverview(props) {
     };
 
     /**
+=======
+>>>>>>> upstream/master
      * Method to get the advance configuration from the selected endpoint.
      *
      * @param {number} index The selected endpoint index
@@ -493,10 +514,10 @@ function EndpointOverview(props) {
      * @param {string} value The value
      * @param {string} field The security propety that is being modified.
      * */
-    const handleEndpointSecurityChange = (value, field) => {
+    const handleEndpointSecurityChange = (value, type) => {
         endpointsDispatcher({
             action: 'endpointSecurity',
-            value: { ...endpointSecurityInfo, [field]: value },
+            value: { ...endpointSecurityInfo, [type]: value },
         });
     };
 
@@ -871,9 +892,11 @@ function EndpointOverview(props) {
                             <GeneralConfiguration
                                 epConfig={(cloneDeep(epConfig))}
                                 endpointSecurityInfo={endpointSecurityInfo}
-                                handleToggleEndpointSecurity={handleToggleEndpointSecurity}
+                                setEndpointSecurityInfo={setEndpointSecurityInfo}
                                 handleEndpointSecurityChange={handleEndpointSecurityChange}
                                 endpointType={endpointType}
+                                endpointsDispatcher={endpointsDispatcher}
+                                endpointSecurityInformation={endpointSecurityInformation}
                             />
                         </Grid>
                     )}
