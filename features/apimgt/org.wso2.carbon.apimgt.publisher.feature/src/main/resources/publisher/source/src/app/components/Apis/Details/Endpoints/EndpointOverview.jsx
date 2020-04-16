@@ -439,28 +439,6 @@ function EndpointOverview(props) {
     };
 
     /**
-<<<<<<< HEAD
-     * Handles the endpoint security toggle action.
-     * */
-    const handleToggleEndpointSecurity = () => {
-        const tmpSecurityInfo = endpointSecurityInfo === null
-            ? {
-                type: 'BASIC',
-                username: null,
-                password: null,
-                grantType: null,
-                tokenUrl: null,
-                apiKey: null,
-                apiSecret: null,
-                customParameters: null,
-            } : null;
-        setEndpointSecurityInfo(tmpSecurityInfo);
-        endpointsDispatcher({ action: 'endpointSecurity', value: tmpSecurityInfo });
-    };
-
-    /**
-=======
->>>>>>> upstream/master
      * Method to get the advance configuration from the selected endpoint.
      *
      * @param {number} index The selected endpoint index
