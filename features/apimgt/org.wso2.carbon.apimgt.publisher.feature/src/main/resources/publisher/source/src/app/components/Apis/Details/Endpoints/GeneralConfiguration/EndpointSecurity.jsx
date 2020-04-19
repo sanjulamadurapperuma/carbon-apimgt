@@ -74,11 +74,10 @@ function EndpointSecurity(props) {
         type: 'BASIC',
         username: '',
         password: '',
+        grantType: '',
         tokenUrl: '',
-        httpMethod: 'post',
         apiKey: '',
         apiSecret: '',
-        grantType: '',
         customParameters: {},
     });
 
@@ -276,8 +275,31 @@ function EndpointSecurity(props) {
             }
             setSecurityValidity({ ...securityValidity, [field]: validity });
         }
+        // if (!endpointSecurityInfo[field]) {
+        //     setSecurityValidity({ ...securityValidity, [field]: false });
+        // } else {
+        //     let validity = true;
+        //     if (field === 'tokenUrl') {
+        //         validity = validateTokenURL(endpointSecurityInfo[field]);
+        //     }
+        //     setSecurityValidity({ ...securityValidity, [field]: validity });
+        // }
         const type = isProduction ? 'production' : 'sandbox';
         onChangeEndpointAuth(endpointSecurityInfo, type);
+    };
+
+
+    const validateTokenURL = (value) => {
+        // const state = APIValidation.url.required().validate(value).error;
+        // state 'null' means the URL is valid.
+        // if (state === null) {
+        // setSecurityValidity({ ...securityValidity, ['tokenUrl']: true});
+        // return true;
+        // } else {
+        // setSecurityValidity({ ...securityValidity, ['tokenUrl']: false});
+        // return true;
+        // }
+        validateAndUpdateSecurityInfo('tokenUrl');
     };
 
     return (
@@ -297,6 +319,7 @@ function EndpointSecurity(props) {
                             name: 'key',
                             id: 'auth-type-select',
                         }}
+                        // onBlur={() => validateAndUpdateSecurityInfo('isProduction')}
                     >
                         {authTypes.map((type) => (
                             <MenuItem value={type.key}>{type.value}</MenuItem>

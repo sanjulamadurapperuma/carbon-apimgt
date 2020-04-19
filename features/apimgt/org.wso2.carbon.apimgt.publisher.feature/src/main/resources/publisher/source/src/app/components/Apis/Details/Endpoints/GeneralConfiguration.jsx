@@ -105,10 +105,26 @@ function GeneralConfiguration(props) {
         setState({ ...state, [name]: event.target.checked });
         const tmpSecurityInfo = endpointSecurityInfo === null ? {
             production: {
-                enabled: state[name], type: 'BASIC', username: null, password: null,
+                enabled: state[name],
+                type: 'BASIC',
+                username: null,
+                password: null,
+                grantType: null,
+                tokenUrl: null,
+                apiKey: null,
+                apiSecret: null,
+                customParameters: null,
             },
             sandbox: {
-                enabled: state[name], type: 'BASIC', username: null, password: null,
+                enabled: state[name],
+                type: 'BASIC',
+                username: null,
+                password: null,
+                grantType: null,
+                tokenUrl: null,
+                apiKey: null,
+                apiSecret: null,
+                customParameters: null,
             },
         } : endpointSecurityInfo;
         setEndpointSecurityInfo(tmpSecurityInfo);

@@ -154,12 +154,22 @@ function EndpointOverview(props) {
             type: 'BASIC',
             username: '',
             password: '',
+            grantType: '',
+            tokenUrl: '',
+            apiKey: '',
+            apiSecret: '',
+            customParameters: {},
         },
         sandbox: {
             enabled: false,
             type: 'BASIC',
             username: '',
             password: '',
+            grantType: '',
+            tokenUrl: '',
+            apiKey: '',
+            apiSecret: '',
+            customParameters: {},
         },
     };
 
