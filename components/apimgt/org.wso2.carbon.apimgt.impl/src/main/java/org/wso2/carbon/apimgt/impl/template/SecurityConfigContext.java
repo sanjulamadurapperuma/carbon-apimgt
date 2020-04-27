@@ -132,7 +132,7 @@ public class SecurityConfigContext extends ConfigContextDecorator {
                     if (productionEndpointSecurity != null) {
                         EndpointSecurityModel endpointSecurityModel = new ObjectMapper()
                                 .convertValue(productionEndpointSecurity, EndpointSecurityModel.class);
-                        if (endpointSecurityModel != null) {
+                        if (endpointSecurityModel != null && endpointSecurityModel.isEnabled()) {
                             endpointSecurityModel.setBase64EncodedPassword(new String(Base64.encodeBase64(
                                     endpointSecurityModel.getUsername().concat(":")
                                             .concat(endpointSecurityModel.getPassword()).getBytes())));
@@ -145,7 +145,7 @@ public class SecurityConfigContext extends ConfigContextDecorator {
                     if (sandboxEndpointSecurity != null) {
                         EndpointSecurityModel endpointSecurityModel = new ObjectMapper()
                                 .convertValue(sandboxEndpointSecurity, EndpointSecurityModel.class);
-                        if (endpointSecurityModel != null) {
+                        if (endpointSecurityModel != null && endpointSecurityModel.isEnabled()) {
                             endpointSecurityModel.setBase64EncodedPassword(new String(Base64.encodeBase64(
                                     endpointSecurityModel.getUsername().concat(":")
                                             .concat(endpointSecurityModel.getPassword()).getBytes())));
