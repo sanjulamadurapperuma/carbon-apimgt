@@ -40,7 +40,7 @@ const useStyles = makeStyles(() => ({
 function EditableParameterRow(props) {
     const {
         oldName, oldValue,
-        handleUpdateList, handleDelete, optionalParameters,
+        handleUpdateList, handleDelete, customParameters,
         intl, setEditing, isRestricted, api,
     } = props;
     const [newName, setName] = useState(oldName);
@@ -76,7 +76,7 @@ function EditableParameterRow(props) {
         setEditing(false);
     };
     const deleteRow = function () {
-        handleDelete(optionalParameters, oldName);
+        handleDelete(customParameters, oldName);
     };
     const handleKeyDown = function (e) {
         if (e.key === 'Enter') {

@@ -113,7 +113,7 @@ function GeneralConfiguration(props) {
                 tokenUrl: null,
                 apiKey: null,
                 apiSecret: null,
-                customParameters: null,
+                customParameters: {},
             },
             sandbox: {
                 enabled: state[name],
@@ -124,7 +124,7 @@ function GeneralConfiguration(props) {
                 tokenUrl: null,
                 apiKey: null,
                 apiSecret: null,
-                customParameters: null,
+                customParameters: {},
             },
         } : endpointSecurityInfo;
         setEndpointSecurityInfo(tmpSecurityInfo);
