@@ -85,7 +85,6 @@ function EndpointSecurity(props) {
     const [parameterName, setParameterName] = useState(null);
     const [parameterValue, setParameterValue] = useState(null);
     const [editing, setEditing] = useState(false);
-    const [isOptionalParametersStale, setIsOptionalParametersStale] = useState(false);
     const endpointType = isProduction ? 'production' : 'sandbox';
 
     const authTypes = [
@@ -195,8 +194,8 @@ function EndpointSecurity(props) {
     const handleAddToList = () => {
         const customParametersCopy = endpointSecurityInfo.customParameters;
 
-        if (customParametersCopy !== null &&
-            Object.prototype.hasOwnProperty.call(customParametersCopy, parameterName)) {
+        if (customParametersCopy !== null
+            && Object.prototype.hasOwnProperty.call(customParametersCopy, parameterName)) {
             Alert.warning('Parameter name: ' + parameterName + ' already exists');
         } else {
             customParametersCopy[parameterName] = parameterValue;
@@ -211,8 +210,8 @@ function EndpointSecurity(props) {
         const customParametersCopy = endpointSecurityInfo.customParameters;
         const { oldName, oldValue } = oldRow;
         const { newName, newValue } = newRow;
-        if (customParametersCopy !== null &&
-            Object.prototype.hasOwnProperty.call(customParametersCopy, newName) && oldName === newName) {
+        if (customParametersCopy !== null
+            && Object.prototype.hasOwnProperty.call(customParametersCopy, newName) && oldName === newName) {
             // Only the value is updated
             if (newValue && oldValue !== newValue) {
                 customParametersCopy[oldName] = oldValue;
