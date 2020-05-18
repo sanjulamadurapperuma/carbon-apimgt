@@ -1162,6 +1162,14 @@ public final class APIConstants {
         public static final String TOKEN_TYPE = "token_type";
         public static final String EXPIRES_IN = "expires_in";
 
+        // Properties in Endpoint Config
+        public static final String ENDPOINT_SECURITY_PRODUCTION = "production";
+        public static final String ENDPOINT_SECURITY_SANDBOX = "sandbox";
+        public static final String ENDPOINT_SECURITY_PASSWORD = "password";
+        public static final String ENDPOINT_SECURITY_TYPE = "type";
+        public static final String ENDPOINT_SECURITY_ENABLED = "enabled";
+        public static final String ENDPOINT_SECURITY_USERNAME = "username";
+
         // For configs
         public static final String OAUTH_ENDPOINT_SECURITY = "OAuthEndpointSecurity.";
         public static final String OAUTH_TOKEN_REFRESH_INTERVAL = OAUTH_ENDPOINT_SECURITY + "TokenRefreshInterval";

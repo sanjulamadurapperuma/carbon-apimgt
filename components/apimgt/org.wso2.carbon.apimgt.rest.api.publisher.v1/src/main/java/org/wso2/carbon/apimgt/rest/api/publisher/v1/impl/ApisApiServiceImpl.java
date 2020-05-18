@@ -26,6 +26,7 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.lambda.model.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import graphql.language.FieldDefinition;
@@ -590,26 +591,104 @@ public class ApisApiServiceImpl implements ApisApiService {
                     APIDTO.class.getAnnotationsByType(org.wso2.carbon.apimgt.rest.api.util.annotations.Scope.class);
             boolean hasClassLevelScope = checkClassScopeAnnotation(apiDtoClassAnnotatedScopes, tokenScopes);
 
+
+            LinkedHashMap endpointConfig = (LinkedHashMap) body.getEndpointConfig();
+
             // OAuth 2.0 backend protection: Api Key and Api Secret encryption while updating the API
-            if (body.getEndpointSecurity() != null) {
-                APIEndpointSecurityDTO endpointSecurity = body.getEndpointSecurity();
-                if (endpointSecurity.getType().compareTo(APIEndpointSecurityDTO.TypeEnum.OAUTH) == 0) {
-                    String apiKey = endpointSecurity.getApiKey();
-                    String apiSecret = endpointSecurity.getApiSecret();
-                    if (!StringUtils.isEmpty(apiKey) && !StringUtils.isEmpty(apiSecret)) {
-                        CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
-                        String encryptedApiKey = cryptoUtil.encryptAndBase64Encode(apiKey.getBytes());
-                        String encryptedApiSecret = cryptoUtil.encryptAndBase64Encode(apiSecret.getBytes());
-                        endpointSecurity.setApiKey(encryptedApiKey);
-                        endpointSecurity.setApiSecret(encryptedApiSecret);
-                        body.setEndpointSecurity(endpointSecurity);
+            if (endpointConfig != null) {
+                if ((endpointConfig.get(APIConstants.ENDPOINT_SECURITY) != null)) {
+                    LinkedHashMap endpointSecurity = (LinkedHashMap) endpointConfig.get(APIConstants.ENDPOINT_SECURITY);
+                    if (endpointSecurity.get(APIConstants.OAuthConstants.ENDPOINT_SECURITY_PRODUCTION) != null) {
+                        LinkedHashMap endpointSecurityProduction = (LinkedHashMap) endpointSecurity
+                                .get(APIConstants.OAuthConstants.ENDPOINT_SECURITY_PRODUCTION);
+                        String productionEndpointType = (String) endpointSecurityProduction
+                                .get(APIConstants.OAuthConstants.ENDPOINT_SECURITY_TYPE);
+
+                        // Change default value of customParameters JSONObject to String
+                        LinkedHashMap<String, String> customParametersHashMap = (LinkedHashMap<String, String>)
+                                endpointSecurityProduction.get(APIConstants
+                                        .OAuthConstants.OAUTH_CUSTOM_PARAMETERS);
+                        String customParametersString = JSONObject.toJSONString(customParametersHashMap);
+                        endpointSecurityProduction.put(APIConstants
+                                .OAuthConstants.OAUTH_CUSTOM_PARAMETERS, customParametersString);
+
+                        if (productionEndpointType.compareTo(APIConstants.OAuthConstants.OAUTH) == 0) {
+                            String apiKey = endpointSecurityProduction.get(APIConstants
+                                    .OAuthConstants.OAUTH_API_KEY).toString();
+                            String apiSecret = endpointSecurityProduction.get(APIConstants
+                                    .OAuthConstants.OAUTH_API_SECRET).toString();
+
+                            if (!StringUtils.isEmpty(apiKey) && !StringUtils.isEmpty(apiSecret)) {
+                                CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
+//                                String encryptedApiKey = cryptoUtil.encryptAndBase64Encode(apiKey.getBytes());
+//                                String encryptedApiSecret = cryptoUtil.encryptAndBase64Encode(apiSecret.getBytes());
+                                endpointSecurityProduction.put(APIConstants
+                                        .OAuthConstants.OAUTH_API_KEY, apiKey);
+                                endpointSecurityProduction.put(APIConstants
+                                        .OAuthConstants.OAUTH_API_SECRET, apiSecret);
+                            }
+                        }
+                        endpointSecurity.put(APIConstants
+                                .OAuthConstants.ENDPOINT_SECURITY_PRODUCTION, endpointSecurityProduction);
+                        endpointConfig.put(APIConstants.ENDPOINT_SECURITY, endpointSecurity);
+                        body.setEndpointConfig(endpointConfig);
+                    }
+                    if (endpointSecurity.get(APIConstants.OAuthConstants.ENDPOINT_SECURITY_SANDBOX) != null) {
+                        LinkedHashMap endpointSecuritySandbox = (LinkedHashMap) endpointSecurity
+                                .get(APIConstants.OAuthConstants.ENDPOINT_SECURITY_SANDBOX);
+                        String sandboxEndpointType = (String) endpointSecuritySandbox
+                                .get(APIConstants.OAuthConstants.ENDPOINT_SECURITY_TYPE);
+
+                        // Change default value of customParameters JSONObject to String
+                        LinkedHashMap<String, String> customParametersHashMap = (LinkedHashMap<String, String>)
+                                endpointSecuritySandbox.get(APIConstants
+                                        .OAuthConstants.OAUTH_CUSTOM_PARAMETERS);
+                        String customParametersString = JSONObject.toJSONString(customParametersHashMap);
+                        endpointSecuritySandbox.put(APIConstants
+                                .OAuthConstants.OAUTH_CUSTOM_PARAMETERS, customParametersString);
+
+                        if (sandboxEndpointType.compareTo(APIConstants.OAuthConstants.OAUTH) == 0) {
+                            String apiKey = endpointSecuritySandbox.get(APIConstants
+                                    .OAuthConstants.OAUTH_API_KEY).toString();
+                            String apiSecret = endpointSecuritySandbox.get(APIConstants
+                                    .OAuthConstants.OAUTH_API_SECRET).toString();
+
+                            if (!StringUtils.isEmpty(apiKey) && !StringUtils.isEmpty(apiSecret)) {
+                                // TODO - Solve encryption logic
+                                CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
+//                                String encryptedApiKey = cryptoUtil.encryptAndBase64Encode(apiKey.getBytes());
+//                                String encryptedApiSecret = cryptoUtil.encryptAndBase64Encode(apiSecret.getBytes());
+                                endpointSecuritySandbox.put(APIConstants
+                                        .OAuthConstants.OAUTH_API_KEY, apiKey);
+                                endpointSecuritySandbox.put(APIConstants
+                                        .OAuthConstants.OAUTH_API_SECRET, apiSecret);
+                            }
+                        }
+                        endpointSecurity.put(APIConstants
+                                .OAuthConstants.ENDPOINT_SECURITY_SANDBOX, endpointSecuritySandbox);
+                        endpointConfig.put(APIConstants.ENDPOINT_SECURITY, endpointSecurity);
+                        body.setEndpointConfig(endpointConfig);
                     }
                 }
+
+
+//                APIEndpointSecurityDTO endpointSecurity = body.getEndpointSecurity();
+//                if (endpointSecurity.getType().compareTo(APIEndpointSecurityDTO.TypeEnum.OAUTH) == 0) {
+//                    String apiKey = endpointSecurity.getApiKey();
+//                    String apiSecret = endpointSecurity.getApiSecret();
+//                    if (!StringUtils.isEmpty(apiKey) && !StringUtils.isEmpty(apiSecret)) {
+//                        CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
+//                        String encryptedApiKey = cryptoUtil.encryptAndBase64Encode(apiKey.getBytes());
+//                        String encryptedApiSecret = cryptoUtil.encryptAndBase64Encode(apiSecret.getBytes());
+//                        endpointSecurity.setApiKey(encryptedApiKey);
+//                        endpointSecurity.setApiSecret(encryptedApiSecret);
+//                        body.setEndpointSecurity(endpointSecurity);
+//                    }
+//                }
             }
 
             // AWS Lambda: secret key encryption while updating the API
             if (body.getEndpointConfig() != null) {
-                LinkedHashMap endpointConfig = (LinkedHashMap) body.getEndpointConfig();
                 if (endpointConfig.containsKey(APIConstants.AMZN_SECRET_KEY)) {
                     String secretKey = (String) endpointConfig.get(APIConstants.AMZN_SECRET_KEY);
                     if (!StringUtils.isEmpty(secretKey)) {

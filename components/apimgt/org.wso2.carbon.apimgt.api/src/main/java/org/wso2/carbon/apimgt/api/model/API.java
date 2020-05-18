@@ -97,7 +97,7 @@ public class API implements Serializable {
     private String tokenUrl;
     private String apiKey;
     private String apiSecret;
-    private JSONObject customParameters;
+    private String customParameters;
 
     private String transports;
     private String inSequence;
@@ -739,14 +739,14 @@ public class API implements Serializable {
     /**
      * @return the customParameters
      */
-    public JSONObject getCustomParameters() {
+    public String getCustomParameters() {
         return customParameters;
     }
 
     /**
      * @param customParameters the customParameters to set
      */
-    public void setCustomParameters(JSONObject customParameters) {
+    public void setCustomParameters(String customParameters) {
         this.customParameters = customParameters;
     }
 
