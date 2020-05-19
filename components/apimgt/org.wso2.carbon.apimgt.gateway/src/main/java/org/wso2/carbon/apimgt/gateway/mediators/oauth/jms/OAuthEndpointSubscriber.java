@@ -22,7 +22,7 @@ public class OAuthEndpointSubscriber implements OAuthMessageListener {
     public void onEventReceived(String type, OAuthEndpoint oAuthEndpoint) {
         if (TOPIC_OAUTH_ENDPOINT.equals(type)) {
             try {
-                TokenGeneratorScheduledExecutor.generateToken(oAuthEndpoint);
+                TokenGeneratorScheduledExecutor.generateToken(oAuthEndpoint, null);
             } catch (IOException e) {
                 log.error("Error occurred in HTTP client when trying to request for a token: ", e);
             } catch (APIManagementException e) {
