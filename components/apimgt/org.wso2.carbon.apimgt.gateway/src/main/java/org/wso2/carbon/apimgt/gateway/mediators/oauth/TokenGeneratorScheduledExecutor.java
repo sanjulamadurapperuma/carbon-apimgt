@@ -37,10 +37,14 @@ public class TokenGeneratorScheduledExecutor {
                         long timeDifference = validTill - currentTimeInSeconds;
 
                         if (timeDifference <= 1) {
-                            generateToken(oAuthEndpoint);
+                            if (previousResponse.getRefreshToken() != null) {
+                                generateToken(oAuthEndpoint, previousResponse.getRefreshToken());
+                            } else {
+                                generateToken(oAuthEndpoint, null);
+                            }
                         }
                     } else {
-                        generateToken(oAuthEndpoint);
+                        generateToken(oAuthEndpoint, null);
                     }
                 } catch (Exception e) {
                     log.error("Could not generate access token " + getEndpointId(oAuthEndpoint), e);
@@ -51,10 +55,12 @@ public class TokenGeneratorScheduledExecutor {
         }
     }
 
-    public static void generateToken(OAuthEndpoint oAuthEndpoint) throws IOException, APIManagementException {
+    public static void generateToken(OAuthEndpoint oAuthEndpoint, String refreshToken)
+            throws IOException, APIManagementException {
         TokenResponse tokenResponse = OAuthClient.generateToken(oAuthEndpoint.getTokenApiUrl(),
                 oAuthEndpoint.getApiKey(), oAuthEndpoint.getApiSecret(), oAuthEndpoint.getUsername(),
-                oAuthEndpoint.getPassword(), oAuthEndpoint.getGrantType(), oAuthEndpoint.getCustomParameters());
+                oAuthEndpoint.getPassword(), oAuthEndpoint.getGrantType(), oAuthEndpoint.getCustomParameters(),
+                refreshToken);
         assert tokenResponse != null;
         TokenCache.getInstance().getTokenMap().put(oAuthEndpoint.getId(), tokenResponse);
     }

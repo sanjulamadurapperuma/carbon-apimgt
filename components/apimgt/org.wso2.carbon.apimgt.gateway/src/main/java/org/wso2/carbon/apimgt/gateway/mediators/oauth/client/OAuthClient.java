@@ -46,9 +46,10 @@ public class OAuthClient {
     private static final String APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
     private static final String CLIENT_CRED_GRANT_TYPE = "grant_type=client_credentials";
     private static final String PASSWORD_GRANT_TYPE = "grant_type=password";
+    private static final String REFRESH_TOKEN_GRANT_TYPE = "grant_type=refresh_token";
 
     public static TokenResponse generateToken(String url, String apiKey, String apiSecret,
-            String username, String password, String grantType, JSONObject customParameters)
+            String username, String password, String grantType, JSONObject customParameters, String refreshToken)
             throws IOException, APIManagementException {
         if(log.isDebugEnabled()) {
             log.debug("Initializing token generation request: [token-endpoint] " + url);
@@ -65,7 +66,10 @@ public class OAuthClient {
             // Set authorization header
             httpPost.setHeader(AUTHORIZATION_HEADER, "Basic " + credentials);
             httpPost.setHeader(CONTENT_TYPE_HEADER, APPLICATION_X_WWW_FORM_URLENCODED);
-            if (grantType.equals(APIConstants.OAuthConstants.CLIENT_CREDENTIALS)) {
+            if (refreshToken != null) {
+                payload.append(REFRESH_TOKEN_GRANT_TYPE)
+                        .append("&refresh_token=").append(refreshToken);
+            } else if (grantType.equals(APIConstants.OAuthConstants.CLIENT_CREDENTIALS)) {
                 payload.append(CLIENT_CRED_GRANT_TYPE);
             } else if (grantType.equals(APIConstants.OAuthConstants.PASSWORD)) {
                 payload.append(PASSWORD_GRANT_TYPE + "&username=")
