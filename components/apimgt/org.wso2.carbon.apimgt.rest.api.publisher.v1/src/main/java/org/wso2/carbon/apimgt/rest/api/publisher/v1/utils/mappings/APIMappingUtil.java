@@ -809,9 +809,20 @@ public class APIMappingUtil {
                     if (endpointSecurity.get(APIConstants.OAuthConstants.ENDPOINT_SECURITY_PRODUCTION) != null) {
                         JSONObject productionEndpointSecurity = (JSONObject) endpointSecurity
                                 .get(APIConstants.OAuthConstants.ENDPOINT_SECURITY_PRODUCTION);
+                        String productionEndpointType = (String) productionEndpointSecurity
+                                .get(APIConstants.OAuthConstants.ENDPOINT_SECURITY_TYPE);
+
                         String customParametersString = (String) productionEndpointSecurity
                                 .get(APIConstants.OAuthConstants.OAUTH_CUSTOM_PARAMETERS);
                         JSONObject customParameters = (JSONObject) parser.parse(customParametersString);
+
+                        if (productionEndpointType.compareTo(APIConstants.OAuthConstants.OAUTH) == 0) {
+                            productionEndpointSecurity.put(APIConstants
+                                    .OAuthConstants.OAUTH_API_KEY, "");
+                            productionEndpointSecurity.put(APIConstants
+                                    .OAuthConstants.OAUTH_API_SECRET, "");
+                        }
+
                         productionEndpointSecurity.put(
                                 APIConstants.OAuthConstants.OAUTH_CUSTOM_PARAMETERS, customParameters);
                         endpointSecurity.put(APIConstants.OAuthConstants.ENDPOINT_SECURITY_PRODUCTION,
@@ -821,11 +832,22 @@ public class APIMappingUtil {
                     if (endpointSecurity.get(APIConstants.OAuthConstants.ENDPOINT_SECURITY_SANDBOX) != null) {
                         JSONObject sandboxEndpointSecurity = (JSONObject) endpointSecurity
                                 .get(APIConstants.OAuthConstants.ENDPOINT_SECURITY_SANDBOX);
+                        String productionEndpointType = (String) sandboxEndpointSecurity
+                                .get(APIConstants.OAuthConstants.ENDPOINT_SECURITY_TYPE);
+
                         String customParametersString = (String) sandboxEndpointSecurity
                                 .get(APIConstants.OAuthConstants.OAUTH_CUSTOM_PARAMETERS);
                         JSONObject customParameters = (JSONObject) parser.parse(customParametersString);
                         sandboxEndpointSecurity.put(
                                 APIConstants.OAuthConstants.OAUTH_CUSTOM_PARAMETERS, customParameters);
+
+                        if (productionEndpointType.compareTo(APIConstants.OAuthConstants.OAUTH) == 0) {
+                            sandboxEndpointSecurity.put(APIConstants
+                                    .OAuthConstants.OAUTH_API_KEY, "");
+                            sandboxEndpointSecurity.put(APIConstants
+                                    .OAuthConstants.OAUTH_API_SECRET, "");
+                        }
+
                         endpointSecurity.put(APIConstants.OAuthConstants.ENDPOINT_SECURITY_SANDBOX,
                                 sandboxEndpointSecurity);
                         endpointConfigJson.put(APIConstants.ENDPOINT_SECURITY, endpointSecurity);

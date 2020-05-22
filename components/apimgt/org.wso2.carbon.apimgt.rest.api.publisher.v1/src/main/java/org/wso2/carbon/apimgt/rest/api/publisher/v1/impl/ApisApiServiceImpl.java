@@ -637,6 +637,47 @@ public class ApisApiServiceImpl implements ApisApiService {
                     APIDTO.class.getAnnotationsByType(org.wso2.carbon.apimgt.rest.api.util.annotations.Scope.class);
             boolean hasClassLevelScope = checkClassScopeAnnotation(apiDtoClassAnnotatedScopes, tokenScopes);
 
+            JSONParser parser = new JSONParser();
+            String oldEndpointConfigString = originalAPI.getEndpointConfig();
+            JSONObject oldEndpointConfig = (JSONObject) parser.parse(oldEndpointConfigString);
+            String oldProductionApiKey = null;
+            String oldProductionApiSecret = null;
+            String oldSandboxApiKey = null;
+            String oldSandboxApiSecret = null;
+
+            if (oldEndpointConfig != null) {
+                if ((oldEndpointConfig.containsKey(APIConstants.ENDPOINT_SECURITY))) {
+                    JSONObject oldEndpointSecurity =
+                            (JSONObject) oldEndpointConfig.get(APIConstants.ENDPOINT_SECURITY);
+                    if (oldEndpointSecurity.containsKey(APIConstants.OAuthConstants.ENDPOINT_SECURITY_PRODUCTION)) {
+                        JSONObject oldEndpointSecurityProduction = (JSONObject) oldEndpointSecurity
+                                .get(APIConstants.OAuthConstants.ENDPOINT_SECURITY_PRODUCTION);
+
+                        if (oldEndpointSecurityProduction.get(APIConstants
+                                .OAuthConstants.OAUTH_API_KEY) != null && oldEndpointSecurityProduction.get(
+                                APIConstants.OAuthConstants.OAUTH_API_SECRET) != null) {
+                            oldProductionApiKey = oldEndpointSecurityProduction.get(APIConstants
+                                    .OAuthConstants.OAUTH_API_KEY).toString();
+                            oldProductionApiSecret = oldEndpointSecurityProduction.get(APIConstants
+                                    .OAuthConstants.OAUTH_API_SECRET).toString();
+                        }
+                    }
+                    if (oldEndpointSecurity.containsKey(APIConstants.OAuthConstants.ENDPOINT_SECURITY_SANDBOX)) {
+                        JSONObject oldEndpointSecuritySandbox = (JSONObject) oldEndpointSecurity
+                                .get(APIConstants.OAuthConstants.ENDPOINT_SECURITY_SANDBOX);
+
+                        if (oldEndpointSecuritySandbox.get(APIConstants
+                        .OAuthConstants.OAUTH_API_KEY) != null && oldEndpointSecuritySandbox.get(
+                                APIConstants.OAuthConstants.OAUTH_API_SECRET) != null) {
+                            oldSandboxApiKey = oldEndpointSecuritySandbox.get(APIConstants
+                                    .OAuthConstants.OAUTH_API_KEY).toString();
+                            oldSandboxApiSecret = oldEndpointSecuritySandbox.get(APIConstants
+                                    .OAuthConstants.OAUTH_API_SECRET).toString();
+                        }
+                    }
+                }
+            }
+
 
             LinkedHashMap endpointConfig = (LinkedHashMap) body.getEndpointConfig();
 
@@ -664,14 +705,22 @@ public class ApisApiServiceImpl implements ApisApiService {
                             String apiSecret = endpointSecurityProduction.get(APIConstants
                                     .OAuthConstants.OAUTH_API_SECRET).toString();
 
-                            if (!StringUtils.isEmpty(apiKey) && !StringUtils.isEmpty(apiSecret)) {
-                                CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
-//                                String encryptedApiKey = cryptoUtil.encryptAndBase64Encode(apiKey.getBytes());
-//                                String encryptedApiSecret = cryptoUtil.encryptAndBase64Encode(apiSecret.getBytes());
+                            CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
+                            if (!apiKey.equals("")) {
+                                String encryptedApiKey = cryptoUtil.encryptAndBase64Encode(apiKey.getBytes());
                                 endpointSecurityProduction.put(APIConstants
-                                        .OAuthConstants.OAUTH_API_KEY, apiKey);
+                                        .OAuthConstants.OAUTH_API_KEY, encryptedApiKey);
+                            } else {
                                 endpointSecurityProduction.put(APIConstants
-                                        .OAuthConstants.OAUTH_API_SECRET, apiSecret);
+                                .OAuthConstants.OAUTH_API_KEY, oldProductionApiKey);
+                            }
+                            if (!apiSecret.equals("")) {
+                                String encryptedApiSecret = cryptoUtil.encryptAndBase64Encode(apiSecret.getBytes());
+                                endpointSecurityProduction.put(APIConstants
+                                        .OAuthConstants.OAUTH_API_SECRET, encryptedApiSecret);
+                            } else {
+                                endpointSecurityProduction.put(APIConstants
+                                .OAuthConstants.OAUTH_API_SECRET, oldProductionApiSecret);
                             }
                         }
                         endpointSecurity.put(APIConstants
@@ -699,15 +748,22 @@ public class ApisApiServiceImpl implements ApisApiService {
                             String apiSecret = endpointSecuritySandbox.get(APIConstants
                                     .OAuthConstants.OAUTH_API_SECRET).toString();
 
-                            if (!StringUtils.isEmpty(apiKey) && !StringUtils.isEmpty(apiSecret)) {
-                                // TODO - Solve encryption logic
-                                CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
-//                                String encryptedApiKey = cryptoUtil.encryptAndBase64Encode(apiKey.getBytes());
-//                                String encryptedApiSecret = cryptoUtil.encryptAndBase64Encode(apiSecret.getBytes());
+                            CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
+                            if (!apiKey.equals("")) {
+                                String encryptedApiKey = cryptoUtil.encryptAndBase64Encode(apiKey.getBytes());
                                 endpointSecuritySandbox.put(APIConstants
-                                        .OAuthConstants.OAUTH_API_KEY, apiKey);
+                                        .OAuthConstants.OAUTH_API_KEY, encryptedApiKey);
+                            } else {
                                 endpointSecuritySandbox.put(APIConstants
-                                        .OAuthConstants.OAUTH_API_SECRET, apiSecret);
+                                        .OAuthConstants.OAUTH_API_KEY, oldSandboxApiKey);
+                            }
+                            if (!apiSecret.equals("")) {
+                                String encryptedApiSecret = cryptoUtil.encryptAndBase64Encode(apiSecret.getBytes());
+                                endpointSecuritySandbox.put(APIConstants
+                                        .OAuthConstants.OAUTH_API_SECRET, encryptedApiSecret);
+                            } else {
+                                endpointSecuritySandbox.put(APIConstants
+                                        .OAuthConstants.OAUTH_API_SECRET, oldSandboxApiSecret);
                             }
                         }
                         endpointSecurity.put(APIConstants

@@ -74,7 +74,7 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             log.debug("OAuth Mediator is invoked...");
         }
 
-//        CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
+        CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
         try {
             String username = null;
             String password = null;
@@ -104,8 +104,8 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
                 }
             }
 
-//            String decryptedApiKey = new String(cryptoUtil.base64DecodeAndDecrypt(apiKey));
-//            String decryptedApiSecret = new String(cryptoUtil.base64DecodeAndDecrypt(apiSecret));
+            String decryptedApiKey = new String(cryptoUtil.base64DecodeAndDecrypt(apiKey));
+            String decryptedApiSecret = new String(cryptoUtil.base64DecodeAndDecrypt(apiSecret));
 
             JSONObject oAuthEndpointSecurityProperties = getOAuthEndpointSecurityProperties();
             int tokenRefreshInterval;
@@ -120,8 +120,8 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             OAuthEndpoint oAuthEndpoint = new OAuthEndpoint();
             oAuthEndpoint.setId((UUID.randomUUID().toString()));
             oAuthEndpoint.setTokenApiUrl(tokenApiUrl);
-            oAuthEndpoint.setApiKey(apiKey);
-            oAuthEndpoint.setApiSecret(apiSecret);
+            oAuthEndpoint.setApiKey(decryptedApiKey);
+            oAuthEndpoint.setApiSecret(decryptedApiSecret);
             oAuthEndpoint.setUsername(username);
             oAuthEndpoint.setPassword(password);
             oAuthEndpoint.setGrantType(grantType);
@@ -150,9 +150,8 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             } else {
                 log.debug("Token Response is null...");
             }
-//        } catch (CryptoException e) {
-//            log.error(" Error occurred when decrypting the client key and client secret", e);
-//        }
+        } catch (CryptoException e) {
+            log.error(" Error occurred when decrypting the client key and client secret", e);
         } catch (ParseException e) {
             log.error("Failed to parse OAuth Custom Parameters", e);
         }
