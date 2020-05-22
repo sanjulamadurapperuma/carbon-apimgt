@@ -137,8 +137,8 @@ function EndpointSecurity(props) {
             tmpSecurity.password = password === '' ? '**********' : password;
             tmpSecurity.grantType = grantType;
             tmpSecurity.tokenUrl = tokenUrl;
-            tmpSecurity.apiKey = apiKey;
-            tmpSecurity.apiSecret = apiSecret;
+            tmpSecurity.apiKey = apiKey === '' ? '********' : apiKey;
+            tmpSecurity.apiSecret = apiSecret === '' ? '********' : apiSecret;
             tmpSecurity.customParameters = customParameters;
         }
         setEndpointSecurityInfo(tmpSecurity);
