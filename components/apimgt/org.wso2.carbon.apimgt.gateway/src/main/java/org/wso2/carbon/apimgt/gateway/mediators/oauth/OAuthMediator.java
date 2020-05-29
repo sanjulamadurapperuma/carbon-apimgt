@@ -41,6 +41,7 @@ import org.wso2.carbon.core.util.CryptoUtil;
 import java.util.UUID;
 
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
@@ -75,6 +76,7 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
         }
 
         CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
+        CountDownLatch latch = new CountDownLatch(1);
         try {
             String username = null;
             String password = null;
@@ -132,9 +134,10 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
                 try {
                     TokenGeneratorScheduledExecutor scheduledExecutor =
                             new TokenGeneratorScheduledExecutor(executorService);
-                    scheduledExecutor.schedule(oAuthEndpoint);
+                    scheduledExecutor.schedule(oAuthEndpoint, latch);
+                    latch.await();
                     // Thread sleep to allow enough time for Token to be added to TokenCache
-                    Thread.sleep(1000);
+//                    Thread.sleep(1000);
                 } catch(Exception e) {
                     log.error("Could not generate access token...", e);
                 }

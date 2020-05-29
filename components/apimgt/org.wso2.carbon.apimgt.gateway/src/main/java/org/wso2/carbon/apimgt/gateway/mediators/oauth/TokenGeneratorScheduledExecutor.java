@@ -8,6 +8,7 @@ import org.wso2.carbon.apimgt.gateway.mediators.oauth.client.TokenResponse;
 import org.wso2.carbon.apimgt.gateway.mediators.oauth.conf.OAuthEndpoint;
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -26,7 +27,7 @@ public class TokenGeneratorScheduledExecutor {
     /**
      * Initialize OAuth Scheduled Executor
      */
-    public void schedule(OAuthEndpoint oAuthEndpoint) {
+    public void schedule(OAuthEndpoint oAuthEndpoint, CountDownLatch latch) {
         try {
             executorService.scheduleAtFixedRate(()->{
                 try {
@@ -49,6 +50,7 @@ public class TokenGeneratorScheduledExecutor {
                 } catch (Exception e) {
                     log.error("Could not generate access token " + getEndpointId(oAuthEndpoint), e);
                 }
+                latch.countDown();
             }, 0, oAuthEndpoint.getTokenRefreshInterval(), TimeUnit.SECONDS);
         } catch (Exception e) {
             log.error("Error occurred when running the Token Generator " +  getEndpointId(oAuthEndpoint), e);
