@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2020, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
  * WSO2 Inc. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -136,8 +136,6 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
                             new TokenGeneratorScheduledExecutor(executorService);
                     scheduledExecutor.schedule(oAuthEndpoint, latch);
                     latch.await();
-                    // Thread sleep to allow enough time for Token to be added to TokenCache
-//                    Thread.sleep(1000);
                 } catch(Exception e) {
                     log.error("Could not generate access token...", e);
                 }

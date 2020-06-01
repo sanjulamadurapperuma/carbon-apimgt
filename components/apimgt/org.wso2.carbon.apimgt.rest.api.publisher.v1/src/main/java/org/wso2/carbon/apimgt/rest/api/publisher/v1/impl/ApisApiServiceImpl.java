@@ -774,19 +774,20 @@ public class ApisApiServiceImpl implements ApisApiService {
                 }
 
 
-//                APIEndpointSecurityDTO endpointSecurity = body.getEndpointSecurity();
-//                if (endpointSecurity.getType().compareTo(APIEndpointSecurityDTO.TypeEnum.OAUTH) == 0) {
-//                    String apiKey = endpointSecurity.getApiKey();
-//                    String apiSecret = endpointSecurity.getApiSecret();
-//                    if (!StringUtils.isEmpty(apiKey) && !StringUtils.isEmpty(apiSecret)) {
-//                        CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
-//                        String encryptedApiKey = cryptoUtil.encryptAndBase64Encode(apiKey.getBytes());
-//                        String encryptedApiSecret = cryptoUtil.encryptAndBase64Encode(apiSecret.getBytes());
-//                        endpointSecurity.setApiKey(encryptedApiKey);
-//                        endpointSecurity.setApiSecret(encryptedApiSecret);
-//                        body.setEndpointSecurity(endpointSecurity);
-//                    }
-//                }
+                // OLd flow for OAuth API Security
+                APIEndpointSecurityDTO endpointSecurity = body.getEndpointSecurity();
+                if (endpointSecurity.getType().compareTo(APIEndpointSecurityDTO.TypeEnum.OAUTH) == 0) {
+                    String apiKey = endpointSecurity.getApiKey();
+                    String apiSecret = endpointSecurity.getApiSecret();
+                    if (!StringUtils.isEmpty(apiKey) && !StringUtils.isEmpty(apiSecret)) {
+                        CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
+                        String encryptedApiKey = cryptoUtil.encryptAndBase64Encode(apiKey.getBytes());
+                        String encryptedApiSecret = cryptoUtil.encryptAndBase64Encode(apiSecret.getBytes());
+                        endpointSecurity.setApiKey(encryptedApiKey);
+                        endpointSecurity.setApiSecret(encryptedApiSecret);
+                        body.setEndpointSecurity(endpointSecurity);
+                    }
+                }
             }
 
             // AWS Lambda: secret key encryption while updating the API
