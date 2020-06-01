@@ -729,24 +729,24 @@ public class APIMappingUtil {
             api.setEndpointUTPassword(securityDTO.getPassword());
             if (APIEndpointSecurityDTO.TypeEnum.DIGEST.equals(securityDTO.getType())) {
                 api.setEndpointAuthDigest(true);
-//            } else if (APIEndpointSecurityDTO.TypeEnum.OAUTH.equals(securityDTO.getType())) {
-//                api.setEndpointOAuth(true);
-//                api.setGrantType(securityDTO.getGrantType());
-//                api.setTokenUrl(securityDTO.getTokenUrl());
-//                api.setApiKey(securityDTO.getApiKey());
-//                api.setApiSecret(securityDTO.getApiSecret());
-//                if (securityDTO.getCustomParameters() != null) {
-//                    Gson gson = new Gson();
-//                    JSONParser parser = new JSONParser();
-//                    JSONObject customParameters = null;
-//                    try {
-//                        customParameters = (JSONObject) parser.parse(gson
-//                                .toJson(securityDTO.getCustomParameters()));
-//                    } catch (ParseException e) {
-//                        log.error("Cannot parse OAuth Custom Parameters", e);
-//                    }
-//                    api.setCustomParameters(customParameters);
-//                }
+            } else if (APIEndpointSecurityDTO.TypeEnum.OAUTH.equals(securityDTO.getType())) {
+                api.setEndpointOAuth(true);
+                api.setGrantType(securityDTO.getGrantType());
+                api.setTokenUrl(securityDTO.getTokenUrl());
+                api.setApiKey(securityDTO.getApiKey());
+                api.setApiSecret(securityDTO.getApiSecret());
+                if (securityDTO.getCustomParameters() != null) {
+                    Gson gson = new Gson();
+                    JSONParser parser = new JSONParser();
+                    JSONObject customParameters = null;
+                    try {
+                        customParameters = (JSONObject) parser.parse(gson
+                                .toJson(securityDTO.getCustomParameters()));
+                    } catch (ParseException e) {
+                        log.error("Cannot parse OAuth Custom Parameters", e);
+                    }
+                    api.setCustomParameters(String.valueOf(customParameters));
+                }
             }
         }
     }
@@ -1150,9 +1150,8 @@ public class APIMappingUtil {
                     securityDTO.setPassword(""); //Do not expose password
                 }
             } else if (api.isEndpointOAuth()) {
-                // TODO - Resolve decryption logic
-//                try {
-//                    CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
+                try {
+                    CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
                     securityDTO.setType(APIEndpointSecurityDTO.TypeEnum.OAUTH);
                     securityDTO.setUsername(api.getEndpointUTUsername());
                     if (checkEndpointSecurityPasswordEnabled(tenantDomain)) {
@@ -1161,19 +1160,19 @@ public class APIMappingUtil {
                         securityDTO.setPassword(""); //Do not expose password
                     }
                     securityDTO.setTokenUrl(api.getTokenUrl());
-//                    if (checkEndpointSecurityPasswordEnabled(tenantDomain)) {
-//                        securityDTO.setApiKey(new String(cryptoUtil.base64DecodeAndDecrypt(api.getApiKey())));
-//                        securityDTO.setApiSecret(new String(cryptoUtil.base64DecodeAndDecrypt(api.getApiSecret())));
-//                    } else {
-//                        securityDTO.setApiKey(""); // Do not expose API Key
-//                        securityDTO.setApiSecret(""); // Do not expose API Secret
-//                    }
+                    if (checkEndpointSecurityPasswordEnabled(tenantDomain)) {
+                        securityDTO.setApiKey(new String(cryptoUtil.base64DecodeAndDecrypt(api.getApiKey())));
+                        securityDTO.setApiSecret(new String(cryptoUtil.base64DecodeAndDecrypt(api.getApiSecret())));
+                    } else {
+                        securityDTO.setApiKey(""); // Do not expose API Key
+                        securityDTO.setApiSecret(""); // Do not expose API Secret
+                    }
                     securityDTO.setGrantType(api.getGrantType());
                     securityDTO.setCustomParameters(api.getCustomParameters());
-//                } catch (CryptoException e) {
-//                    String msg = "Failed to decrypt API Key and API Secret for OAuth Endpoint";
-//                    throw new APIManagementException(msg, e);
-//                }
+                } catch (CryptoException e) {
+                    String msg = "Failed to decrypt API Key and API Secret for OAuth Endpoint";
+                    throw new APIManagementException(msg, e);
+                }
             } else {
                 securityDTO.setUsername(api.getEndpointUTUsername());
                 if (checkEndpointSecurityPasswordEnabled(tenantDomain)) {
