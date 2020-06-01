@@ -1,4 +1,3 @@
-/* eslint-disable react/jsx-no-bind */
 /**
  * Copyright (c)  WSO2 Inc. (http://wso2.com) All Rights Reserved.
  *
@@ -15,6 +14,7 @@
  * limitations under the License.
  */
 import React, { useState } from 'react';
+import { injectIntl } from 'react-intl';
 import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core/styles';
 import TextField from '@material-ui/core/TextField';
@@ -23,7 +23,6 @@ import EditIcon from '@material-ui/icons/Edit';
 import SaveIcon from '@material-ui/icons/Save';
 import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
-import { injectIntl } from 'react-intl';
 import IconButton from '@material-ui/core/IconButton';
 
 const useStyles = makeStyles(() => ({
@@ -47,18 +46,37 @@ function EditableParameterRow(props) {
     const [newValue, setValue] = useState(oldValue);
     const [editMode, setEditMode] = useState(false);
 
+    /**
+     * Set edit mode
+     */
     const updateEditMode = function () {
         setEditMode(!editMode);
         setEditing(true);
     };
+
+    /**
+     * Update name field
+     * @param {*} event value entered for name field
+     */
     const handleKeyChange = (event) => {
         const { value } = event.target;
         setName(value);
     };
+
+    /**
+     * Update value field
+     * @param {*} event value entered for the value field
+     */
     const handleValueChange = (event) => {
         const { value } = event.target;
         setValue(value);
     };
+
+    /**
+     * Validate if the field is empty
+     * @param {*} itemValue value of the field
+     * @returns {*} boolean value
+     */
     const validateEmpty = function (itemValue) {
         if (itemValue === null) {
             return false;
@@ -68,6 +86,10 @@ function EditableParameterRow(props) {
             return false;
         }
     };
+
+    /**
+     * Save the updated values in the custom parameters object
+     */
     const saveRow = function () {
         const oldRow = { oldName, oldValue };
         const newRow = { newName: newName || oldName, newValue: newValue || oldValue };
@@ -75,15 +97,27 @@ function EditableParameterRow(props) {
         setEditMode(false);
         setEditing(false);
     };
+
+    /**
+     * Delete name-value pair in the custom parameters object
+     */
     const deleteRow = function () {
         handleDelete(customParameters, oldName);
     };
+
+    /**
+     * Keyboard event listener to save the name-value pair on Enter
+     * @param {*} e event containing the key that was pressed
+     */
     const handleKeyDown = function (e) {
         if (e.key === 'Enter') {
             saveRow();
         }
     };
+
+    // Styles definition
     const classes = useStyles();
+
     return (
         <TableRow>
             {editMode ? (
@@ -101,7 +135,7 @@ function EditableParameterRow(props) {
                         className={classes.addProperty}
                         value={newName}
                         onChange={handleKeyChange}
-                        onKeyDown={handleKeyDown}
+                        onKeyDown={handleKeyDown()}
                         error={validateEmpty(newName)}
                     />
                 </TableCell>
@@ -123,7 +157,7 @@ function EditableParameterRow(props) {
                         className={classes.addProperty}
                         value={newValue}
                         onChange={handleValueChange}
-                        onKeyDown={handleKeyDown}
+                        onKeyDown={handleKeyDown()}
                         error={validateEmpty(newValue)}
                     />
                 </TableCell>
@@ -136,7 +170,7 @@ function EditableParameterRow(props) {
                         <IconButton
                             className={classes.link}
                             aria-label='save'
-                            onClick={saveRow}
+                            onClick={saveRow()}
                             onKeyDown={() => {}}
                             disabled={validateEmpty(newName) || validateEmpty(newValue)}
                             color='inherit'
@@ -148,7 +182,7 @@ function EditableParameterRow(props) {
                     <IconButton
                         className={classes.link}
                         aria-label='edit'
-                        onClick={updateEditMode}
+                        onClick={updateEditMode()}
                         onKeyDown={() => {}}
                         color='inherit'
                         disabled={isRestricted(['apim:api_create', 'apim:api_publish'], api)}
@@ -159,7 +193,7 @@ function EditableParameterRow(props) {
                 <IconButton
                     className={classes.link}
                     aria-label='remove'
-                    onClick={deleteRow}
+                    onClick={deleteRow()}
                     onKeyDown={() => {}}
                     color='inherit'
                     disabled={isRestricted(['apim:api_create', 'apim:api_publish'], api)}

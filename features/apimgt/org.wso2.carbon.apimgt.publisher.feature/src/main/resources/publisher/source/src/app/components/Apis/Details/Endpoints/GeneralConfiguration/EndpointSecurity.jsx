@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 /**
  * Copyright (c)  WSO2 Inc. (http://wso2.com) All Rights Reserved.
  *
@@ -19,19 +18,19 @@ import React, { useState, useEffect, useContext } from 'react';
 import PropTypes from 'prop-types';
 import { Grid, TextField, MenuItem } from '@material-ui/core';
 import { FormattedMessage, injectIntl } from 'react-intl';
-import { isRestricted } from 'AppData/AuthManager';
 import { withStyles } from '@material-ui/core/styles';
-import APIContext from 'AppComponents/Apis/Details/components/ApiContext';
-import APIValidation from 'AppData/APIValidation';
-import Alert from 'AppComponents/Shared/Alert';
+import Table from '@material-ui/core/Table';
 import Button from '@material-ui/core/Button';
 import AddCircle from '@material-ui/icons/AddCircle';
-import isEmpty from 'lodash.isempty';
-import Table from '@material-ui/core/Table';
 import TableHead from '@material-ui/core/TableHead';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
 import TableRow from '@material-ui/core/TableRow';
+import isEmpty from 'lodash.isempty';
+import { isRestricted } from 'AppData/AuthManager';
+import APIContext from 'AppComponents/Apis/Details/components/ApiContext';
+import APIValidation from 'AppData/APIValidation';
+import Alert from 'AppComponents/Shared/Alert';
 import EditableParameterRow from './EditableParameterRow';
 
 const styles = () => ({
@@ -81,11 +80,11 @@ function EndpointSecurity(props) {
     });
     const [securityValidity, setSecurityValidity] = useState();
 
-    // Implementation of useState variables for parameter name and value
     const [showAddParameter, setShowAddParameter] = useState(false);
+    // Implementation of useState variables for parameter name and value
     const [parameterName, setParameterName] = useState(null);
     const [parameterValue, setParameterValue] = useState(null);
-    const [editing, setEditing] = useState(false);
+    const [setEditing] = useState(false);
     const endpointType = isProduction ? 'production' : 'sandbox';
 
     const authTypes = [
@@ -145,7 +144,12 @@ function EndpointSecurity(props) {
         setEndpointSecurityInfo(tmpSecurity);
     }, [props]);
 
-    const validateTokenURL = (value) => {
+    /**
+     * Validating whether token url is in a proper format
+     * @param {*} value value of the field
+     * @returns {*} boolean value
+     */
+    const validateTokenUrl = (value) => {
         const state = APIValidation.url.required().validate(value).error;
         // state 'null' means the URL is valid.
         if (state === null) {
@@ -155,6 +159,10 @@ function EndpointSecurity(props) {
         }
     };
 
+    /**
+     * Validate Security Info properties
+     * @param {*} field value of the field
+     */
     const validateAndUpdateSecurityInfo = (field) => {
         if (!endpointSecurityInfo[field]) {
             setSecurityValidity({ ...securityValidity, [field]: false });
@@ -169,10 +177,18 @@ function EndpointSecurity(props) {
         onChangeEndpointAuth(endpointSecurityInfo, type);
     };
 
+    /**
+     * Show or hide the Add Parameter component
+     */
     const toggleAddParameter = () => {
         setShowAddParameter(!showAddParameter);
     };
 
+    /**
+     * Set the custom parameter name or value property
+     * @param {*} name name of the field edited
+     * @returns {*} fills the parameter name or parameter value states
+     */
     const handleParameterChange = (name) => (event) => {
         const { value } = event.target;
         if (name === 'parameterName') {
@@ -182,6 +198,11 @@ function EndpointSecurity(props) {
         }
     };
 
+    /**
+     * Check if the field is empty or not
+     * @param {*} itemValue value of the field
+     * @returns {*} boolean value
+     */
     const validateEmpty = (itemValue) => {
         if (itemValue === null) {
             return false;
@@ -192,6 +213,9 @@ function EndpointSecurity(props) {
         }
     };
 
+    /**
+     * Add new custom parameter
+     */
     const handleAddToList = () => {
         const customParametersCopy = endpointSecurityInfo.customParameters;
 
@@ -207,6 +231,11 @@ function EndpointSecurity(props) {
         onChangeEndpointAuth(endpointSecurityInfo, endpointType);
     };
 
+    /**
+     * Update existing custom parameter name-value pair
+     * @param {*} oldRow previous name-value pair
+     * @param {*} newRow new name-value pair
+     */
     const handleUpdateList = (oldRow, newRow) => {
         const customParametersCopy = endpointSecurityInfo.customParameters;
         const { oldName, oldValue } = oldRow;
@@ -225,7 +254,11 @@ function EndpointSecurity(props) {
         onChangeEndpointAuth(endpointSecurityInfo, endpointType);
     };
 
-    const handleDelete = (customParameters, oldName) => {
+    /**
+     * Delete existing custom parameter name-value pair
+     * @param {*} oldName name property of the name-value pair to be removed
+     */
+    const handleDelete = (oldName) => {
         const customParametersCopy = endpointSecurityInfo.customParameters;
         if (customParametersCopy !== null && Object.prototype.hasOwnProperty.call(customParametersCopy, oldName)) {
             delete customParametersCopy[oldName];
@@ -234,12 +267,20 @@ function EndpointSecurity(props) {
         onChangeEndpointAuth(endpointSecurityInfo, endpointType);
     };
 
+    /**
+     * Keyboard shortcut to execute adding custom parameters when pressing the Enter key
+     * @param {*} event event containing the key that was pressed
+     */
     const handleKeyDown = (event) => {
         if (event.key === 'Enter') {
             handleAddToList();
         }
     };
 
+    /**
+     * Render the custom parameters component
+     * @returns {*} list of items added
+     */
     const renderCustomParameters = () => {
         const items = [];
         for (const name in endpointSecurityInfo.customParameters) {
