@@ -730,7 +730,8 @@ public class ApisApiServiceImpl implements ApisApiService {
 
                 // OLd flow for OAuth API Security
                 APIEndpointSecurityDTO endpointSecurity = body.getEndpointSecurity();
-                if (endpointSecurity.getType().compareTo(APIEndpointSecurityDTO.TypeEnum.OAUTH) == 0) {
+                if (endpointSecurity != null && endpointSecurity.getType()
+                        .compareTo(APIEndpointSecurityDTO.TypeEnum.OAUTH) == 0) {
                     String apiKey = endpointSecurity.getApiKey();
                     String apiSecret = endpointSecurity.getApiSecret();
                     if (!StringUtils.isEmpty(apiKey) && !StringUtils.isEmpty(apiSecret)) {

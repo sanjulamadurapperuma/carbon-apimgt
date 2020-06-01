@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-no-bind */
 /**
  * Copyright (c)  WSO2 Inc. (http://wso2.com) All Rights Reserved.
  *
@@ -135,7 +136,7 @@ function EditableParameterRow(props) {
                         className={classes.addProperty}
                         value={newName}
                         onChange={handleKeyChange}
-                        onKeyDown={handleKeyDown()}
+                        onKeyDown={handleKeyDown}
                         error={validateEmpty(newName)}
                     />
                 </TableCell>
@@ -157,7 +158,7 @@ function EditableParameterRow(props) {
                         className={classes.addProperty}
                         value={newValue}
                         onChange={handleValueChange}
-                        onKeyDown={handleKeyDown()}
+                        onKeyDown={handleKeyDown}
                         error={validateEmpty(newValue)}
                     />
                 </TableCell>
@@ -170,7 +171,7 @@ function EditableParameterRow(props) {
                         <IconButton
                             className={classes.link}
                             aria-label='save'
-                            onClick={saveRow()}
+                            onClick={saveRow}
                             onKeyDown={() => {}}
                             disabled={validateEmpty(newName) || validateEmpty(newValue)}
                             color='inherit'
@@ -182,7 +183,7 @@ function EditableParameterRow(props) {
                     <IconButton
                         className={classes.link}
                         aria-label='edit'
-                        onClick={updateEditMode()}
+                        onClick={updateEditMode}
                         onKeyDown={() => {}}
                         color='inherit'
                         disabled={isRestricted(['apim:api_create', 'apim:api_publish'], api)}
@@ -193,7 +194,7 @@ function EditableParameterRow(props) {
                 <IconButton
                     className={classes.link}
                     aria-label='remove'
-                    onClick={deleteRow()}
+                    onClick={deleteRow}
                     onKeyDown={() => {}}
                     color='inherit'
                     disabled={isRestricted(['apim:api_create', 'apim:api_publish'], api)}
