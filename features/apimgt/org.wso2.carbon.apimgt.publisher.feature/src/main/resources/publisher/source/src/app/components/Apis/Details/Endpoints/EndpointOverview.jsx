@@ -43,7 +43,6 @@ import GeneralConfiguration from './GeneralConfiguration';
 import LoadbalanceFailoverConfig from './LoadbalanceFailoverConfig';
 import GenericEndpoint from './GenericEndpoint';
 import AdvanceEndpointConfig from './AdvancedConfig/AdvanceEndpointConfig';
-// import EndpointSecurityConfig from './GeneralConfiguration/EndpointSecurityConfig';
 import EndpointSecurity from './GeneralConfiguration/EndpointSecurity';
 import Credentials from './AWSLambda/Credentials.jsx';
 
@@ -160,30 +159,30 @@ function EndpointOverview(props) {
         sandbox: false,
     });
     const [typeChangeConfirmation, setTypeChangeConfirmation] = useState({ openDialog: false });
-    const endpointSecurityInformation = {
-        production: {
-            enabled: false,
-            type: 'BASIC',
-            username: '',
-            password: '',
-            grantType: '',
-            tokenUrl: '',
-            apiKey: '',
-            apiSecret: '',
-            customParameters: {},
-        },
-        sandbox: {
-            enabled: false,
-            type: 'BASIC',
-            username: '',
-            password: '',
-            grantType: '',
-            tokenUrl: '',
-            apiKey: '',
-            apiSecret: '',
-            customParameters: {},
-        },
-    };
+    // const endpointSecurityInformation = {
+    //     production: {
+    //         enabled: false,
+    //         type: 'BASIC',
+    //         username: '',
+    //         password: '',
+    //         grantType: '',
+    //         tokenUrl: '',
+    //         apiKey: '',
+    //         apiSecret: '',
+    //         customParameters: {},
+    //     },
+    //     sandbox: {
+    //         enabled: false,
+    //         type: 'BASIC',
+    //         username: '',
+    //         password: '',
+    //         grantType: '',
+    //         tokenUrl: '',
+    //         apiKey: '',
+    //         apiSecret: '',
+    //         customParameters: {},
+    //     },
+    // };
 
     const handleToggleEndpointSecurity = (name) => {
         if (name === 'production') {
@@ -980,12 +979,8 @@ function EndpointOverview(props) {
                             </Typography>
                             <GeneralConfiguration
                                 epConfig={(cloneDeep(epConfig))}
-                                endpointSecurityInfo={endpointSecurityInfo}
-                                setEndpointSecurityInfo={setEndpointSecurityInfo}
-                                handleEndpointSecurityChange={handleEndpointSecurityChange}
                                 endpointType={endpointType}
                                 endpointsDispatcher={endpointsDispatcher}
-                                endpointSecurityInformation={endpointSecurityInformation}
                             />
                         </Grid>
                     )}
