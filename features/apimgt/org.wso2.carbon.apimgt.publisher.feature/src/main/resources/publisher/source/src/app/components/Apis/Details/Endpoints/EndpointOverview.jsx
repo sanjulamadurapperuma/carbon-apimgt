@@ -43,6 +43,8 @@ import GeneralConfiguration from './GeneralConfiguration';
 import LoadbalanceFailoverConfig from './LoadbalanceFailoverConfig';
 import GenericEndpoint from './GenericEndpoint';
 import AdvanceEndpointConfig from './AdvancedConfig/AdvanceEndpointConfig';
+// import EndpointSecurityConfig from './GeneralConfiguration/EndpointSecurityConfig';
+import EndpointSecurity from './GeneralConfiguration/EndpointSecurity';
 import Credentials from './AWSLambda/Credentials.jsx';
 
 const styles = (theme) => ({
@@ -146,7 +148,17 @@ function EndpointOverview(props) {
         category: '',
         config: undefined,
     });
+    const [endpointSecurityConfig, setEndpointSecurityConfig] = useState({
+        open: false,
+        type: '',
+        category: '',
+        config: undefined,
+    });
     const [endpointCategory, setEndpointCategory] = useState({ sandbox: false, prod: false });
+    const [state, setState] = React.useState({
+        production: false,
+        sandbox: false,
+    });
     const [typeChangeConfirmation, setTypeChangeConfirmation] = useState({ openDialog: false });
     const endpointSecurityInformation = {
         production: {
@@ -171,6 +183,43 @@ function EndpointOverview(props) {
             apiSecret: '',
             customParameters: {},
         },
+    };
+
+    const handleToggleEndpointSecurity = (name) => {
+        if (name === 'production') {
+            setState({ ...state, production: true });
+        } else if (name === 'sandbox') {
+            setState({ ...state, sandbox: true });
+        }
+        const tmpSecurityInfo = endpointSecurityInfo === null ? {
+            production: {
+                enabled: state[name],
+                type: 'BASIC',
+                username: null,
+                password: null,
+                grantType: null,
+                tokenUrl: null,
+                apiKey: null,
+                apiSecret: null,
+                customParameters: {},
+            },
+            sandbox: {
+                enabled: state[name],
+                type: 'BASIC',
+                username: null,
+                password: null,
+                grantType: null,
+                tokenUrl: null,
+                apiKey: null,
+                apiSecret: null,
+                customParameters: {},
+            },
+        } : endpointSecurityInfo;
+        setEndpointSecurityInfo(tmpSecurityInfo);
+        endpointsDispatcher({
+            action: 'endpointSecurity',
+            value: { ...tmpSecurityInfo, [name]: { ...tmpSecurityInfo[name], enabled: state[name] } },
+        });
     };
 
     /**
@@ -497,16 +546,36 @@ function EndpointOverview(props) {
         });
     };
 
+    const toggleEndpointSecurityConfig = (type, category) => {
+        handleToggleEndpointSecurity(category);
+        setEndpointSecurityConfig(() => {
+            return ({
+                open: !endpointSecurityConfig.open,
+                type,
+                category,
+                config: endpointSecurityInfo === undefined ? {} : endpointSecurityInfo,
+            });
+        });
+    };
+
     /**
      * Method to handle the endpoint security changes.
      * @param {string} value The value
-     * @param {string} field The security propety that is being modified.
+     * @param {string} type The security property that is being modified.
      * */
     const handleEndpointSecurityChange = (value, type) => {
         endpointsDispatcher({
             action: 'endpointSecurity',
             value: { ...endpointSecurityInfo, [type]: value },
         });
+    };
+
+    const saveEndpointSecurityConfig = (endpointSecurityObj) => {
+        setEndpointSecurityConfig({ open: false, config: endpointSecurityObj });
+    };
+
+    const closeEndpointSecurityConfig = () => {
+        setEndpointSecurityConfig({ open: false });
     };
 
     /**
@@ -726,6 +795,34 @@ function EndpointOverview(props) {
                                                                     />
                                                                 </Typography>
                                                             </Button>
+                                                            <Button
+                                                                className={classes.button}
+                                                                aria-label='Settings'
+                                                                onClick={() => toggleEndpointSecurityConfig(
+                                                                    '', 'production',
+                                                                )}
+                                                                disabled={
+                                                                    (isRestricted(
+                                                                        ['apim:api_create'], api,
+                                                                    )
+                                                                    )
+                                                                }
+                                                                variant='outlined'
+                                                            >
+                                                                <Icon
+                                                                    className={classes.buttonIcon}
+                                                                >
+                                                                    security
+                                                                </Icon>
+                                                                <Typography>
+                                                                    <FormattedMessage
+                                                                        id={'Apis.Details.Endpoints.EndpointOverview'
+                                                                            + '.endpoint.security.configuration'}
+                                                                        defaultMessage={'Endpoint '
+                                                                        + 'Security Configurations'}
+                                                                    />
+                                                                </Typography>
+                                                            </Button>
                                                         </InlineMessage>
                                                     )
                                                     : (
@@ -754,6 +851,8 @@ function EndpointOverview(props) {
                                                             category='production_endpoints'
                                                             editEndpoint={editEndpoint}
                                                             setAdvancedConfigOpen={toggleAdvanceConfig}
+                                                            esCategory='production'
+                                                            setESConfigOpen={toggleEndpointSecurityConfig}
                                                             apiId={api.id}
                                                         />
                                                     )}
@@ -853,7 +952,9 @@ function EndpointOverview(props) {
                                                                         index={0}
                                                                         category='sandbox_endpoints'
                                                                         editEndpoint={editEndpoint}
+                                                                        esCategory='sandbox'
                                                                         setAdvancedConfigOpen={toggleAdvanceConfig}
+                                                                        setESConfigOpen={toggleEndpointSecurityConfig}
                                                                         apiId={api.id}
                                                                     />
                                                                 )}
@@ -939,6 +1040,38 @@ function EndpointOverview(props) {
                         onSaveAdvanceConfig={saveAdvanceConfig}
                         onCancel={closeAdvanceConfig}
                     />
+                </DialogContent>
+            </Dialog>
+            <Dialog open={endpointSecurityConfig.open}>
+                <DialogTitle>
+                    <Typography className={classes.configDialogHeader}>
+                        <FormattedMessage
+                            id='Apis.Details.Endpoints.EndpointOverview.endpoint.security.configuration'
+                            defaultMessage='Endpoint Security Configurations'
+                        />
+                    </Typography>
+                </DialogTitle>
+                <DialogContent>
+                    {endpointSecurityConfig.category === 'production' ? (
+                        <EndpointSecurity
+                            securityInfo={endpointSecurityInfo
+                                            && (endpointSecurityInfo.production
+                                                ? endpointSecurityInfo.production : endpointSecurityInfo)}
+                            onChangeEndpointAuth={handleEndpointSecurityChange}
+                            saveEndpointSecurityConfig={saveEndpointSecurityConfig}
+                            closeEndpointSecurityConfig={closeEndpointSecurityConfig}
+                            isProduction
+                        />
+                    ) : (
+                        <EndpointSecurity
+                            securityInfo={endpointSecurityInfo
+                                            && (endpointSecurityInfo.sandbox
+                                                ? endpointSecurityInfo.sandbox : endpointSecurityInfo)}
+                            onChangeEndpointAuth={handleEndpointSecurityChange}
+                            saveEndpointSecurityConfig={saveEndpointSecurityConfig}
+                            closeEndpointSecurityConfig={closeEndpointSecurityConfig}
+                        />
+                    )}
                 </DialogContent>
             </Dialog>
             <Dialog open={typeChangeConfirmation.openDialog}>
