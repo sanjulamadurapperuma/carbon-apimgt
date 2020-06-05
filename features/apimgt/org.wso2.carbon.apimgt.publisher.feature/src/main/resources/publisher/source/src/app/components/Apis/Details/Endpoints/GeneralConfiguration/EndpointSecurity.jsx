@@ -65,6 +65,7 @@ function EndpointSecurity(props) {
     const { api } = useContext(APIContext);
     const {
         intl, securityInfo, onChangeEndpointAuth, classes, isProduction,
+        saveEndpointSecurityConfig, closeEndpointSecurityConfig,
     } = props;
     const [endpointSecurityInfo, setEndpointSecurityInfo] = useState({
         type: 'BASIC',
@@ -699,6 +700,30 @@ function EndpointSecurity(props) {
                     </Table>
                 </Grid>
             )}
+            <Grid className={classes.advanceDialogActions}>
+                <Button
+                    onClick={() => saveEndpointSecurityConfig(endpointSecurityInfo)}
+                    color='primary'
+                    autoFocus
+                    // disabled={!securityValidity}
+                    variant='contained'
+                    style={{ marginRight: '10px', marginBottom: '10px' }}
+                >
+                    <FormattedMessage
+                        id='Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurityConfig.config.save.button'
+                        defaultMessage='Save'
+                    />
+                </Button>
+                <Button
+                    onClick={closeEndpointSecurityConfig}
+                    style={{ marginBottom: '10px' }}
+                >
+                    <FormattedMessage
+                        id='Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurityConfig.cancel.button'
+                        defaultMessage='Close'
+                    />
+                </Button>
+            </Grid>
         </Grid>
     );
 }
