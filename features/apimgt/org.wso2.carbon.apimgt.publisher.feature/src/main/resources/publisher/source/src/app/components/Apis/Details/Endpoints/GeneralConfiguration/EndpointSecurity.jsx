@@ -243,7 +243,7 @@ function EndpointSecurity(props) {
             && Object.prototype.hasOwnProperty.call(customParametersCopy, newName) && oldName === newName) {
             // Only the value is updated
             if (newValue && oldValue !== newValue) {
-                customParametersCopy[oldName] = oldValue;
+                customParametersCopy[oldName] = newValue;
             }
         } else {
             delete customParametersCopy[oldName];
