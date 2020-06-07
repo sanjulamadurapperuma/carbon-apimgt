@@ -48,20 +48,20 @@ public class OAuthClient {
     private static final String PASSWORD_GRANT_TYPE = "grant_type=password";
     private static final String REFRESH_TOKEN_GRANT_TYPE = "grant_type=refresh_token";
 
-    public static TokenResponse generateToken(String url, String apiKey, String apiSecret,
+    public static TokenResponse generateToken(String url, String clientId, String clientSecret,
             String username, String password, String grantType, JSONObject customParameters, String refreshToken)
             throws IOException, APIManagementException {
         if(log.isDebugEnabled()) {
             log.debug("Initializing token generation request: [token-endpoint] " + url);
         }
 
-        URL url_;
-        String credentials = Base64.getEncoder().encodeToString((apiKey + ":" + apiSecret).getBytes());
+        URL urlObject;
+        String credentials = Base64.getEncoder().encodeToString((clientId + ":" + clientSecret).getBytes());
 
-        url_ = new URL(url);
+        urlObject = new URL(url);
         StringBuilder payload = new StringBuilder();
         try (CloseableHttpClient httpClient = (CloseableHttpClient) APIUtil
-                .getHttpClient(url_.getPort(), url_.getProtocol())) {
+                .getHttpClient(urlObject.getPort(), urlObject.getProtocol())) {
             HttpPost httpPost = new HttpPost(url);
             // Set authorization header
             httpPost.setHeader(AUTHORIZATION_HEADER, "Basic " + credentials);

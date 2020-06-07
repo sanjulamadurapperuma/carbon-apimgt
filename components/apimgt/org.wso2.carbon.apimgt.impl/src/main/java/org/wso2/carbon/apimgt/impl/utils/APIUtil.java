@@ -239,8 +239,6 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
@@ -248,19 +246,15 @@ import java.security.SignatureException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
-import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateFactory;
-import java.security.cert.CertificateNotYetValidException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -418,8 +412,8 @@ public final class APIUtil {
             api.setEndpointOAuth(Boolean.parseBoolean(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_OAUTH)));
             api.setGrantType(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_GRANT_TYPE));
             api.setTokenUrl(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_TOKEN_URL));
-            api.setApiKey(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_KEY));
-            api.setApiSecret(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_SECRET));
+            api.setClientId(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_CLIENT_ID));
+            api.setClientSecret(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_CLIENT_SECRET));
             api.setCustomParameters(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_CUSTOM_PARAMETERS));
             api.setTransports(artifact.getAttribute(APIConstants.API_OVERVIEW_TRANSPORTS));
             api.setInSequence(artifact.getAttribute(APIConstants.API_OVERVIEW_INSEQUENCE));
@@ -599,8 +593,8 @@ public final class APIUtil {
             api.setEndpointOAuth(Boolean.parseBoolean(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_OAUTH)));
             api.setGrantType(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_GRANT_TYPE));
             api.setTokenUrl(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_TOKEN_URL));
-            api.setApiKey(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_KEY));
-            api.setApiSecret(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_SECRET));
+            api.setClientId(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_CLIENT_ID));
+            api.setClientSecret(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_CLIENT_SECRET));
             api.setCustomParameters(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_CUSTOM_PARAMETERS));
             api.setTransports(artifact.getAttribute(APIConstants.API_OVERVIEW_TRANSPORTS));
             api.setInSequence(artifact.getAttribute(APIConstants.API_OVERVIEW_INSEQUENCE));
@@ -1198,8 +1192,8 @@ public final class APIUtil {
             artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_OAUTH, Boolean.toString(api.isEndpointOAuth()));
             artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_GRANT_TYPE, api.getGrantType());
             artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_TOKEN_URL, api.getTokenUrl());
-            artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_KEY, api.getApiKey());
-            artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_SECRET, api.getApiSecret());
+            artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_CLIENT_ID, api.getClientId());
+            artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_CLIENT_SECRET, api.getClientSecret());
             artifact.setAttribute(APIConstants.API_OVERVIEW_ENDPOINT_CUSTOM_PARAMETERS, api.getCustomParameters());
             artifact.setAttribute(APIConstants.API_OVERVIEW_TRANSPORTS, api.getTransports());
             artifact.setAttribute(APIConstants.API_OVERVIEW_INSEQUENCE, api.getInSequence());
@@ -3371,8 +3365,8 @@ public final class APIUtil {
             api.setEndpointOAuth(Boolean.parseBoolean(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_OAUTH)));
             api.setGrantType(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_GRANT_TYPE));
             api.setTokenUrl(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_TOKEN_URL));
-            api.setApiKey(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_KEY));
-            api.setApiSecret(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_API_SECRET));
+            api.setClientId(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_CLIENT_ID));
+            api.setClientSecret(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_CLIENT_SECRET));
             api.setCustomParameters(artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_CUSTOM_PARAMETERS));
             api.setTransports(artifact.getAttribute(APIConstants.API_OVERVIEW_TRANSPORTS));
 
@@ -10385,8 +10379,8 @@ public final class APIUtil {
                     productionEndpointSecurity.setType(APIConstants.ENDPOINT_SECURITY_TYPE_OAUTH.toUpperCase());
                     productionEndpointSecurity.setGrantType(api.getGrantType());
                     productionEndpointSecurity.setTokenUrl(api.getTokenUrl());
-                    productionEndpointSecurity.setApiKey(api.getApiKey());
-                    productionEndpointSecurity.setApiSecret(api.getApiSecret());
+                    productionEndpointSecurity.setClientId(api.getClientId());
+                    productionEndpointSecurity.setClientSecret(api.getClientSecret());
                     if (api.getCustomParameters() != null) {
                         productionEndpointSecurity.setCustomParameters(api.getCustomParameters());
                     } else {
