@@ -41,7 +41,7 @@ function EditableParameterRow(props) {
     const {
         oldName, oldValue,
         handleUpdateList, handleDelete, customParameters,
-        intl, setEditing, isRestricted, api,
+        intl, isRestricted, api,
     } = props;
     const [newName, setName] = useState(oldName);
     const [newValue, setValue] = useState(oldValue);
@@ -52,7 +52,6 @@ function EditableParameterRow(props) {
      */
     const updateEditMode = function () {
         setEditMode(!editMode);
-        setEditing(true);
     };
 
     /**
@@ -96,14 +95,13 @@ function EditableParameterRow(props) {
         const newRow = { newName: newName || oldName, newValue: newValue || oldValue };
         handleUpdateList(oldRow, newRow);
         setEditMode(false);
-        setEditing(false);
     };
 
     /**
      * Delete name-value pair in the custom parameters object
      */
     const deleteRow = function () {
-        handleDelete(customParameters, oldName);
+        handleDelete(oldName);
     };
 
     /**
@@ -207,14 +205,12 @@ function EditableParameterRow(props) {
 }
 
 EditableParameterRow.propTypes = {
-    oldName: PropTypes.shape({}).isRequired,
-    oldValue: PropTypes.shape({}).isRequired,
+    oldName: PropTypes.string.isRequired,
+    oldValue: PropTypes.string.isRequired,
     classes: PropTypes.shape({}).isRequired,
-    handleUpdateList: PropTypes.shape({}).isRequired,
-    handleDelete: PropTypes.shape({}).isRequired,
-    optionalParameters: PropTypes.shape({}).isRequired,
-    intl: PropTypes.shape({ formatMessage: PropTypes.func }).isRequired,
-    setEditing: PropTypes.func.isRequired,
+    handleUpdateList: PropTypes.func.isRequired,
+    handleDelete: PropTypes.func.isRequired,
+    customParameters: PropTypes.shape({}).isRequired,
 };
 
 export default injectIntl(EditableParameterRow);

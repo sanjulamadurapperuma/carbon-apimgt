@@ -84,7 +84,6 @@ function EndpointSecurity(props) {
     // Implementation of useState variables for parameter name and value
     const [parameterName, setParameterName] = useState(null);
     const [parameterValue, setParameterValue] = useState(null);
-    const [setEditing] = useState(false);
     const endpointType = isProduction ? 'production' : 'sandbox';
 
     const authTypes = [
@@ -137,8 +136,8 @@ function EndpointSecurity(props) {
             tmpSecurity.password = password === '' ? '**********' : password;
             tmpSecurity.grantType = grantType;
             tmpSecurity.tokenUrl = tokenUrl;
-            tmpSecurity.apiKey = clientId === '' ? '********' : clientId;
-            tmpSecurity.apiSecret = clientSecret === '' ? '********' : clientSecret;
+            tmpSecurity.clientId = clientId === '' ? '********' : clientId;
+            tmpSecurity.clientSecret = clientSecret === '' ? '********' : clientSecret;
             tmpSecurity.customParameters = customParameters;
         }
         setEndpointSecurityInfo(tmpSecurity);
@@ -292,7 +291,6 @@ function EndpointSecurity(props) {
                     handleDelete={handleDelete}
                     customParameters={endpointSecurityInfo.customParameters}
                     {...props}
-                    setEditing={setEditing}
                     isRestricted={isRestricted}
                     api={api}
                 />);
