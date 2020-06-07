@@ -8712,10 +8712,10 @@ definitions:
       tokenUrl:
         type: string
         example: http://localhost:8244/token
-      apiKey:
+      clientId:
         type: string
         example: by2gPAePag6N165_NVnKB7cI8iAa
-      apiSecret:
+      clientSecret:
         type: string
         example: 3KQt5bvgoesIS7TRj58IsoqlIgIa
       customParameters:

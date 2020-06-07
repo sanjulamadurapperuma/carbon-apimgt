@@ -24,8 +24,8 @@ public class OAuthEndpoint {
 
     private String id;
     private String tokenApiUrl;
-    private String apiKey;
-    private String apiSecret;
+    private String clientId;
+    private String clientSecret;
     private String username;
     private String password;
     private String grantType;
@@ -48,20 +48,20 @@ public class OAuthEndpoint {
         this.tokenApiUrl = tokenApiUrl;
     }
 
-    public String getApiKey() {
-        return apiKey;
+    public String getClientId() {
+        return clientId;
     }
 
-    public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
     }
 
-    public String getApiSecret() {
-        return apiSecret;
+    public String getClientSecret() {
+        return clientSecret;
     }
 
-    public void setApiSecret(String apiSecret) {
-        this.apiSecret = apiSecret;
+    public void setClientSecret(String clientSecret) {
+        this.clientSecret = clientSecret;
     }
 
     public String getUsername() {

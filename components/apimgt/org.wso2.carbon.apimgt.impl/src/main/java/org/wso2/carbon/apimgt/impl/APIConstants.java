@@ -331,8 +331,8 @@ public final class APIConstants {
     public static final String API_OVERVIEW_ENDPOINT_GRANT_TYPE = "overview_grantType";
     public static final String API_OVERVIEW_ENDPOINT_HTTP_METHOD = "overview_httpMethod";
     public static final String API_OVERVIEW_ENDPOINT_TOKEN_URL = "overview_endpointTokenUrl";
-    public static final String API_OVERVIEW_ENDPOINT_API_KEY = "overview_apiKey";
-    public static final String API_OVERVIEW_ENDPOINT_API_SECRET = "overview_apiSecret";
+    public static final String API_OVERVIEW_ENDPOINT_CLIENT_ID = "overview_clientId";
+    public static final String API_OVERVIEW_ENDPOINT_CLIENT_SECRET = "overview_clientSecret";
     public static final String API_OVERVIEW_ENDPOINT_CUSTOM_PARAMETERS = "overview_customParameters";
     public static final String API_OVERVIEW_TRANSPORTS = "overview_transports";
     public static final String API_OVERVIEW_INSEQUENCE = "overview_inSequence";
@@ -1210,8 +1210,8 @@ public final class APIConstants {
         public static final String OAUTH = "OAUTH";
         public static final String OAUTH_ID = "id";
         public static final String TOKEN_API_URL = "tokenUrl";
-        public static final String OAUTH_API_KEY = "apiKey";
-        public static final String OAUTH_API_SECRET = "apiSecret";
+        public static final String OAUTH_CLIENT_ID = "clientId";
+        public static final String OAUTH_CLIENT_SECRET = "clientSecret";
         public static final String OAUTH_USERNAMEPASSWORD = "usernamePassword";
         public static final String GRANT_TYPE = "grantType";
         public static final String OAUTH_CUSTOM_PARAMETERS = "customParameters";
@@ -1474,8 +1474,8 @@ public final class APIConstants {
     public static final String ENDPOINT_SECURITY_PRODUCTION = "production";
     public static final String ENDPOINT_SECURITY_SANDBOX = "sandbox";
     public static final String ENDPOINT_SECURITY_PASSWORD = "password";
-    public static final String ENDPOINT_SECURITY_API_KEY = "apiKey";
-    public static final String ENDPOINT_SECURITY_API_SECRET = "apiSecret";
+    public static final String ENDPOINT_SECURITY_CLIENT_ID = "clientId";
+    public static final String ENDPOINT_SECURITY_CLIENT_SECRET = "clientSecret";
     public static final String ENDPOINT_SECURITY_ENABLED = "enabled";
 
     public static final String API_ENDPOINT_CONFIG_TIMEOUT = "timeout";

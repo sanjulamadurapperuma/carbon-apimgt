@@ -159,30 +159,6 @@ function EndpointOverview(props) {
         sandbox: false,
     });
     const [typeChangeConfirmation, setTypeChangeConfirmation] = useState({ openDialog: false });
-    // const endpointSecurityInformation = {
-    //     production: {
-    //         enabled: false,
-    //         type: 'BASIC',
-    //         username: '',
-    //         password: '',
-    //         grantType: '',
-    //         tokenUrl: '',
-    //         apiKey: '',
-    //         apiSecret: '',
-    //         customParameters: {},
-    //     },
-    //     sandbox: {
-    //         enabled: false,
-    //         type: 'BASIC',
-    //         username: '',
-    //         password: '',
-    //         grantType: '',
-    //         tokenUrl: '',
-    //         apiKey: '',
-    //         apiSecret: '',
-    //         customParameters: {},
-    //     },
-    // };
 
     const handleToggleEndpointSecurity = (name) => {
         if (name === 'production') {
@@ -198,8 +174,8 @@ function EndpointOverview(props) {
                 password: null,
                 grantType: null,
                 tokenUrl: null,
-                apiKey: null,
-                apiSecret: null,
+                clientId: null,
+                clientSecret: null,
                 customParameters: {},
             },
             sandbox: {
@@ -209,8 +185,8 @@ function EndpointOverview(props) {
                 password: null,
                 grantType: null,
                 tokenUrl: null,
-                apiKey: null,
-                apiSecret: null,
+                clientId: null,
+                clientSecret: null,
                 customParameters: {},
             },
         } : endpointSecurityInfo;

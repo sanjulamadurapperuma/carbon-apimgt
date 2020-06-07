@@ -82,8 +82,8 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             String password = null;
 
             String tokenApiUrl = (String) messageContext.getProperty(OAuthConstants.TOKEN_API_URL);
-            String apiKey = (String) messageContext.getProperty(OAuthConstants.OAUTH_API_KEY);
-            String apiSecret = (String) messageContext.getProperty(OAuthConstants.OAUTH_API_SECRET);
+            String clientId = (String) messageContext.getProperty(OAuthConstants.OAUTH_CLIENT_ID);
+            String clientSecret = (String) messageContext.getProperty(OAuthConstants.OAUTH_CLIENT_SECRET);
             String grantType = (String) messageContext.getProperty(OAuthConstants.GRANT_TYPE);
             String customParametersString = (String) messageContext.getProperty(OAuthConstants.OAUTH_CUSTOM_PARAMETERS);
 
@@ -106,8 +106,8 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
                 }
             }
 
-            String decryptedApiKey = new String(cryptoUtil.base64DecodeAndDecrypt(apiKey));
-            String decryptedApiSecret = new String(cryptoUtil.base64DecodeAndDecrypt(apiSecret));
+            String decryptedClientId = new String(cryptoUtil.base64DecodeAndDecrypt(clientId));
+            String decryptedClientSecret = new String(cryptoUtil.base64DecodeAndDecrypt(clientSecret));
 
             JSONObject oAuthEndpointSecurityProperties = getOAuthEndpointSecurityProperties();
             int tokenRefreshInterval;
@@ -122,8 +122,8 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             OAuthEndpoint oAuthEndpoint = new OAuthEndpoint();
             oAuthEndpoint.setId((UUID.randomUUID().toString()));
             oAuthEndpoint.setTokenApiUrl(tokenApiUrl);
-            oAuthEndpoint.setApiKey(decryptedApiKey);
-            oAuthEndpoint.setApiSecret(decryptedApiSecret);
+            oAuthEndpoint.setClientId(decryptedClientId);
+            oAuthEndpoint.setClientSecret(decryptedClientSecret);
             oAuthEndpoint.setUsername(username);
             oAuthEndpoint.setPassword(password);
             oAuthEndpoint.setGrantType(grantType);

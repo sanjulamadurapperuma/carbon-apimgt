@@ -53,8 +53,8 @@ public enum TypeEnum {
     private String password = null;
     private String grantType = null;
     private String tokenUrl = null;
-    private String apiKey = null;
-    private String apiSecret = null;
+    private String clientId = null;
+    private String clientSecret = null;
     private Object customParameters = null;
 
   /**
@@ -145,36 +145,36 @@ public enum TypeEnum {
 
   /**
    **/
-  public APIEndpointSecurityDTO apiKey(String apiKey) {
-    this.apiKey = apiKey;
+  public APIEndpointSecurityDTO clientId(String clientId) {
+    this.clientId = clientId;
     return this;
   }
 
   
   @ApiModelProperty(example = "by2gPAePag6N165_NVnKB7cI8iAa", value = "")
-  @JsonProperty("apiKey")
-  public String getApiKey() {
-    return apiKey;
+  @JsonProperty("clientId")
+  public String getClientId() {
+    return clientId;
   }
-  public void setApiKey(String apiKey) {
-    this.apiKey = apiKey;
+  public void setClientId(String clientId) {
+    this.clientId = clientId;
   }
 
   /**
    **/
-  public APIEndpointSecurityDTO apiSecret(String apiSecret) {
-    this.apiSecret = apiSecret;
+  public APIEndpointSecurityDTO clientSecret(String clientSecret) {
+    this.clientSecret = clientSecret;
     return this;
   }
 
   
   @ApiModelProperty(example = "3KQt5bvgoesIS7TRj58IsoqlIgIa", value = "")
-  @JsonProperty("apiSecret")
-  public String getApiSecret() {
-    return apiSecret;
+  @JsonProperty("clientSecret")
+  public String getClientSecret() {
+    return clientSecret;
   }
-  public void setApiSecret(String apiSecret) {
-    this.apiSecret = apiSecret;
+  public void setClientSecret(String clientSecret) {
+    this.clientSecret = clientSecret;
   }
 
   /**
@@ -209,14 +209,14 @@ public enum TypeEnum {
         Objects.equals(password, apIEndpointSecurity.password) &&
         Objects.equals(grantType, apIEndpointSecurity.grantType) &&
         Objects.equals(tokenUrl, apIEndpointSecurity.tokenUrl) &&
-        Objects.equals(apiKey, apIEndpointSecurity.apiKey) &&
-        Objects.equals(apiSecret, apIEndpointSecurity.apiSecret) &&
+        Objects.equals(clientId, apIEndpointSecurity.clientId) &&
+        Objects.equals(clientSecret, apIEndpointSecurity.clientSecret) &&
         Objects.equals(customParameters, apIEndpointSecurity.customParameters);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, username, password, grantType, tokenUrl, apiKey, apiSecret, customParameters);
+    return Objects.hash(type, username, password, grantType, tokenUrl, clientId, clientSecret, customParameters);
   }
 
   @Override
@@ -229,8 +229,8 @@ public enum TypeEnum {
     sb.append("    password: ").append(toIndentedString(password)).append("\n");
     sb.append("    grantType: ").append(toIndentedString(grantType)).append("\n");
     sb.append("    tokenUrl: ").append(toIndentedString(tokenUrl)).append("\n");
-    sb.append("    apiKey: ").append(toIndentedString(apiKey)).append("\n");
-    sb.append("    apiSecret: ").append(toIndentedString(apiSecret)).append("\n");
+    sb.append("    clientId: ").append(toIndentedString(clientId)).append("\n");
+    sb.append("    clientSecret: ").append(toIndentedString(clientSecret)).append("\n");
     sb.append("    customParameters: ").append(toIndentedString(customParameters)).append("\n");
     sb.append("}");
     return sb.toString();

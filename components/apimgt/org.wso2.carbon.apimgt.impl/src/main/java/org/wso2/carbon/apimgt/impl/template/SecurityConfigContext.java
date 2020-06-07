@@ -111,8 +111,8 @@ public class SecurityConfigContext extends ConfigContextDecorator {
                     endpointSecurityModel.setType(APIConstants.ENDPOINT_SECURITY_TYPE_OAUTH);
                     endpointSecurityModel.setGrantType(api.getGrantType());
                     endpointSecurityModel.setTokenUrl(api.getTokenUrl());
-                    endpointSecurityModel.setApiKey(api.getApiKey());
-                    endpointSecurityModel.setApiSecret(api.getApiSecret());
+                    endpointSecurityModel.setClientId(api.getClientId());
+                    endpointSecurityModel.setClientSecret(api.getClientSecret());
                     if (api.getCustomParameters() != null) {
                         endpointSecurityModel.setCustomParameters(api.getCustomParameters());
                     } else {
@@ -191,8 +191,8 @@ public class SecurityConfigContext extends ConfigContextDecorator {
                                 .equals(APIConstants.ENDPOINT_SECURITY_TYPE_OAUTH)) {
                             endpointSecurityModel.setGrantType(endpointSecurityEntry.getValue().getGrantType());
                             endpointSecurityModel.setTokenUrl(endpointSecurityEntry.getValue().getTokenUrl());
-                            endpointSecurityModel.setApiKey(endpointSecurityEntry.getValue().getApiKey());
-                            endpointSecurityModel.setApiSecret(endpointSecurityEntry.getValue().getApiSecret());
+                            endpointSecurityModel.setClientId(endpointSecurityEntry.getValue().getClientId());
+                            endpointSecurityModel.setClientSecret(endpointSecurityEntry.getValue().getClientSecret());
                             if (endpointSecurityEntry.getValue().getCustomParameters() != null) {
                                 endpointSecurityModel.setCustomParameters(
                                         endpointSecurityEntry.getValue().getCustomParameters());

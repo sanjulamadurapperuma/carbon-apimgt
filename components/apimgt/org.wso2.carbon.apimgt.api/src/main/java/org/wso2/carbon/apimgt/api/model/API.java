@@ -95,8 +95,8 @@ public class API implements Serializable {
     private String endpointUTPassword;
     private String grantType;
     private String tokenUrl;
-    private String apiKey;
-    private String apiSecret;
+    private String clientId;
+    private String clientSecret;
     private String customParameters;
 
     private String transports;
@@ -715,29 +715,29 @@ public class API implements Serializable {
     /**
      * @return the apiKey
      */
-    public String getApiKey() {
-        return apiKey;
+    public String getClientId() {
+        return clientId;
     }
 
     /**
-     * @param apiKey the apiKey to set
+     * @param clientId the apiKey to set
      */
-    public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
     }
 
     /**
      * @return the apiSecret
      */
-    public String getApiSecret() {
-        return apiSecret;
+    public String getClientSecret() {
+        return clientSecret;
     }
 
     /**
-     * @param apiSecret the apiSecret to set
+     * @param clientSecret the apiSecret to set
      */
-    public void setApiSecret(String apiSecret) {
-        this.apiSecret = apiSecret;
+    public void setClientSecret(String clientSecret) {
+        this.clientSecret = clientSecret;
     }
 
     /**

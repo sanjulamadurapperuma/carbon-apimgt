@@ -17,8 +17,6 @@
  */
 package org.wso2.carbon.apimgt.api.model;
 
-import org.json.simple.JSONObject;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,9 +34,9 @@ public class EndpointSecurity {
 
     private String tokenUrl = null;
 
-    private String apiKey = null;
+    private String clientId = null;
 
-    private String apiSecret = null;
+    private String clientSecret = null;
 
     private String customParameters = null;
 
@@ -100,20 +98,20 @@ public class EndpointSecurity {
         this.tokenUrl = tokenUrl;
     }
 
-    public String getApiKey() {
-        return apiKey;
+    public String getClientId() {
+        return clientId;
     }
 
-    public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
+    public void setClientId(String clientId) {
+        this.clientId = clientId;
     }
 
-    public String getApiSecret() {
-        return apiSecret;
+    public String getClientSecret() {
+        return clientSecret;
     }
 
-    public void setApiSecret(String apiSecret) {
-        this.apiSecret = apiSecret;
+    public void setClientSecret(String clientSecret) {
+        this.clientSecret = clientSecret;
     }
 
     public String getCustomParameters() {
@@ -138,7 +136,7 @@ public class EndpointSecurity {
     public String toString() {
         return "EndpointSecurity{" + "password='" + password + '\'' + ", type='" + type + '\'' + ", enabled=" + enabled
                 + ", username='" + username + '\'' + ", grantType='" + grantType + '\'' + ", tokenUrl='" + tokenUrl
-                + '\'' + ", apiKey='" + apiKey + '\'' + ", apiSecret='" + apiSecret + '\'' + ", customParameters="
+                + '\'' + ", apiKey='" + clientId + '\'' + ", apiSecret='" + clientSecret + '\'' + ", customParameters="
                 + customParameters + ", additionalProperties=" + additionalProperties + '}';
     }
 }

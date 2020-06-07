@@ -1613,8 +1613,8 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                 if (api.isEndpointOAuth()) {
                     api.setGrantType(oldApi.getGrantType());
                     api.setTokenUrl(oldApi.getTokenUrl());
-                    api.setApiKey(oldApi.getApiKey());
-                    api.setApiSecret(oldApi.getApiSecret());
+                    api.setClientId(oldApi.getClientId());
+                    api.setClientSecret(oldApi.getClientSecret());
                     api.setCustomParameters(oldApi.getCustomParameters());
                 }
 
@@ -1648,8 +1648,8 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                                     if (endpointSecurity.getType().equals(APIConstants.ENDPOINT_SECURITY_TYPE_OAUTH)) {
                                         endpointSecurity.setGrantType(oldEndpointSecurity.getGrantType());
                                         endpointSecurity.setTokenUrl(oldEndpointSecurity.getTokenUrl());
-                                        endpointSecurity.setApiKey(oldEndpointSecurity.getApiKey());
-                                        endpointSecurity.setApiSecret(oldEndpointSecurity.getApiSecret());
+                                        endpointSecurity.setClientId(oldEndpointSecurity.getClientId());
+                                        endpointSecurity.setClientSecret(oldEndpointSecurity.getClientSecret());
                                         endpointSecurity.setCustomParameters(oldEndpointSecurity.getCustomParameters());
                                     }
                                 }
@@ -1672,8 +1672,8 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                                     if (endpointSecurity.getType().equals(APIConstants.ENDPOINT_SECURITY_TYPE_OAUTH)) {
                                         endpointSecurity.setGrantType(oldEndpointSecurity.getGrantType());
                                         endpointSecurity.setTokenUrl(oldEndpointSecurity.getTokenUrl());
-                                        endpointSecurity.setApiKey(oldEndpointSecurity.getApiKey());
-                                        endpointSecurity.setApiSecret(oldEndpointSecurity.getApiSecret());
+                                        endpointSecurity.setClientId(oldEndpointSecurity.getClientId());
+                                        endpointSecurity.setClientSecret(oldEndpointSecurity.getClientSecret());
                                         endpointSecurity.setCustomParameters(oldEndpointSecurity.getCustomParameters());
                                     }
                                 }

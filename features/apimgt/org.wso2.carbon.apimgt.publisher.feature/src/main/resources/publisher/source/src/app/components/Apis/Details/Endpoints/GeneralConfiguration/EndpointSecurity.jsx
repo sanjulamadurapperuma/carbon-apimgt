@@ -74,8 +74,8 @@ function EndpointSecurity(props) {
         password: '',
         grantType: '',
         tokenUrl: '',
-        apiKey: '',
-        apiSecret: '',
+        clientId: '',
+        clientSecret: '',
         customParameters: {},
     });
     const [securityValidity, setSecurityValidity] = useState();
@@ -130,15 +130,15 @@ function EndpointSecurity(props) {
         let tmpSecurity = {};
         if (securityInfo !== null) {
             const {
-                type, username, password, grantType, tokenUrl, apiKey, apiSecret, customParameters,
+                type, username, password, grantType, tokenUrl, clientId, clientSecret, customParameters,
             } = securityInfo;
             tmpSecurity.type = type;
             tmpSecurity.username = username;
             tmpSecurity.password = password === '' ? '**********' : password;
             tmpSecurity.grantType = grantType;
             tmpSecurity.tokenUrl = tokenUrl;
-            tmpSecurity.apiKey = apiKey === '' ? '********' : apiKey;
-            tmpSecurity.apiSecret = apiSecret === '' ? '********' : apiSecret;
+            tmpSecurity.apiKey = clientId === '' ? '********' : clientId;
+            tmpSecurity.apiSecret = clientSecret === '' ? '********' : clientSecret;
             tmpSecurity.customParameters = customParameters;
         }
         setEndpointSecurityInfo(tmpSecurity);
@@ -410,36 +410,36 @@ function EndpointSecurity(props) {
                                         disabled={isRestricted(['apim:api_create'], api)}
                                         required
                                         fullWidth
-                                        error={securityValidity && securityValidity.apiKey === false}
+                                        error={securityValidity && securityValidity.clientId === false}
                                         helperText={
-                                            securityValidity && securityValidity.apiKey === false ? (
+                                            securityValidity && securityValidity.clientId === false ? (
                                                 <FormattedMessage
                                                     id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                            + 'EndpointSecurity.no.apiKey.error'}
-                                                    defaultMessage='API Key should not be empty'
+                                            + 'EndpointSecurity.no.clientId.error'}
+                                                    defaultMessage='Client ID should not be empty'
                                                 />
                                             ) : (
                                                 <FormattedMessage
                                                     id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                                    + 'EndpointSecurity.apiKey.message'}
-                                                    defaultMessage='Enter API Key'
+                                                    + 'EndpointSecurity.clientId.message'}
+                                                    defaultMessage='Enter Client ID'
                                                 />
                                             )
                                         }
                                         variant='outlined'
-                                        id='auth-apiKey'
+                                        id='auth-clientId'
                                         label={(
                                             <FormattedMessage
                                                 id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                                + 'EndpointSecurity.api.key.input'}
-                                                defaultMessage='API Key'
+                                                + 'EndpointSecurity.clientId.input'}
+                                                defaultMessage='Client ID'
                                             />
                                         )}
                                         onChange={(event) => setEndpointSecurityInfo(
-                                            { ...endpointSecurityInfo, apiKey: event.target.value },
+                                            { ...endpointSecurityInfo, clientId: event.target.value },
                                         )}
-                                        value={endpointSecurityInfo.apiKey}
-                                        onBlur={() => validateAndUpdateSecurityInfo('apiKey')}
+                                        value={endpointSecurityInfo.clientId}
+                                        onBlur={() => validateAndUpdateSecurityInfo('clientId')}
                                     />
                                 </Grid>
 
@@ -448,36 +448,36 @@ function EndpointSecurity(props) {
                                         disabled={isRestricted(['apim:api_create'], api)}
                                         required
                                         fullWidth
-                                        error={securityValidity && securityValidity.apiSecret === false}
+                                        error={securityValidity && securityValidity.clientSecret === false}
                                         helperText={
-                                            securityValidity && securityValidity.apiSecret === false ? (
+                                            securityValidity && securityValidity.clientSecret === false ? (
                                                 <FormattedMessage
                                                     id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                            + 'EndpointSecurity.no.apiSecret.error'}
-                                                    defaultMessage='API Secret should not be empty'
+                                            + 'EndpointSecurity.no.clientSecret.error'}
+                                                    defaultMessage='Client Secret should not be empty'
                                                 />
                                             ) : (
                                                 <FormattedMessage
                                                     id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                            + 'EndpointSecurity.apiSecret.message'}
-                                                    defaultMessage='Enter API Secret'
+                                            + 'EndpointSecurity.clientSecret.message'}
+                                                    defaultMessage='Enter Client Secret'
                                                 />
                                             )
                                         }
                                         variant='outlined'
-                                        id='auth-apiSecret'
+                                        id='auth-clientSecret'
                                         label={(
                                             <FormattedMessage
                                                 id={'Apis.Details.Endpoints.GeneralConfiguration.'
-                                                + 'EndpointSecurity.api.secret.input'}
-                                                defaultMessage='API Secret'
+                                                + 'EndpointSecurity.clientSecret.input'}
+                                                defaultMessage='Client Secret'
                                             />
                                         )}
                                         onChange={(event) => setEndpointSecurityInfo(
-                                            { ...endpointSecurityInfo, apiSecret: event.target.value },
+                                            { ...endpointSecurityInfo, clientSecret: event.target.value },
                                         )}
-                                        value={endpointSecurityInfo.apiSecret}
-                                        onBlur={() => validateAndUpdateSecurityInfo('apiSecret')}
+                                        value={endpointSecurityInfo.clientSecret}
+                                        onBlur={() => validateAndUpdateSecurityInfo('clientSecret')}
                                     />
                                 </Grid>
                             </>
