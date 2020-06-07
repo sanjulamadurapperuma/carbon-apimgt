@@ -40,7 +40,7 @@ const useStyles = makeStyles(() => ({
 function EditableParameterRow(props) {
     const {
         oldName, oldValue,
-        handleUpdateList, handleDelete, customParameters,
+        handleUpdateList, handleDelete,
         intl, isRestricted, api,
     } = props;
     const [newName, setName] = useState(oldName);
@@ -50,7 +50,7 @@ function EditableParameterRow(props) {
     /**
      * Set edit mode
      */
-    const updateEditMode = function () {
+    const updateEditMode = () => {
         setEditMode(!editMode);
     };
 
@@ -77,7 +77,7 @@ function EditableParameterRow(props) {
      * @param {*} itemValue value of the field
      * @returns {*} boolean value
      */
-    const validateEmpty = function (itemValue) {
+    const validateEmpty = (itemValue) => {
         if (itemValue === null) {
             return false;
         } else if (itemValue === '') {
@@ -90,7 +90,7 @@ function EditableParameterRow(props) {
     /**
      * Save the updated values in the custom parameters object
      */
-    const saveRow = function () {
+    const saveRow = () => {
         const oldRow = { oldName, oldValue };
         const newRow = { newName: newName || oldName, newValue: newValue || oldValue };
         handleUpdateList(oldRow, newRow);
@@ -100,7 +100,7 @@ function EditableParameterRow(props) {
     /**
      * Delete name-value pair in the custom parameters object
      */
-    const deleteRow = function () {
+    const deleteRow = () => {
         handleDelete(oldName);
     };
 
@@ -108,7 +108,7 @@ function EditableParameterRow(props) {
      * Keyboard event listener to save the name-value pair on Enter
      * @param {*} e event containing the key that was pressed
      */
-    const handleKeyDown = function (e) {
+    const handleKeyDown = (e) => {
         if (e.key === 'Enter') {
             saveRow();
         }
@@ -210,7 +210,6 @@ EditableParameterRow.propTypes = {
     classes: PropTypes.shape({}).isRequired,
     handleUpdateList: PropTypes.func.isRequired,
     handleDelete: PropTypes.func.isRequired,
-    customParameters: PropTypes.shape({}).isRequired,
 };
 
 export default injectIntl(EditableParameterRow);
