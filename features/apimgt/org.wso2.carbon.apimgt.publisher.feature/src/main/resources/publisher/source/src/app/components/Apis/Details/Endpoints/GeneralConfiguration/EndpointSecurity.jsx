@@ -584,7 +584,8 @@ function EndpointSecurity(props) {
 
             <Grid item xs={12} />
 
-            {(!isEmpty(endpointSecurityInfo.customParameters) || showAddParameter) && (
+            {(endpointSecurityInfo.type === 'OAUTH')
+            && (!isEmpty(endpointSecurityInfo.customParameters) || showAddParameter) && (
                 <Grid item xs={12}>
                     <Table className={classes.table}>
                         <TableHead>
