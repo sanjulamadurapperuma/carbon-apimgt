@@ -609,7 +609,7 @@ function EndpointSecurity(props) {
                             <FormattedMessage
                                 id='Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.add.new.parameter.info'
                                 defaultMessage={'You can add any additional payload parameters'
-                                + ' required for the backend below'}
+                                + ' required for the endpoint below'}
                             />
                         </ListItemText>
                     </ListItem>
