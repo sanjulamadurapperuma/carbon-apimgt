@@ -772,23 +772,6 @@ public class ApisApiServiceImpl implements ApisApiService {
                         body.setEndpointConfig(endpointConfig);
                     }
                 }
-
-
-                // OLd flow for OAuth API Security
-                APIEndpointSecurityDTO endpointSecurity = body.getEndpointSecurity();
-                if (endpointSecurity != null && endpointSecurity.getType()
-                        .compareTo(APIEndpointSecurityDTO.TypeEnum.OAUTH) == 0) {
-                    String apiKey = endpointSecurity.getClientId();
-                    String apiSecret = endpointSecurity.getClientSecret();
-                    if (!StringUtils.isEmpty(apiKey) && !StringUtils.isEmpty(apiSecret)) {
-                        CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
-                        String encryptedClientId = cryptoUtil.encryptAndBase64Encode(apiKey.getBytes());
-                        String encryptedClientSecret = cryptoUtil.encryptAndBase64Encode(apiSecret.getBytes());
-                        endpointSecurity.setClientId(encryptedClientId);
-                        endpointSecurity.setClientSecret(encryptedClientSecret);
-                        body.setEndpointSecurity(endpointSecurity);
-                    }
-                }
             }
 
             // AWS Lambda: secret key encryption while updating the API

@@ -728,24 +728,6 @@ public class APIMappingUtil {
             api.setEndpointUTPassword(securityDTO.getPassword());
             if (APIEndpointSecurityDTO.TypeEnum.DIGEST.equals(securityDTO.getType())) {
                 api.setEndpointAuthDigest(true);
-            } else if (APIEndpointSecurityDTO.TypeEnum.OAUTH.equals(securityDTO.getType())) {
-                api.setEndpointOAuth(true);
-                api.setGrantType(securityDTO.getGrantType());
-                api.setTokenUrl(securityDTO.getTokenUrl());
-                api.setClientId(securityDTO.getClientId());
-                api.setClientSecret(securityDTO.getClientSecret());
-                if (securityDTO.getCustomParameters() != null) {
-                    Gson gson = new Gson();
-                    JSONParser parser = new JSONParser();
-                    JSONObject customParameters = null;
-                    try {
-                        customParameters = (JSONObject) parser.parse(gson
-                                .toJson(securityDTO.getCustomParameters()));
-                    } catch (ParseException e) {
-                        log.error("Cannot parse OAuth Custom Parameters", e);
-                    }
-                    api.setCustomParameters(String.valueOf(customParameters));
-                }
             }
         }
     }
@@ -1149,44 +1131,16 @@ public class APIMappingUtil {
         if (api.isEndpointSecured()) {
             APIEndpointSecurityDTO securityDTO = new APIEndpointSecurityDTO();
             securityDTO.setType(APIEndpointSecurityDTO.TypeEnum.BASIC); //set default as basic
-
+            securityDTO.setUsername(api.getEndpointUTUsername());
             String tenantDomain = MultitenantUtils.getTenantDomain(APIUtil.replaceEmailDomainBack(api.getId()
                     .getProviderName()));
-
+            if (checkEndpointSecurityPasswordEnabled(tenantDomain)) {
+                securityDTO.setPassword(api.getEndpointUTPassword());
+            } else {
+                securityDTO.setPassword(""); //Do not expose password
+            }
             if (api.isEndpointAuthDigest()) {
                 securityDTO.setType(APIEndpointSecurityDTO.TypeEnum.DIGEST);
-                securityDTO.setUsername(api.getEndpointUTUsername());
-                if (checkEndpointSecurityPasswordEnabled(tenantDomain)) {
-                    securityDTO.setPassword(api.getEndpointUTPassword());
-                } else {
-                    securityDTO.setPassword(""); //Do not expose password
-                }
-            } else if (api.isEndpointOAuth()) {
-                try {
-                    CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
-                    securityDTO.setType(APIEndpointSecurityDTO.TypeEnum.OAUTH);
-                    securityDTO.setUsername(api.getEndpointUTUsername());
-                    if (checkEndpointSecurityPasswordEnabled(tenantDomain)) {
-                        securityDTO.setPassword(api.getEndpointUTPassword());
-                    } else {
-                        securityDTO.setPassword(""); //Do not expose password
-                    }
-                    securityDTO.setTokenUrl(api.getTokenUrl());
-                    securityDTO.setClientId(new String(cryptoUtil.base64DecodeAndDecrypt(api.getClientId())));
-                    securityDTO.setClientSecret(new String(cryptoUtil.base64DecodeAndDecrypt(api.getClientSecret())));
-                    securityDTO.setGrantType(api.getGrantType());
-                    securityDTO.setCustomParameters(api.getCustomParameters());
-                } catch (CryptoException e) {
-                    String msg = "Failed to decrypt API Key and API Secret for OAuth Endpoint";
-                    throw new APIManagementException(msg, e);
-                }
-            } else {
-                securityDTO.setUsername(api.getEndpointUTUsername());
-                if (checkEndpointSecurityPasswordEnabled(tenantDomain)) {
-                    securityDTO.setPassword(api.getEndpointUTPassword());
-                } else {
-                    securityDTO.setPassword(""); //Do not expose password
-                }
             }
             dto.setEndpointSecurity(securityDTO);
         }
