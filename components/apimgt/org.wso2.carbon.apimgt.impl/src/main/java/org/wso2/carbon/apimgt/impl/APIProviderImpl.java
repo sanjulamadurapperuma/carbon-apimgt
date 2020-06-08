@@ -1369,14 +1369,6 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                 api.setEndpointUTUsername(oldApi.getEndpointUTUsername());
                 api.setEndpointUTPassword(oldApi.getEndpointUTPassword());
 
-                if (api.isEndpointOAuth()) {
-                    api.setGrantType(oldApi.getGrantType());
-                    api.setTokenUrl(oldApi.getTokenUrl());
-                    api.setClientId(oldApi.getClientId());
-                    api.setClientSecret(oldApi.getClientSecret());
-                    api.setCustomParameters(oldApi.getCustomParameters());
-                }
-
                 if (log.isDebugEnabled()) {
                     log.debug("Using the previous username and password for endpoint security");
                 }
@@ -1479,25 +1471,20 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
             //This sets the endpoint security of the APIs based on the old artifact.
             APIGatewayManager gatewayManager = APIGatewayManager.getInstance();
             if (gatewayManager.isAPIPublished(api, tenantDomain)) {
-                if ((!api.isEndpointSecured() && !api.isEndpointAuthDigest() && !api.isEndpointOAuth())) {
+                if ((!api.isEndpointSecured() && !api.isEndpointAuthDigest())) {
                     boolean isSecured = Boolean.parseBoolean(
                             artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_SECURED));
                     boolean isDigestSecured = Boolean.parseBoolean(
                             artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_AUTH_DIGEST));
-                    boolean isOAuthSecured = Boolean.parseBoolean(
-                            artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_OAUTH));
                     String userName = artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_USERNAME);
                     String password = artifact.getAttribute(APIConstants.API_OVERVIEW_ENDPOINT_PASSWORD);
 
                     //Check for APIs marked as non-secured, but username is set.
-                    if (!isSecured && !isDigestSecured && !isOAuthSecured && userName != null) {
+                    if (!isSecured && !isDigestSecured && userName != null) {
                         String epAuthType = gatewayManager.getAPIEndpointSecurityType(api, tenantDomain);
                         if (APIConstants.APIEndpointSecurityConstants.DIGEST_AUTH.equalsIgnoreCase(epAuthType)) {
                             api.setEndpointSecured(true);
                             api.setEndpointAuthDigest(true);
-                        } else if (APIConstants.APIEndpointSecurityConstants.OAUTH.equalsIgnoreCase(epAuthType)) {
-                            api.setEndpointSecured(true);
-                            api.setEndpointOAuth(true);
                         } else if (APIConstants.APIEndpointSecurityConstants.BASIC_AUTH.equalsIgnoreCase(epAuthType)) {
                             api.setEndpointSecured(true);
                         }

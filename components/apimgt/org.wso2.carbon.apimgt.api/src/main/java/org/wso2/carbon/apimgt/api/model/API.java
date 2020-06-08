@@ -89,15 +89,9 @@ public class API implements Serializable {
     private List<Label> gatewayLabels;
 
     private boolean endpointSecured = false;
-    private boolean endpointOAuth = false;
     private boolean endpointAuthDigest = false;
     private String endpointUTUsername;
     private String endpointUTPassword;
-    private String grantType;
-    private String tokenUrl;
-    private String clientId;
-    private String clientSecret;
-    private String customParameters;
 
     private String transports;
     private String inSequence;
@@ -664,90 +658,6 @@ public class API implements Serializable {
      */
     public void setEndpointUTPassword(String endpointUTPassword) {
         this.endpointUTPassword = endpointUTPassword;
-    }
-
-    /**
-     * @return the endpointOAuth
-     */
-    public boolean isEndpointOAuth() {
-        return endpointOAuth;
-    }
-
-    /**
-     * @param endpointOAuth the endpointOAuth to set
-     */
-    public void setEndpointOAuth(boolean endpointOAuth) {
-        this.endpointOAuth = endpointOAuth;
-    }
-
-    /**
-     * @return the grantType
-     */
-    public String getGrantType() {
-        return grantType;
-    }
-
-    /**
-     * @param grantType the grantType to set
-     */
-    public void setGrantType(String grantType) {
-        this.grantType = grantType;
-    }
-
-    /**
-     * @return the tokenUrl
-     */
-    public String getTokenUrl() {
-        return tokenUrl;
-    }
-
-    /**
-     * @param tokenUrl the tokenUrl to set
-     */
-    public void setTokenUrl(String tokenUrl) {
-        this.tokenUrl = tokenUrl;
-    }
-
-    /**
-     * @return the apiKey
-     */
-    public String getClientId() {
-        return clientId;
-    }
-
-    /**
-     * @param clientId the apiKey to set
-     */
-    public void setClientId(String clientId) {
-        this.clientId = clientId;
-    }
-
-    /**
-     * @return the apiSecret
-     */
-    public String getClientSecret() {
-        return clientSecret;
-    }
-
-    /**
-     * @param clientSecret the apiSecret to set
-     */
-    public void setClientSecret(String clientSecret) {
-        this.clientSecret = clientSecret;
-    }
-
-    /**
-     * @return the customParameters
-     */
-    public String getCustomParameters() {
-        return customParameters;
-    }
-
-    /**
-     * @param customParameters the customParameters to set
-     */
-    public void setCustomParameters(String customParameters) {
-        this.customParameters = customParameters;
     }
 
     /**

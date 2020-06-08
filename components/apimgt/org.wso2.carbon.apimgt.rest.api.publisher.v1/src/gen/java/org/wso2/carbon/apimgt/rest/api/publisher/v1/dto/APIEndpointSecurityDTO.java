@@ -20,7 +20,7 @@ public class APIEndpointSecurityDTO   {
 @XmlEnum(String.class)
 public enum TypeEnum {
 
-    @XmlEnumValue("BASIC") BASIC(String.valueOf("BASIC")), @XmlEnumValue("DIGEST") DIGEST(String.valueOf("DIGEST")), @XmlEnumValue("OAUTH") OAUTH(String.valueOf("OAUTH"));
+    @XmlEnumValue("BASIC") BASIC(String.valueOf("BASIC")), @XmlEnumValue("DIGEST") DIGEST(String.valueOf("DIGEST"));
 
 
     private String value;
@@ -51,14 +51,9 @@ public enum TypeEnum {
     private TypeEnum type = null;
     private String username = null;
     private String password = null;
-    private String grantType = null;
-    private String tokenUrl = null;
-    private String clientId = null;
-    private String clientSecret = null;
-    private Object customParameters = null;
 
   /**
-   * Accepts one of the following, basic, digest or oauth.
+   * Accepts one of the following, basic or digest.
    **/
   public APIEndpointSecurityDTO type(TypeEnum type) {
     this.type = type;
@@ -66,7 +61,7 @@ public enum TypeEnum {
   }
 
   
-  @ApiModelProperty(example = "basic", value = "Accepts one of the following, basic, digest or oauth.")
+  @ApiModelProperty(example = "basic", value = "Accepts one of the following, basic or digest.")
   @JsonProperty("type")
   public TypeEnum getType() {
     return type;
@@ -109,91 +104,6 @@ public enum TypeEnum {
     this.password = password;
   }
 
-  /**
-   **/
-  public APIEndpointSecurityDTO grantType(String grantType) {
-    this.grantType = grantType;
-    return this;
-  }
-
-  
-  @ApiModelProperty(example = "client_credentials", value = "")
-  @JsonProperty("grantType")
-  public String getGrantType() {
-    return grantType;
-  }
-  public void setGrantType(String grantType) {
-    this.grantType = grantType;
-  }
-
-  /**
-   **/
-  public APIEndpointSecurityDTO tokenUrl(String tokenUrl) {
-    this.tokenUrl = tokenUrl;
-    return this;
-  }
-
-  
-  @ApiModelProperty(example = "http://localhost:8244/token", value = "")
-  @JsonProperty("tokenUrl")
-  public String getTokenUrl() {
-    return tokenUrl;
-  }
-  public void setTokenUrl(String tokenUrl) {
-    this.tokenUrl = tokenUrl;
-  }
-
-  /**
-   **/
-  public APIEndpointSecurityDTO clientId(String clientId) {
-    this.clientId = clientId;
-    return this;
-  }
-
-  
-  @ApiModelProperty(example = "by2gPAePag6N165_NVnKB7cI8iAa", value = "")
-  @JsonProperty("clientId")
-  public String getClientId() {
-    return clientId;
-  }
-  public void setClientId(String clientId) {
-    this.clientId = clientId;
-  }
-
-  /**
-   **/
-  public APIEndpointSecurityDTO clientSecret(String clientSecret) {
-    this.clientSecret = clientSecret;
-    return this;
-  }
-
-  
-  @ApiModelProperty(example = "3KQt5bvgoesIS7TRj58IsoqlIgIa", value = "")
-  @JsonProperty("clientSecret")
-  public String getClientSecret() {
-    return clientSecret;
-  }
-  public void setClientSecret(String clientSecret) {
-    this.clientSecret = clientSecret;
-  }
-
-  /**
-   **/
-  public APIEndpointSecurityDTO customParameters(Object customParameters) {
-    this.customParameters = customParameters;
-    return this;
-  }
-
-  
-  @ApiModelProperty(example = "\"{ scope: \\\"admin\\\", User-Agent: \\\"wso2\\\" }\"", value = "")
-  @JsonProperty("customParameters")
-  public Object getCustomParameters() {
-    return customParameters;
-  }
-  public void setCustomParameters(Object customParameters) {
-    this.customParameters = customParameters;
-  }
-
 
   @Override
   public boolean equals(java.lang.Object o) {
@@ -206,17 +116,12 @@ public enum TypeEnum {
     APIEndpointSecurityDTO apIEndpointSecurity = (APIEndpointSecurityDTO) o;
     return Objects.equals(type, apIEndpointSecurity.type) &&
         Objects.equals(username, apIEndpointSecurity.username) &&
-        Objects.equals(password, apIEndpointSecurity.password) &&
-        Objects.equals(grantType, apIEndpointSecurity.grantType) &&
-        Objects.equals(tokenUrl, apIEndpointSecurity.tokenUrl) &&
-        Objects.equals(clientId, apIEndpointSecurity.clientId) &&
-        Objects.equals(clientSecret, apIEndpointSecurity.clientSecret) &&
-        Objects.equals(customParameters, apIEndpointSecurity.customParameters);
+        Objects.equals(password, apIEndpointSecurity.password);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, username, password, grantType, tokenUrl, clientId, clientSecret, customParameters);
+    return Objects.hash(type, username, password);
   }
 
   @Override
@@ -227,11 +132,6 @@ public enum TypeEnum {
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("    username: ").append(toIndentedString(username)).append("\n");
     sb.append("    password: ").append(toIndentedString(password)).append("\n");
-    sb.append("    grantType: ").append(toIndentedString(grantType)).append("\n");
-    sb.append("    tokenUrl: ").append(toIndentedString(tokenUrl)).append("\n");
-    sb.append("    clientId: ").append(toIndentedString(clientId)).append("\n");
-    sb.append("    clientSecret: ").append(toIndentedString(clientSecret)).append("\n");
-    sb.append("    customParameters: ").append(toIndentedString(customParameters)).append("\n");
     sb.append("}");
     return sb.toString();
   }

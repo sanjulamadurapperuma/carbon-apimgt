@@ -107,17 +107,6 @@ public class SecurityConfigContext extends ConfigContextDecorator {
                 endpointSecurityModel.setPassword(api.getEndpointUTPassword());
                 if (api.isEndpointAuthDigest()) {
                     endpointSecurityModel.setType(APIConstants.ENDPOINT_SECURITY_TYPE_DIGEST);
-                } else if (api.isEndpointOAuth()) {
-                    endpointSecurityModel.setType(APIConstants.ENDPOINT_SECURITY_TYPE_OAUTH);
-                    endpointSecurityModel.setGrantType(api.getGrantType());
-                    endpointSecurityModel.setTokenUrl(api.getTokenUrl());
-                    endpointSecurityModel.setClientId(api.getClientId());
-                    endpointSecurityModel.setClientSecret(api.getClientSecret());
-                    if (api.getCustomParameters() != null) {
-                        endpointSecurityModel.setCustomParameters(api.getCustomParameters());
-                    } else {
-                        endpointSecurityModel.setCustomParameters("");
-                    }
                 } else {
                     endpointSecurityModel.setType(APIConstants.ENDPOINT_SECURITY_TYPE_BASIC);
                 }
