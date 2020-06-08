@@ -816,11 +816,22 @@ public class APIMappingUtil {
                                 .get(APIConstants.OAuthConstants.OAUTH_CUSTOM_PARAMETERS);
                         JSONObject customParameters = (JSONObject) parser.parse(customParametersString);
 
+                        CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
                         if (productionEndpointType.compareTo(APIConstants.OAuthConstants.OAUTH) == 0) {
-                            productionEndpointSecurity.put(APIConstants
-                                    .OAuthConstants.OAUTH_CLIENT_ID, "");
-                            productionEndpointSecurity.put(APIConstants
-                                    .OAuthConstants.OAUTH_CLIENT_SECRET, "");
+                            String clientId = (String) productionEndpointSecurity
+                                    .get(APIConstants.OAuthConstants.OAUTH_CLIENT_ID);
+                            String clientSecret = (String) productionEndpointSecurity
+                                    .get(APIConstants.OAuthConstants.OAUTH_CLIENT_SECRET);
+                            if (StringUtils.isNotEmpty(clientId)) {
+                                productionEndpointSecurity.put(APIConstants
+                                        .OAuthConstants.OAUTH_CLIENT_ID,
+                                        new String(cryptoUtil.base64DecodeAndDecrypt(clientId)));
+                            }
+                            if (StringUtils.isNotEmpty(clientSecret)) {
+                                productionEndpointSecurity.put(APIConstants
+                                        .OAuthConstants.OAUTH_CLIENT_SECRET,
+                                        new String(cryptoUtil.base64DecodeAndDecrypt(clientSecret)));
+                            }
                         }
 
                         productionEndpointSecurity.put(
@@ -861,6 +872,8 @@ public class APIMappingUtil {
                 //logs the error and continues as this is not a blocker
                 log.error("Cannot convert endpoint configurations when setting endpoint for API. " +
                         "API ID = " + model.getId(), e);
+            } catch (CryptoException e) {
+                log.error("Error while decrypting client credentials for API: " + model.getId() , e);
             }
         }
       /*  if (!StringUtils.isBlank(model.getThumbnailUrl())) {todo
@@ -1159,13 +1172,8 @@ public class APIMappingUtil {
                         securityDTO.setPassword(""); //Do not expose password
                     }
                     securityDTO.setTokenUrl(api.getTokenUrl());
-                    if (checkEndpointSecurityPasswordEnabled(tenantDomain)) {
-                        securityDTO.setClientId(new String(cryptoUtil.base64DecodeAndDecrypt(api.getClientId())));
-                        securityDTO.setClientSecret(new String(cryptoUtil.base64DecodeAndDecrypt(api.getClientSecret())));
-                    } else {
-                        securityDTO.setClientId(""); // Do not expose API Key
-                        securityDTO.setClientSecret(""); // Do not expose API Secret
-                    }
+                    securityDTO.setClientId(new String(cryptoUtil.base64DecodeAndDecrypt(api.getClientId())));
+                    securityDTO.setClientSecret(new String(cryptoUtil.base64DecodeAndDecrypt(api.getClientSecret())));
                     securityDTO.setGrantType(api.getGrantType());
                     securityDTO.setCustomParameters(api.getCustomParameters());
                 } catch (CryptoException e) {
