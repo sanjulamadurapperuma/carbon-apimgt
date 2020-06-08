@@ -132,11 +132,11 @@ public class EndpointSecurity {
         this.additionalProperties = additionalProperties;
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
         return "EndpointSecurity{" + "password='" + password + '\'' + ", type='" + type + '\'' + ", enabled=" + enabled
                 + ", username='" + username + '\'' + ", grantType='" + grantType + '\'' + ", tokenUrl='" + tokenUrl
-                + '\'' + ", apiKey='" + clientId + '\'' + ", apiSecret='" + clientSecret + '\'' + ", customParameters="
-                + customParameters + ", additionalProperties=" + additionalProperties + '}';
+                + '\'' + ", clientId='" + clientId + '\'' + ", clientSecret='" + clientSecret + '\''
+                + ", customParameters='" + customParameters + '\'' + ", additionalProperties=" + additionalProperties
+                + '}';
     }
 }

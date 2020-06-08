@@ -594,9 +594,7 @@ public class ApisApiServiceImpl implements ApisApiService {
             JSONParser parser = new JSONParser();
             String oldEndpointConfigString = originalAPI.getEndpointConfig();
             JSONObject oldEndpointConfig = (JSONObject) parser.parse(oldEndpointConfigString);
-            String oldProductionApiKey = null;
             String oldProductionApiSecret = null;
-            String oldSandboxApiKey = null;
             String oldSandboxApiSecret = null;
 
             if (oldEndpointConfig != null) {
@@ -610,8 +608,6 @@ public class ApisApiServiceImpl implements ApisApiService {
                         if (oldEndpointSecurityProduction.get(APIConstants
                                 .OAuthConstants.OAUTH_CLIENT_ID) != null && oldEndpointSecurityProduction.get(
                                 APIConstants.OAuthConstants.OAUTH_CLIENT_SECRET) != null) {
-                            oldProductionApiKey = oldEndpointSecurityProduction.get(APIConstants
-                                    .OAuthConstants.OAUTH_CLIENT_ID).toString();
                             oldProductionApiSecret = oldEndpointSecurityProduction.get(APIConstants
                                     .OAuthConstants.OAUTH_CLIENT_SECRET).toString();
                         }
@@ -623,8 +619,6 @@ public class ApisApiServiceImpl implements ApisApiService {
                         if (oldEndpointSecuritySandbox.get(APIConstants
                         .OAuthConstants.OAUTH_CLIENT_ID) != null && oldEndpointSecuritySandbox.get(
                                 APIConstants.OAuthConstants.OAUTH_CLIENT_SECRET) != null) {
-                            oldSandboxApiKey = oldEndpointSecuritySandbox.get(APIConstants
-                                    .OAuthConstants.OAUTH_CLIENT_ID).toString();
                             oldSandboxApiSecret = oldEndpointSecuritySandbox.get(APIConstants
                                     .OAuthConstants.OAUTH_CLIENT_SECRET).toString();
                         }
@@ -713,7 +707,6 @@ public class ApisApiServiceImpl implements ApisApiService {
                     String secretKey = (String) endpointConfig.get(APIConstants.AMZN_SECRET_KEY);
                     if (!StringUtils.isEmpty(secretKey)) {
                         if (!APIConstants.AWS_SECRET_KEY.equals(secretKey)) {
-                            CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
                             String encryptedSecretKey = cryptoUtil.encryptAndBase64Encode(secretKey.getBytes());
                             endpointConfig.put(APIConstants.AMZN_SECRET_KEY, encryptedSecretKey);
                             body.setEndpointConfig(endpointConfig);
