@@ -634,6 +634,7 @@ public class ApisApiServiceImpl implements ApisApiService {
 
 
             LinkedHashMap endpointConfig = (LinkedHashMap) body.getEndpointConfig();
+            CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
 
             // OAuth 2.0 backend protection: Api Key and Api Secret encryption while updating the API
             if (endpointConfig != null) {
@@ -657,7 +658,6 @@ public class ApisApiServiceImpl implements ApisApiService {
                             String apiSecret = endpointSecurityProduction.get(APIConstants
                                     .OAuthConstants.OAUTH_CLIENT_SECRET).toString();
 
-                            CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
                             if (!apiSecret.equals("")) {
                                 String encryptedApiSecret = cryptoUtil.encryptAndBase64Encode(apiSecret.getBytes());
                                 endpointSecurityProduction.put(APIConstants
@@ -690,7 +690,6 @@ public class ApisApiServiceImpl implements ApisApiService {
                             String apiSecret = endpointSecuritySandbox.get(APIConstants
                                     .OAuthConstants.OAUTH_CLIENT_SECRET).toString();
 
-                            CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
                             if (!apiSecret.equals("")) {
                                 String encryptedApiSecret = cryptoUtil.encryptAndBase64Encode(apiSecret.getBytes());
                                 endpointSecuritySandbox.put(APIConstants
