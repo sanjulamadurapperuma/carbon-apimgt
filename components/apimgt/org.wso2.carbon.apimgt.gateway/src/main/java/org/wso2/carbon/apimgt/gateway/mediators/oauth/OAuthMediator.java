@@ -106,7 +106,6 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
                 }
             }
 
-            String decryptedClientId = new String(cryptoUtil.base64DecodeAndDecrypt(clientId));
             String decryptedClientSecret = new String(cryptoUtil.base64DecodeAndDecrypt(clientSecret));
 
             JSONObject oAuthEndpointSecurityProperties = getOAuthEndpointSecurityProperties();
@@ -122,7 +121,7 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             OAuthEndpoint oAuthEndpoint = new OAuthEndpoint();
             oAuthEndpoint.setId((UUID.randomUUID().toString()));
             oAuthEndpoint.setTokenApiUrl(tokenApiUrl);
-            oAuthEndpoint.setClientId(decryptedClientId);
+            oAuthEndpoint.setClientId(clientId);
             oAuthEndpoint.setClientSecret(decryptedClientSecret);
             oAuthEndpoint.setUsername(username);
             oAuthEndpoint.setPassword(password);
