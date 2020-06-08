@@ -16,7 +16,14 @@
 
 import React, { useState, useEffect, useContext } from 'react';
 import PropTypes from 'prop-types';
-import { Grid, TextField, MenuItem } from '@material-ui/core';
+import {
+    Grid, TextField, MenuItem, InputAdornment,
+    Icon,
+    ListItem,
+    ListItemAvatar,
+    ListItemText,
+} from '@material-ui/core';
+import { RemoveRedEye } from '@material-ui/icons';
 import { FormattedMessage, injectIntl } from 'react-intl';
 import { withStyles } from '@material-ui/core/styles';
 import Table from '@material-ui/core/Table';
@@ -52,7 +59,13 @@ const styles = () => ({
         marginRight: '16px',
     },
     button: {
-        marginTop: '20px',
+        marginTop: '5px',
+    },
+    listItem: {
+        marginTop: '25px',
+    },
+    eye: {
+        cursor: 'pointer',
     },
 });
 
@@ -80,6 +93,7 @@ function EndpointSecurity(props) {
     const [securityValidity, setSecurityValidity] = useState();
 
     const [showAddParameter, setShowAddParameter] = useState(false);
+    const [clientSecretIsMasked, setClientSecretIsMasked] = useState(true);
     // Implementation of useState variables for parameter name and value
     const [parameterName, setParameterName] = useState(null);
     const [parameterValue, setParameterValue] = useState(null);
@@ -120,7 +134,7 @@ function EndpointSecurity(props) {
             key: 'PASSWORD',
             value: intl.formatMessage({
                 id: 'Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.oauth.grant.type.password',
-                defaultMessage: 'Password',
+                defaultMessage: 'Resource Owner Password',
             }),
         },
     ];
@@ -180,6 +194,13 @@ function EndpointSecurity(props) {
      */
     const toggleAddParameter = () => {
         setShowAddParameter(!showAddParameter);
+    };
+
+    /**
+     * Show or hide the Client Secret
+     */
+    const toggleClientSecretMask = () => {
+        setClientSecretIsMasked(!clientSecretIsMasked);
     };
 
     /**
@@ -463,6 +484,7 @@ function EndpointSecurity(props) {
                                         }
                                         variant='outlined'
                                         id='auth-clientSecret'
+                                        type={clientSecretIsMasked ? 'password' : 'text'}
                                         label={(
                                             <FormattedMessage
                                                 id={'Apis.Details.Endpoints.GeneralConfiguration.'
@@ -475,6 +497,16 @@ function EndpointSecurity(props) {
                                         )}
                                         value={endpointSecurityInfo.clientSecret}
                                         onBlur={() => validateAndUpdateSecurityInfo('clientSecret')}
+                                        InputProps={{
+                                            endAdornment: (
+                                                <InputAdornment position='end'>
+                                                    <RemoveRedEye
+                                                        className={classes.eye}
+                                                        onClick={toggleClientSecretMask}
+                                                    />
+                                                </InputAdornment>
+                                            ),
+                                        }}
                                     />
                                 </Grid>
                             </>
@@ -563,9 +595,24 @@ function EndpointSecurity(props) {
                 </>
             )}
 
-            {endpointSecurityInfo.type === 'OAUTH'
+            {endpointSecurityInfo.type === 'OAUTH' && (endpointSecurityInfo.grantType === 'CLIENT_CREDENTIALS'
+            || endpointSecurityInfo.grantType === 'PASSWORD')
             && (
-                <Grid item xs={6}>
+                <Grid item xs={12}>
+                    <ListItem
+                        className={classes.listItem}
+                    >
+                        <ListItemAvatar>
+                            <Icon color='primary'>info</Icon>
+                        </ListItemAvatar>
+                        <ListItemText>
+                            <FormattedMessage
+                                id='Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.add.new.parameter.info'
+                                defaultMessage={'You can add any additional payload parameters'
+                                + ' required for the backend below'}
+                            />
+                        </ListItemText>
+                    </ListItem>
                     <Button
                         size='medium'
                         className={classes.button}
@@ -689,10 +736,7 @@ function EndpointSecurity(props) {
                                     </TableRow>
                                 </>
                             )}
-                            {(endpointType === 'production') && (
-                                renderCustomParameters()
-                            )}
-                            {(endpointType === 'sandbox') && (
+                            {((endpointType === 'production') || (endpointType === 'sandbox')) && (
                                 renderCustomParameters()
                             )}
                         </TableBody>
@@ -706,7 +750,7 @@ function EndpointSecurity(props) {
                     autoFocus
                     // disabled={!securityValidity}
                     variant='contained'
-                    style={{ marginRight: '10px', marginBottom: '10px' }}
+                    style={{ marginTop: '10px', marginRight: '10px', marginBottom: '10px' }}
                 >
                     <FormattedMessage
                         id='Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurityConfig.config.save.button'
@@ -715,7 +759,7 @@ function EndpointSecurity(props) {
                 </Button>
                 <Button
                     onClick={closeEndpointSecurityConfig}
-                    style={{ marginBottom: '10px' }}
+                    style={{ marginTop: '10px', marginBottom: '10px' }}
                 >
                     <FormattedMessage
                         id='Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurityConfig.cancel.button'
