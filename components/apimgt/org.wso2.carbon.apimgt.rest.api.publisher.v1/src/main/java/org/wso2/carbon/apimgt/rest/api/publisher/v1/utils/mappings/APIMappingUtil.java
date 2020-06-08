@@ -786,6 +786,7 @@ public class APIMappingUtil {
                         endpointConfigJson.put(APIConstants.AMZN_SECRET_KEY, APIConstants.AWS_SECRET_KEY);
                     }
                 }
+                CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
                 if (endpointConfigJson.get(APIConstants.ENDPOINT_SECURITY) != null) {
                     JSONObject endpointSecurity = (JSONObject) endpointConfigJson.get(APIConstants.ENDPOINT_SECURITY);
                     if (endpointSecurity.get(APIConstants.OAuthConstants.ENDPOINT_SECURITY_PRODUCTION) != null) {
@@ -798,17 +799,9 @@ public class APIMappingUtil {
                                 .get(APIConstants.OAuthConstants.OAUTH_CUSTOM_PARAMETERS);
                         JSONObject customParameters = (JSONObject) parser.parse(customParametersString);
 
-                        CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
                         if (productionEndpointType.compareTo(APIConstants.OAuthConstants.OAUTH) == 0) {
-                            String clientId = (String) productionEndpointSecurity
-                                    .get(APIConstants.OAuthConstants.OAUTH_CLIENT_ID);
                             String clientSecret = (String) productionEndpointSecurity
                                     .get(APIConstants.OAuthConstants.OAUTH_CLIENT_SECRET);
-                            if (StringUtils.isNotEmpty(clientId)) {
-                                productionEndpointSecurity.put(APIConstants
-                                        .OAuthConstants.OAUTH_CLIENT_ID,
-                                        new String(cryptoUtil.base64DecodeAndDecrypt(clientId)));
-                            }
                             if (StringUtils.isNotEmpty(clientSecret)) {
                                 productionEndpointSecurity.put(APIConstants
                                         .OAuthConstants.OAUTH_CLIENT_SECRET,
@@ -835,10 +828,13 @@ public class APIMappingUtil {
                                 APIConstants.OAuthConstants.OAUTH_CUSTOM_PARAMETERS, customParameters);
 
                         if (productionEndpointType.compareTo(APIConstants.OAuthConstants.OAUTH) == 0) {
-                            sandboxEndpointSecurity.put(APIConstants
-                                    .OAuthConstants.OAUTH_CLIENT_ID, "");
-                            sandboxEndpointSecurity.put(APIConstants
-                                    .OAuthConstants.OAUTH_CLIENT_SECRET, "");
+                            String clientSecret = (String) sandboxEndpointSecurity
+                                    .get(APIConstants.OAuthConstants.OAUTH_CLIENT_SECRET);
+                            if (StringUtils.isNotEmpty(clientSecret)) {
+                                sandboxEndpointSecurity.put(APIConstants
+                                                .OAuthConstants.OAUTH_CLIENT_SECRET,
+                                        new String(cryptoUtil.base64DecodeAndDecrypt(clientSecret)));
+                            }
                         }
 
                         endpointSecurity.put(APIConstants.OAuthConstants.ENDPOINT_SECURITY_SANDBOX,
