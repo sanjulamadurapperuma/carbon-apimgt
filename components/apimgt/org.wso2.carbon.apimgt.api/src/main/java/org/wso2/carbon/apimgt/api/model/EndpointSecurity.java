@@ -22,6 +22,8 @@ import java.util.Map;
 
 public class EndpointSecurity {
 
+    private String uniqueIdentifier = null;
+
     private String password = null;
 
     private String type = null;
@@ -41,6 +43,14 @@ public class EndpointSecurity {
     private String customParameters = null;
 
     private Map additionalProperties = new HashMap();
+
+    public String getUniqueIdentifier() {
+        return uniqueIdentifier;
+    }
+
+    public void setUniqueIdentifier(String uniqueIdentifier) {
+        this.uniqueIdentifier = uniqueIdentifier;
+    }
 
     public String getPassword() {
 
@@ -133,10 +143,10 @@ public class EndpointSecurity {
     }
 
     @Override public String toString() {
-        return "EndpointSecurity{" + "password='" + password + '\'' + ", type='" + type + '\'' + ", enabled=" + enabled
-                + ", username='" + username + '\'' + ", grantType='" + grantType + '\'' + ", tokenUrl='" + tokenUrl
-                + '\'' + ", clientId='" + clientId + '\'' + ", clientSecret='" + clientSecret + '\''
-                + ", customParameters='" + customParameters + '\'' + ", additionalProperties=" + additionalProperties
-                + '}';
+        return "EndpointSecurity{" + "uniqueIdentifier='" + uniqueIdentifier + '\'' + ", password='" + password + '\''
+                + ", type='" + type + '\'' + ", enabled=" + enabled + ", username='" + username + '\'' + ", grantType='"
+                + grantType + '\'' + ", tokenUrl='" + tokenUrl + '\'' + ", clientId='" + clientId + '\''
+                + ", clientSecret='" + clientSecret + '\'' + ", customParameters='" + customParameters + '\''
+                + ", additionalProperties=" + additionalProperties + '}';
     }
 }

@@ -1209,6 +1209,7 @@ public final class APIConstants {
     public static class OAuthConstants {
         public static final String OAUTH = "OAUTH";
         public static final String OAUTH_ID = "id";
+        public static final String UNIQUE_IDENTIFIER = "uniqueIdentifier";
         public static final String TOKEN_API_URL = "tokenUrl";
         public static final String OAUTH_CLIENT_ID = "clientId";
         public static final String OAUTH_CLIENT_SECRET = "clientSecret";
