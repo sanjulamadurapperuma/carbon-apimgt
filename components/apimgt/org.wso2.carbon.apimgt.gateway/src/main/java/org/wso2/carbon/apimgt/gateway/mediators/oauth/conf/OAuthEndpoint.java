@@ -30,7 +30,6 @@ public class OAuthEndpoint {
     private String password;
     private String grantType;
     private JSONObject customParameters;
-    private int tokenRefreshInterval;
 
     public String getId() {
         return id;
@@ -94,13 +93,5 @@ public class OAuthEndpoint {
 
     public void setCustomParameters(JSONObject customParameters) {
         this.customParameters = customParameters;
-    }
-
-    public int getTokenRefreshInterval() {
-        return tokenRefreshInterval;
-    }
-
-    public void setTokenRefreshInterval(int tokenRefreshInterval) {
-        this.tokenRefreshInterval = tokenRefreshInterval;
     }
 }

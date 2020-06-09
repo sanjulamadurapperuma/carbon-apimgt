@@ -40,7 +40,6 @@ import java.util.Base64;
 
 public class OAuthClient {
     private static final Log log = LogFactory.getLog(OAuthClient.class);
-    private static final String UTF_8 = "UTF-8";
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String CONTENT_TYPE_HEADER = "Content-Type";
     private static final String APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
