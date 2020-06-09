@@ -36,9 +36,9 @@ import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
-import org.wso2.carbon.apimgt.keymgt.internal.ServiceReferenceHolder;
 import org.wso2.carbon.context.PrivilegedCarbonContext;
 import org.wso2.carbon.event.output.adapter.core.OutputEventAdapterService;
+
 import java.util.Map;
 import java.util.Properties;
 
@@ -46,7 +46,7 @@ import static org.wso2.carbon.base.CarbonBaseConstants.CARBON_HOME;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore({ "javax.net.ssl.*" })
-@PrepareForTest({ TokenRevocationNotifierImpl.class, APIUtil.class, ServiceReferenceHolder.class, PrivilegedCarbonContext.class })
+@PrepareForTest({ TokenRevocationNotifierImpl.class, APIUtil.class, PrivilegedCarbonContext.class })
 public class TokenRevocationNotifierImplTest {
 
     private static final Log log = LogFactory.getLog(TokenRevocationNotifierImplTest.class);
@@ -58,7 +58,6 @@ public class TokenRevocationNotifierImplTest {
     @Before
     public void Init() throws Exception {
         System.setProperty(CARBON_HOME, "");
-        ServiceReferenceHolder serviceReferenceHolder;
         OutputEventAdapterService outputEventAdapterService;
 
         UrlEncodedFormEntity urlEncodedFormEntity;
@@ -67,12 +66,9 @@ public class TokenRevocationNotifierImplTest {
         HttpClient etcdEPClient;
         String etcdUrl = "https://localhost:2379/v2/keys/jti/";
 
-
-        serviceReferenceHolder = PowerMockito.mock(ServiceReferenceHolder.class);
         outputEventAdapterService = Mockito.mock(OutputEventAdapterService.class);
         privilegedCarbonContext = Mockito.mock(PrivilegedCarbonContext.class);
 
-        PowerMockito.mockStatic(ServiceReferenceHolder.class);
         etcdEPClient = Mockito.mock(HttpClient.class);
         httpETCDPut = Mockito.mock(HttpPut.class);
         urlEncodedFormEntity = Mockito.mock(UrlEncodedFormEntity.class);
@@ -82,9 +78,6 @@ public class TokenRevocationNotifierImplTest {
         PowerMockito.mockStatic(APIUtil.class);
 
         statusLine = PowerMockito.mock(StatusLine.class);
-        PowerMockito.when(ServiceReferenceHolder.getInstance()).thenReturn(serviceReferenceHolder);
-        PowerMockito.when(serviceReferenceHolder.getOutputEventAdapterService()).
-                thenReturn(outputEventAdapterService);
         PowerMockito.doNothing().when(outputEventAdapterService).
                 publish(Mockito.anyString(), Mockito.anyMap(), Mockito.anyObject());
 
@@ -108,7 +101,6 @@ public class TokenRevocationNotifierImplTest {
 
     @Test
     public void testSendMessageToPersistentStorage() {
-
         log.info("Running the test case to check SendMessageToPersistentStorage method.");
         Properties properties = new Properties();
         String DEFAULT_PERSISTENT_NOTIFIER_HOSTNAME = "https://localhost:2379/v2/keys/jti/";
@@ -121,7 +113,7 @@ public class TokenRevocationNotifierImplTest {
         try {
             PowerMockito.whenNew(HttpPut.class).withAnyArguments().thenReturn(httpETCDPut);
             tokenRevocationNotifierImpl = new TokenRevocationNotifierImpl();
-            tokenRevocationNotifierImpl.sendMessageToPersistentStorage("1234",properties);
+            tokenRevocationNotifierImpl.sendMessageToPersistentStorage("1234", properties);
         } catch (Exception e) {
             Assert.fail("Should not throw any exceptions");
         }
@@ -134,10 +126,10 @@ public class TokenRevocationNotifierImplTest {
         properties.setProperty("ttl", DEFAULT_TTL);
         properties.setProperty("expiryTime", "1571063344");
         log.info("Running the test case to check the sendMessageOnRealTime method.");
-        try{
+        try {
             tokenRevocationNotifierImpl = new TokenRevocationNotifierImpl();
-            tokenRevocationNotifierImpl.sendMessageOnRealtime("1234",properties);
-        }catch (Exception e) {
+            tokenRevocationNotifierImpl.sendMessageOnRealtime("1234", properties);
+        } catch (Exception e) {
             Assert.fail("Should not throw any exceptions");
         }
         log.info("Finished the test case to check the sendMessageOnRealTime method.");
