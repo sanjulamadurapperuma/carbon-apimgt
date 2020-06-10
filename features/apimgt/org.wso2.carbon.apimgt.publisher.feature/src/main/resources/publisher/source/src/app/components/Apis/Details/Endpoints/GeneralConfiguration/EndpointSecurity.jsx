@@ -78,11 +78,12 @@ function EndpointSecurity(props) {
     const { api } = useContext(APIContext);
     const {
         intl, securityInfo, onChangeEndpointAuth, classes, isProduction,
-        saveEndpointSecurityConfig, closeEndpointSecurityConfig,
+        saveEndpointSecurityConfig,
+        closeEndpointSecurityConfig,
     } = props;
 
     const [endpointSecurityInfo, setEndpointSecurityInfo] = useState({
-        type: 'BASIC',
+        type: '',
         username: '',
         password: '',
         grantType: '',
@@ -101,6 +102,13 @@ function EndpointSecurity(props) {
     const endpointType = isProduction ? 'production' : 'sandbox';
 
     const authTypes = [
+        {
+            key: 'NONE',
+            value: intl.formatMessage({
+                id: 'Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.none',
+                defaultMessage: 'None',
+            }),
+        },
         {
             key: 'BASIC',
             value: intl.formatMessage({
@@ -145,7 +153,7 @@ function EndpointSecurity(props) {
             const {
                 type, username, password, grantType, tokenUrl, clientId, clientSecret, customParameters,
             } = securityInfo;
-            tmpSecurity.type = type;
+            tmpSecurity.type = type === null ? 'NONE' : type;
             tmpSecurity.username = username;
             tmpSecurity.password = password === '' ? '**********' : password;
             tmpSecurity.grantType = grantType;
@@ -746,7 +754,7 @@ function EndpointSecurity(props) {
             )}
             <Grid className={classes.advanceDialogActions}>
                 <Button
-                    onClick={() => saveEndpointSecurityConfig(endpointSecurityInfo)}
+                    onClick={() => saveEndpointSecurityConfig(endpointSecurityInfo, endpointType)}
                     color='primary'
                     autoFocus
                     // disabled={!securityValidity}
@@ -755,7 +763,7 @@ function EndpointSecurity(props) {
                 >
                     <FormattedMessage
                         id='Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurityConfig.config.save.button'
-                        defaultMessage='Save'
+                        defaultMessage='Submit'
                     />
                 </Button>
                 <Button
@@ -773,7 +781,7 @@ function EndpointSecurity(props) {
 }
 
 EndpointSecurity.propTypes = {
-    intl: PropTypes.func.isRequired,
+    intl: PropTypes.shape({}).isRequired,
     securityInfo: PropTypes.shape({}).isRequired,
     onChangeEndpointAuth: PropTypes.func.isRequired,
 };

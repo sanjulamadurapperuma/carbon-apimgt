@@ -154,22 +154,13 @@ function EndpointOverview(props) {
         config: undefined,
     });
     const [endpointCategory, setEndpointCategory] = useState({ sandbox: false, prod: false });
-    const [state, setState] = React.useState({
-        production: false,
-        sandbox: false,
-    });
     const [typeChangeConfirmation, setTypeChangeConfirmation] = useState({ openDialog: false });
 
-    const handleToggleEndpointSecurity = (name) => {
-        if (name === 'production') {
-            setState({ ...state, production: true });
-        } else if (name === 'sandbox') {
-            setState({ ...state, sandbox: true });
-        }
+    const handleToggleEndpointSecurity = () => {
         const tmpSecurityInfo = endpointSecurityInfo === null ? {
             production: {
-                enabled: state[name],
-                type: 'BASIC',
+                enabled: false,
+                type: null,
                 username: null,
                 password: null,
                 grantType: null,
@@ -179,8 +170,8 @@ function EndpointOverview(props) {
                 customParameters: {},
             },
             sandbox: {
-                enabled: state[name],
-                type: 'BASIC',
+                enabled: false,
+                type: null,
                 username: null,
                 password: null,
                 grantType: null,
@@ -191,10 +182,6 @@ function EndpointOverview(props) {
             },
         } : endpointSecurityInfo;
         setEndpointSecurityInfo(tmpSecurityInfo);
-        endpointsDispatcher({
-            action: 'endpointSecurity',
-            value: { ...tmpSecurityInfo, [name]: { ...tmpSecurityInfo[name], enabled: state[name] } },
-        });
     };
 
     /**
@@ -522,7 +509,7 @@ function EndpointOverview(props) {
     };
 
     const toggleEndpointSecurityConfig = (type, category) => {
-        handleToggleEndpointSecurity(category);
+        handleToggleEndpointSecurity();
         setEndpointSecurityConfig(() => {
             return ({
                 open: !endpointSecurityConfig.open,
@@ -545,8 +532,19 @@ function EndpointOverview(props) {
         });
     };
 
-    const saveEndpointSecurityConfig = (endpointSecurityObj) => {
-        setEndpointSecurityConfig({ open: false, config: endpointSecurityObj });
+    const saveEndpointSecurityConfig = (endpointSecurityObj, enType) => {
+        endpointsDispatcher({
+            action: 'endpointSecurity',
+            value: {
+                ...endpointSecurityInfo,
+                [enType]: {
+                    ...endpointSecurityInfo[enType],
+                    enabled: endpointSecurityObj.type !== 'NONE'
+                        ? endpointSecurityInfo[enType].enabled = true : endpointSecurityInfo[enType].enabled = false,
+                },
+            },
+        });
+        setEndpointSecurityConfig({ open: false });
     };
 
     const closeEndpointSecurityConfig = () => {

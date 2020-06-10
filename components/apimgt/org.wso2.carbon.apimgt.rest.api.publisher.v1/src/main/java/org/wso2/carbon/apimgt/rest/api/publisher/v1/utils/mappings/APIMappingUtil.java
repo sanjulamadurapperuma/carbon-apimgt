@@ -799,7 +799,7 @@ public class APIMappingUtil {
                                 .get(APIConstants.OAuthConstants.OAUTH_CUSTOM_PARAMETERS);
                         JSONObject customParameters = (JSONObject) parser.parse(customParametersString);
 
-                        if (productionEndpointType.compareTo(APIConstants.OAuthConstants.OAUTH) == 0) {
+                        if (APIConstants.OAuthConstants.OAUTH.equals(productionEndpointType)) {
                             String clientSecret = (String) productionEndpointSecurity
                                     .get(APIConstants.OAuthConstants.OAUTH_CLIENT_SECRET);
                             if (StringUtils.isNotEmpty(clientSecret)) {
@@ -818,7 +818,7 @@ public class APIMappingUtil {
                     if (endpointSecurity.get(APIConstants.OAuthConstants.ENDPOINT_SECURITY_SANDBOX) != null) {
                         JSONObject sandboxEndpointSecurity = (JSONObject) endpointSecurity
                                 .get(APIConstants.OAuthConstants.ENDPOINT_SECURITY_SANDBOX);
-                        String productionEndpointType = (String) sandboxEndpointSecurity
+                        String sandboxEndpointType = (String) sandboxEndpointSecurity
                                 .get(APIConstants.OAuthConstants.ENDPOINT_SECURITY_TYPE);
 
                         String customParametersString = (String) sandboxEndpointSecurity
@@ -827,7 +827,7 @@ public class APIMappingUtil {
                         sandboxEndpointSecurity.put(
                                 APIConstants.OAuthConstants.OAUTH_CUSTOM_PARAMETERS, customParameters);
 
-                        if (productionEndpointType.compareTo(APIConstants.OAuthConstants.OAUTH) == 0) {
+                        if (APIConstants.OAuthConstants.OAUTH.equals(sandboxEndpointType)) {
                             String clientSecret = (String) sandboxEndpointSecurity
                                     .get(APIConstants.OAuthConstants.OAUTH_CLIENT_SECRET);
                             if (StringUtils.isNotEmpty(clientSecret)) {

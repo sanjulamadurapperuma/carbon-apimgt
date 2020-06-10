@@ -421,6 +421,7 @@
   "Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.no.password.error": "",
   "Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.no.tokenUrl.error": "",
   "Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.no.username.error": "",
+  "Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.none": "",
   "Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.oauth": "",
   "Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.oauth.grant.type.client": "",
   "Apis.Details.Endpoints.GeneralConfiguration.EndpointSecurity.oauth.grant.type.password": "",

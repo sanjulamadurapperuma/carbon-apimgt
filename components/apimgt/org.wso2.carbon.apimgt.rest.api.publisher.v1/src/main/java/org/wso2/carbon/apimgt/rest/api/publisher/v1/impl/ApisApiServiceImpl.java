@@ -694,7 +694,7 @@ public class ApisApiServiceImpl implements ApisApiService {
                         endpointSecurityProduction.put(APIConstants
                                 .OAuthConstants.OAUTH_CUSTOM_PARAMETERS, customParametersString);
 
-                        if (productionEndpointType.compareTo(APIConstants.OAuthConstants.OAUTH) == 0) {
+                        if (APIConstants.OAuthConstants.OAUTH.equals(productionEndpointType)) {
                             String apiSecret = endpointSecurityProduction.get(APIConstants
                                     .OAuthConstants.OAUTH_CLIENT_SECRET).toString();
 
@@ -726,7 +726,7 @@ public class ApisApiServiceImpl implements ApisApiService {
                         endpointSecuritySandbox.put(APIConstants
                                 .OAuthConstants.OAUTH_CUSTOM_PARAMETERS, customParametersString);
 
-                        if (sandboxEndpointType.compareTo(APIConstants.OAuthConstants.OAUTH) == 0) {
+                        if (APIConstants.OAuthConstants.OAUTH.equals(sandboxEndpointType)) {
                             String apiSecret = endpointSecuritySandbox.get(APIConstants
                                     .OAuthConstants.OAUTH_CLIENT_SECRET).toString();
 
