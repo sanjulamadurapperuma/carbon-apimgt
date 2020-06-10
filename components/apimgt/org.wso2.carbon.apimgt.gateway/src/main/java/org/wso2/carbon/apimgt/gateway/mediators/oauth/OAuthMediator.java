@@ -42,8 +42,6 @@ import org.wso2.carbon.core.util.CryptoUtil;
 
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 /**
  * OAuth Mediator for generating OAuth tokens for invoking service endpoints secured with OAuth
@@ -51,12 +49,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 public class OAuthMediator extends AbstractMediator implements ManagedLifecycle {
 
     private static final Log log = LogFactory.getLog(OAuthMediator.class);
-    public static final ScheduledExecutorService executorService;
-    public static final int DEFAULT_TOKEN_REFRESH_INTERVAL = 20;
-
-    static {
-         executorService = new ScheduledThreadPoolExecutor(5);
-    }
 
     // Interface methods are being implemented here
     @Override
