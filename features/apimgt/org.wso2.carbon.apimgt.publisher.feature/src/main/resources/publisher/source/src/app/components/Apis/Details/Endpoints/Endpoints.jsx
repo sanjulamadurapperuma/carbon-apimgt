@@ -213,7 +213,7 @@ function Endpoints(props) {
                         return {
                             isValid: false,
                             message: intl.formatMessage({
-                                id: 'Apis.Details.Endpoints.Endpoints.missing.security.oauth.client.error',
+                                id: 'Apis.Details.Endpoints.Endpoints.missing.security.oauth.password.error',
                                 defaultMessage: 'Endpoint Security Token URL'
                                         + '/API Key/API Secret/Username/Password should not be empty',
                             }),
