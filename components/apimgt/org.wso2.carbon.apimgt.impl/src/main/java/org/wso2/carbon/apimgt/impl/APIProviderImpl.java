@@ -1624,6 +1624,7 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                                     endpointSecurity.setUsername(oldEndpointSecurity.getUsername());
                                     endpointSecurity.setPassword(oldEndpointSecurity.getPassword());
                                     if (endpointSecurity.getType().equals(APIConstants.ENDPOINT_SECURITY_TYPE_OAUTH)) {
+                                        endpointSecurity.setUniqueIdentifier(oldEndpointSecurity.getUniqueIdentifier());
                                         endpointSecurity.setGrantType(oldEndpointSecurity.getGrantType());
                                         endpointSecurity.setTokenUrl(oldEndpointSecurity.getTokenUrl());
                                         endpointSecurity.setClientId(oldEndpointSecurity.getClientId());
@@ -1648,6 +1649,7 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                                     endpointSecurity.setUsername(oldEndpointSecurity.getUsername());
                                     endpointSecurity.setPassword(oldEndpointSecurity.getPassword());
                                     if (endpointSecurity.getType().equals(APIConstants.ENDPOINT_SECURITY_TYPE_OAUTH)) {
+                                        endpointSecurity.setUniqueIdentifier(oldEndpointSecurity.getUniqueIdentifier());
                                         endpointSecurity.setGrantType(oldEndpointSecurity.getGrantType());
                                         endpointSecurity.setTokenUrl(oldEndpointSecurity.getTokenUrl());
                                         endpointSecurity.setClientId(oldEndpointSecurity.getClientId());
