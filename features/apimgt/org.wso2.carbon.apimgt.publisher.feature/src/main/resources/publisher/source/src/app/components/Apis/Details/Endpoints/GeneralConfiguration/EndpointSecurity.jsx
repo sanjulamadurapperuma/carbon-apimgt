@@ -81,7 +81,6 @@ function EndpointSecurity(props) {
         saveEndpointSecurityConfig,
         closeEndpointSecurityConfig,
     } = props;
-
     const [endpointSecurityInfo, setEndpointSecurityInfo] = useState({
         type: '',
         username: '',
@@ -150,6 +149,7 @@ function EndpointSecurity(props) {
     useEffect(() => {
         let tmpSecurity = {};
         if (securityInfo !== null) {
+            tmpSecurity = { ...securityInfo };
             const {
                 type, username, password, grantType, tokenUrl, clientId, clientSecret, customParameters,
             } = securityInfo;
@@ -172,7 +172,6 @@ function EndpointSecurity(props) {
      */
     const validateTokenUrl = (value) => {
         const state = APIValidation.url.required().validate(value).error;
-        // state 'null' means the URL is valid.
         if (state === null) {
             return true;
         } else {
@@ -190,7 +189,7 @@ function EndpointSecurity(props) {
         } else {
             let validity = true;
             if (field === 'tokenUrl') {
-                validity = validateTokenURL(endpointSecurityInfo[field]);
+                validity = validateTokenUrl(endpointSecurityInfo[field]);
             }
             setSecurityValidity({ ...securityValidity, [field]: validity });
         }
@@ -757,7 +756,6 @@ function EndpointSecurity(props) {
                     onClick={() => saveEndpointSecurityConfig(endpointSecurityInfo, endpointType)}
                     color='primary'
                     autoFocus
-                    // disabled={!securityValidity}
                     variant='contained'
                     style={{ marginTop: '10px', marginRight: '10px', marginBottom: '10px' }}
                 >
