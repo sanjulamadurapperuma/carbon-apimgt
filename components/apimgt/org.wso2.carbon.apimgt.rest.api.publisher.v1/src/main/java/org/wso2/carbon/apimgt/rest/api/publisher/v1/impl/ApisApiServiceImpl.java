@@ -78,6 +78,9 @@ import org.wso2.carbon.apimgt.api.MonetizationException;
 import org.wso2.carbon.apimgt.api.doc.model.APIResource;
 import org.wso2.carbon.apimgt.api.dto.CertificateInformationDTO;
 import org.wso2.carbon.apimgt.api.dto.ClientCertificateDTO;
+import org.wso2.carbon.apimgt.api.model.*;
+import org.wso2.carbon.apimgt.api.model.graphql.queryanalysis.GraphqlComplexityInfo;
+import org.wso2.carbon.apimgt.api.model.graphql.queryanalysis.GraphqlSchemaType;
 import org.wso2.carbon.apimgt.api.model.API;
 import org.wso2.carbon.apimgt.api.model.APICategory;
 import org.wso2.carbon.apimgt.api.model.APIIdentifier;
@@ -144,10 +147,12 @@ import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.ResourcePathListDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.ResourcePolicyInfoDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.ResourcePolicyListDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.ThrottlingPolicyDTO;
+import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.GraphQLQueryComplexityInfoDTO;
+import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.GraphQLSchemaTypeListDTO;
+import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.DeploymentStatusListDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.WSDLInfoDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.WSDLValidationResponseDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.WorkflowResponseDTO;
-
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.utils.CertificateRestApiUtils;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.utils.RestApiPublisherUtils;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.utils.mappings.APIMappingUtil;
@@ -195,6 +200,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.wso2.carbon.apimgt.rest.api.publisher.v1.utils.mappings.GraphqlQueryAnalysisMappingUtil;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -496,6 +502,136 @@ public class ApisApiServiceImpl implements ApisApiService {
     public Response apisApiIdGet(String apiId, String xWSO2Tenant, String ifNoneMatch, MessageContext messageContext) {
         APIDTO apiToReturn = getAPIByID(apiId);
         return Response.ok().entity(apiToReturn).build();
+    }
+
+
+    /**
+     * Get complexity details of a given API
+     *
+     * @param apiId          apiId
+     * @param messageContext message context
+     * @return Response with complexity details of the GraphQL API
+     */
+
+    @Override
+    public Response apisApiIdGraphqlPoliciesComplexityGet(String apiId, MessageContext messageContext) throws APIManagementException {
+        try {
+            APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();
+            String tenantDomain = RestApiUtil.getLoggedInUserTenantDomain();
+            APIIdentifier apiIdentifier = APIMappingUtil.getAPIIdentifierFromUUID(apiId, tenantDomain);
+            API api = apiProvider.getAPIbyUUID(apiId, tenantDomain);
+            if (APIConstants.GRAPHQL_API.equals(api.getType())) {
+                GraphqlComplexityInfo graphqlComplexityInfo = apiProvider.getComplexityDetails(apiIdentifier);
+                GraphQLQueryComplexityInfoDTO graphQLQueryComplexityInfoDTO =
+                        GraphqlQueryAnalysisMappingUtil.fromGraphqlComplexityInfotoDTO(graphqlComplexityInfo);
+                return Response.ok().entity(graphQLQueryComplexityInfoDTO).build();
+            } else {
+                throw new APIManagementException(ExceptionCodes.API_NOT_GRAPHQL);
+            }
+        } catch (APIManagementException e) {
+            //Auth failure occurs when cross tenant accessing APIs. Sends 404, since we don't need
+            // to expose the existence of the resource
+            if (RestApiUtil.isDueToResourceNotFound(e) || RestApiUtil.isDueToAuthorizationFailure(e)) {
+                RestApiUtil.handleResourceNotFoundError(RestApiConstants.RESOURCE_API, apiId, e, log);
+            } else if (isAuthorizationFailure(e)) {
+                RestApiUtil.handleAuthorizationFailure(
+                        "Authorization failure while retrieving complexity details of API : " + apiId, e, log);
+            } else {
+                String msg = "Error while retrieving complexity details of API " + apiId;
+                RestApiUtil.handleInternalServerError(msg, e, log);
+            }
+        }
+        return null;
+    }
+
+
+    /**
+     * Create complexity details of a given API
+     *
+     * @param apiId          apiId
+     * @param body           GraphQLQueryComplexityInfo DTO as request body
+     * @param messageContext message context
+     * @return Response
+     */
+
+    @Override
+    public Response apisApiIdGraphqlPoliciesComplexityPost(String apiId, GraphQLQueryComplexityInfoDTO body, MessageContext messageContext) throws APIManagementException {
+        try {
+            if (StringUtils.isBlank(apiId)) {
+                String errorMessage = "API ID cannot be empty or null.";
+                RestApiUtil.handleBadRequest(errorMessage, log);
+            }
+            APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();
+            GraphqlComplexityInfo graphqlComplexityInfo =
+                    GraphqlQueryAnalysisMappingUtil.fromDTOtoGraphqlComplexityInfo(body);
+            String tenantDomain = RestApiUtil.getLoggedInUserTenantDomain();
+            APIIdentifier apiIdentifier = APIMappingUtil.getAPIIdentifierFromUUID(apiId, tenantDomain);
+            API api = apiProvider.getAPIbyUUID(apiId, tenantDomain);
+            if (APIConstants.GRAPHQL_API.equals(api.getType())) {
+                apiProvider.addComplexityDetails(apiIdentifier, graphqlComplexityInfo);
+                return Response.ok().build();
+            } else {
+                throw new APIManagementException(ExceptionCodes.API_NOT_GRAPHQL);
+            }
+        } catch (APIManagementException e) {
+            //Auth failure occurs when cross tenant accessing APIs. Sends 404, since we don't need
+            // to expose the existence of the resource
+            if (RestApiUtil.isDueToResourceNotFound(e) || RestApiUtil.isDueToAuthorizationFailure(e)) {
+                RestApiUtil.handleResourceNotFoundError(RestApiConstants.RESOURCE_API, apiId, e, log);
+            } else if (isAuthorizationFailure(e)) {
+                RestApiUtil.handleAuthorizationFailure(
+                        "Authorization failure while adding complexity details of API : " + apiId, e, log);
+            } else {
+                String errorMessage = "Error while adding complexity details of API : " + apiId;
+                RestApiUtil.handleInternalServerError(errorMessage, e, log);
+            }
+        }
+        return null;
+    }
+
+
+    /**
+     * Update complexity details of a given API
+     *
+     * @param apiId          apiId
+     * @param body           GraphQLQueryComplexityInfo DTO as request body
+     * @param messageContext message context
+     * @return Response
+     */
+
+    @Override
+    public Response apisApiIdGraphqlPoliciesComplexityPut(String apiId, GraphQLQueryComplexityInfoDTO body, MessageContext messageContext) throws APIManagementException {
+        try {
+            if (StringUtils.isBlank(apiId)) {
+                String errorMessage = "API ID cannot be empty or null.";
+                RestApiUtil.handleBadRequest(errorMessage, log);
+            }
+            APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();
+            GraphqlComplexityInfo graphqlComplexityInfo =
+                    GraphqlQueryAnalysisMappingUtil.fromDTOtoGraphqlComplexityInfo(body);
+            String tenantDomain = RestApiUtil.getLoggedInUserTenantDomain();
+            APIIdentifier apiIdentifier = APIMappingUtil.getAPIIdentifierFromUUID(apiId, tenantDomain);
+            API api = apiProvider.getAPIbyUUID(apiId, tenantDomain);
+            if (APIConstants.GRAPHQL_API.equals(api.getType())) {
+                apiProvider.updateComplexityDetails(apiIdentifier, graphqlComplexityInfo);
+                return Response.ok().build();
+            } else {
+                throw new APIManagementException(ExceptionCodes.API_NOT_GRAPHQL);
+            }
+        } catch (APIManagementException e) {
+            //Auth failure occurs when cross tenant accessing APIs. Sends 404, since we don't need
+            // to expose the existence of the resource
+            if (RestApiUtil.isDueToResourceNotFound(e) || RestApiUtil.isDueToAuthorizationFailure(e)) {
+                RestApiUtil.handleResourceNotFoundError(RestApiConstants.RESOURCE_API, apiId, e, log);
+            } else if (isAuthorizationFailure(e)) {
+                RestApiUtil.handleAuthorizationFailure(
+                        "Authorization failure while updating complexity details of API : " + apiId, e, log);
+            } else {
+                String errorMessage = "Error while updating complexity details of API : " + apiId;
+                RestApiUtil.handleInternalServerError(errorMessage, e, log);
+            }
+        }
+        return null;
     }
 
     /**
@@ -874,6 +1010,50 @@ public class ApisApiServiceImpl implements ApisApiService {
         }
         return null;
     }
+
+
+
+
+    /**
+     * Get all types and fields of the GraphQL Schema of a given API
+     *
+     * @param apiId          apiId
+     * @param messageContext message context
+     * @return Response with all the types and fields found within the schema definition
+     */
+    @Override
+    public Response apisApiIdGraphqlPoliciesComplexityTypesGet(String apiId, MessageContext messageContext) {
+        GraphQLSchemaDefinition graphql = new GraphQLSchemaDefinition();
+        try {
+            APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();
+            String tenantDomain = RestApiUtil.getLoggedInUserTenantDomain();
+            APIIdentifier apiIdentifier = APIMappingUtil.getAPIIdentifierFromUUID(apiId, tenantDomain);
+            API api = apiProvider.getAPIbyUUID(apiId, tenantDomain);
+            if (APIConstants.GRAPHQL_API.equals(api.getType())) {
+                String schemaContent = apiProvider.getGraphqlSchema(apiIdentifier);
+                List<GraphqlSchemaType> typeList = graphql.extractGraphQLTypeList(schemaContent);
+                GraphQLSchemaTypeListDTO graphQLSchemaTypeListDTO =
+                        GraphqlQueryAnalysisMappingUtil.fromGraphqlSchemaTypeListtoDTO(typeList);
+                return Response.ok().entity(graphQLSchemaTypeListDTO).build();
+            } else {
+                throw new APIManagementException(ExceptionCodes.API_NOT_GRAPHQL);
+            }
+        } catch (APIManagementException e) {
+            //Auth failure occurs when cross tenant accessing APIs. Sends 404, since we don't need
+            // to expose the existence of the resource
+            if (RestApiUtil.isDueToResourceNotFound(e) || RestApiUtil.isDueToAuthorizationFailure(e)) {
+                RestApiUtil.handleResourceNotFoundError(RestApiConstants.RESOURCE_API, apiId, e, log);
+            } else if (isAuthorizationFailure(e)) {
+                RestApiUtil.handleAuthorizationFailure(
+                        "Authorization failure while retrieving types and fields of API : " + apiId, e, log);
+            } else {
+                String msg = "Error while retrieving types and fields of the schema of API " + apiId;
+                RestApiUtil.handleInternalServerError(msg, e, log);
+            }
+        }
+        return null;
+    }
+
 
     // AWS Lambda: rest api operation to get ARNs
     @Override
@@ -4096,6 +4276,19 @@ public class ApisApiServiceImpl implements ApisApiService {
             }
         }
         return null;
+    }
+
+    /**
+     * Retrieve deployment status of APIs in cloud clusters
+     * @return Deployment status response
+     */
+    @Override
+    public Response deploymentsGetStatus(String apiId,MessageContext messageContext) throws APIManagementException{
+        String tenantDomain = RestApiUtil.getLoggedInUserTenantDomain();
+        APIIdentifier apiIdentifier = APIMappingUtil.getAPIIdentifierFromUUID(apiId, tenantDomain);
+        //APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();
+        DeploymentStatusListDTO deploymentStatusListDTO = APIMappingUtil.fromDeploymentStatustoDTO(apiIdentifier);
+        return Response.ok().entity(deploymentStatusListDTO).build();
     }
 
     private APIDTO getAPIByID(String apiId) {
