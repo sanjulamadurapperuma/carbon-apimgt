@@ -1,5 +1,6 @@
 package org.wso2.carbon.apimgt.gateway.mediators.oauth;
 
+import org.codehaus.jackson.map.ObjectMapper;
 import org.wso2.carbon.apimgt.gateway.mediators.oauth.client.TokenResponse;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -16,7 +17,7 @@ public class RedisCache {
     private static Integer port = 6379;
     private static String password = "";
 
-    private void initialize() {
+    public RedisCache() {
         // TODO
         if (password.length() > 0) {
             jedisPool = new JedisPool(new JedisPoolConfig(), host, port);
@@ -40,11 +41,15 @@ public class RedisCache {
         }
     }
 
-    private void getTokenResponseById(String uuid) {
+    private TokenResponse getTokenResponseById(String uuid) {
         // TODO
-        try (Jedis redis = jedisPool.getResource()) {
-            Map<String, String> fields = jedis.hgetAll(uuid);
+        TokenResponse tokenResponse;
+        try (Jedis jedis = jedisPool.getResource()) {
+            Map<String, String> tokenMap = jedis.hgetAll(uuid);
+            ObjectMapper mapper = new ObjectMapper();
+            tokenResponse = mapper.convertValue(tokenMap, TokenResponse.class);
         }
+        return tokenResponse;
     }
 
     private void stopRedisCacheSession() {
