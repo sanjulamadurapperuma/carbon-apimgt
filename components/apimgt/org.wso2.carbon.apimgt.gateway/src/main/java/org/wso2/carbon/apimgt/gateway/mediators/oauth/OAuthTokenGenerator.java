@@ -20,23 +20,44 @@ package org.wso2.carbon.apimgt.gateway.mediators.oauth;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.json.simple.JSONObject;
 import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.gateway.handlers.security.APISecurityConstants;
 import org.wso2.carbon.apimgt.gateway.handlers.security.APISecurityException;
 import org.wso2.carbon.apimgt.gateway.mediators.oauth.client.OAuthClient;
 import org.wso2.carbon.apimgt.gateway.mediators.oauth.client.TokenResponse;
 import org.wso2.carbon.apimgt.gateway.mediators.oauth.conf.OAuthEndpoint;
+import org.wso2.carbon.apimgt.impl.APIConstants;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
 public class OAuthTokenGenerator {
     private static final Log log = LogFactory.getLog(OAuthTokenGenerator.class);
+    private boolean isRedisEnabled = false;
+    private RedisCache redisCache = null;
 
-    public void checkTokenValidity(OAuthEndpoint oAuthEndpoint, CountDownLatch latch)
+    public void checkTokenValidity(OAuthEndpoint oAuthEndpoint, CountDownLatch latch, JSONObject oAuthEndpointSecurityProperties)
             throws APISecurityException {
         try {
-            TokenResponse previousResponse = TokenCache.getInstance().getTokenMap().get(oAuthEndpoint.getId());
+            TokenResponse previousResponse = null;
+            if (oAuthEndpointSecurityProperties != null) {
+                // TODO
+                isRedisEnabled = Boolean.parseBoolean((String) oAuthEndpointSecurityProperties
+                        .get(APIConstants.OAuthConstants.IS_REDIS_ENABLED));
+                String redisHost = (String) oAuthEndpointSecurityProperties.get(APIConstants.OAuthConstants.REDIS_HOST);
+                String redisPort = (String) oAuthEndpointSecurityProperties.get(APIConstants.OAuthConstants.REDIS_PORT);
+                if (oAuthEndpointSecurityProperties.containsKey(APIConstants.OAuthConstants.REDIS_PASSWORD)) {
+                    String redisPassword = (String) oAuthEndpointSecurityProperties
+                            .get(APIConstants.OAuthConstants.REDIS_PASSWORD);
+                    redisCache = new RedisCache(redisHost, Integer.valueOf(redisPort), redisPassword);
+                } else {
+                    redisCache = new RedisCache(redisHost, Integer.valueOf(redisPort), null);
+                }
+                previousResponse = redisCache.getTokenResponseById(oAuthEndpoint.getId());
+            } else {
+                previousResponse = TokenCache.getInstance().getTokenMap().get(oAuthEndpoint.getId());
+            }
             if (previousResponse != null) {
                 long validTill = previousResponse.getValidTill();
                 long currentTimeInSeconds = System.currentTimeMillis() / 1000;
@@ -71,7 +92,11 @@ public class OAuthTokenGenerator {
                 oAuthEndpoint.getPassword(), oAuthEndpoint.getGrantType(), oAuthEndpoint.getCustomParameters(),
                 refreshToken);
         assert tokenResponse != null;
-        TokenCache.getInstance().getTokenMap().put(oAuthEndpoint.getId(), tokenResponse);
+        if (isRedisEnabled) {
+            redisCache.addTokenResponse(oAuthEndpoint.getId(), tokenResponse);
+        } else {
+            TokenCache.getInstance().getTokenMap().put(oAuthEndpoint.getId(), tokenResponse);
+        }
     }
 
     private String getEndpointId(OAuthEndpoint oAuthEndpoint) {

@@ -49,11 +49,13 @@ import java.util.concurrent.CountDownLatch;
 public class OAuthMediator extends AbstractMediator implements ManagedLifecycle {
 
     private static final Log log = LogFactory.getLog(OAuthMediator.class);
+    private JSONObject oAuthEndpointSecurityProperties;
 
     // Interface methods are being implemented here
     @Override
     public void init(SynapseEnvironment synapseEnvironment) {
         // Ignore
+        oAuthEndpointSecurityProperties = getOAuthEndpointSecurityProperties();
     }
 
     @Override
@@ -114,7 +116,11 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
             if (oAuthEndpoint != null) {
                 try {
                     OAuthTokenGenerator tokenGenerator = new OAuthTokenGenerator();
-                    tokenGenerator.checkTokenValidity(oAuthEndpoint, latch);
+                    if (oAuthEndpointSecurityProperties != null) {
+                        tokenGenerator.checkTokenValidity(oAuthEndpoint, latch, oAuthEndpointSecurityProperties);
+                    } else {
+                        tokenGenerator.checkTokenValidity(oAuthEndpoint, latch, null);
+                    }
                     latch.await();
                 } catch(InterruptedException | APISecurityException e) {
                     log.error("Could not generate access token...", e);
@@ -146,13 +152,21 @@ public class OAuthMediator extends AbstractMediator implements ManagedLifecycle 
     public JSONObject getOAuthEndpointSecurityProperties() {
         APIManagerConfiguration configuration = ServiceReferenceHolder.getInstance()
                 .getAPIManagerConfigurationService().getAPIManagerConfiguration();
-        String tokenRefreshInterval = configuration.getFirstProperty(APIConstants
-                .OAuthConstants.OAUTH_TOKEN_REFRESH_INTERVAL);
+        String isRedisEnabled = configuration.getFirstProperty(OAuthConstants.OAUTH_IS_REDIS_ENABLED);
+        String redisHost = configuration.getFirstProperty(OAuthConstants.OAUTH_REDIS_HOST);
+        String redisPort = configuration.getFirstProperty(OAuthConstants.OAUTH_REDIS_PORT);
+        String redisPassword = configuration.getFirstProperty(OAuthConstants.OAUTH_REDIS_PASSWORD);
 
         JSONObject configProperties = new JSONObject();
 
-        if (StringUtils.isNotEmpty(tokenRefreshInterval)) {
-            configProperties.put(APIConstants.OAuthConstants.TOKEN_REFRESH_INTERVAL, tokenRefreshInterval);
+        if (StringUtils.isNotBlank(isRedisEnabled) && "true".equals(isRedisEnabled) && StringUtils.isNotBlank(redisHost)
+                && StringUtils.isNotBlank(redisPort)) {
+            configProperties.put(OAuthConstants.IS_REDIS_ENABLED, isRedisEnabled);
+            configProperties.put(OAuthConstants.REDIS_HOST, redisHost);
+            configProperties.put(OAuthConstants.REDIS_PORT, redisPort);
+            if (StringUtils.isNotBlank(redisPassword)) {
+                configProperties.put(OAuthConstants.REDIS_PASSWORD, redisPassword);
+            }
             return configProperties;
         }
         return null;

@@ -29,8 +29,6 @@ import java.util.Map;
  */
 public class TokenResponse {
 
-    private String uuid;
-
     @SerializedName("access_token")
     private String accessToken;
 
@@ -47,13 +45,13 @@ public class TokenResponse {
 
     private Long validTill;
 
-    public String getUuid() {
-        return uuid;
-    }
-
-    public void setUuid(String uuid) {
-        this.uuid = uuid;
-    }
+//    public String getUuid() {
+//        return uuid;
+//    }
+//
+//    public void setUuid(String uuid) {
+//        this.uuid = uuid;
+//    }
 
     public String getAccessToken() {
         return accessToken;
@@ -110,7 +108,7 @@ public class TokenResponse {
     public Map<String, String> toMap() {
         // TODO - Convert string properties to constants
         Map<String, String> map = new HashMap<>();
-        map.put("uuid", getUuid());
+//        map.put("uuid", getUuid());
         map.put("access_token", getAccessToken());
         map.put("refresh_token", getRefreshToken());
         map.put("scope", getScope());
@@ -127,8 +125,8 @@ public class TokenResponse {
      * @return String of TokenResponse object
      */
     @Override public String toString() {
-        return "TokenResponse{" + "uuid='" + uuid + '\'' + ", accessToken='" + accessToken + '\'' + ", refreshToken='"
-                + refreshToken + '\'' + ", scope='" + scope + '\'' + ", tokenType='" + tokenType + '\''
-                + ", expiresIn='" + expiresIn + '\'' + ", validTill=" + validTill + '}';
+        return "TokenResponse{" + "accessToken='" + accessToken + '\'' + ", refreshToken='" + refreshToken + '\''
+                + ", scope='" + scope + '\'' + ", tokenType='" + tokenType + '\'' + ", expiresIn='" + expiresIn + '\''
+                + ", validTill=" + validTill + '}';
     }
 }

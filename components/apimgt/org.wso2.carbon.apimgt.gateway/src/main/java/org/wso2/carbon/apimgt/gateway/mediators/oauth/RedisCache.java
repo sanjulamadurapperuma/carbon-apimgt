@@ -17,7 +17,7 @@ public class RedisCache {
     private static Integer port = 6379;
     private static String password = "";
 
-    public RedisCache() {
+    public RedisCache(String host, Integer port, String password) {
         // TODO
         if (password.length() > 0) {
             jedisPool = new JedisPool(new JedisPoolConfig(), host, port);
@@ -32,16 +32,16 @@ public class RedisCache {
         }
     }
 
-    private void addTokenResponse(TokenResponse tokenResponse) {
+    public void addTokenResponse(String uuid, TokenResponse tokenResponse) {
         // TODO
         try (Jedis jedis = jedisPool.getResource()) {
             // TODO - Check if the UUID is not unique
             // TODO - If not then append another string to the uuid to make it unique
-            jedis.hmset(tokenResponse.getUuid(), tokenResponse.toMap());
+            jedis.hmset(uuid, tokenResponse.toMap());
         }
     }
 
-    private TokenResponse getTokenResponseById(String uuid) {
+    public TokenResponse getTokenResponseById(String uuid) {
         // TODO
         TokenResponse tokenResponse;
         try (Jedis jedis = jedisPool.getResource()) {
@@ -52,7 +52,7 @@ public class RedisCache {
         return tokenResponse;
     }
 
-    private void stopRedisCacheSession() {
+    public void stopRedisCacheSession() {
         // TODO
         jedisPool.destroy();
         jedis.close();
