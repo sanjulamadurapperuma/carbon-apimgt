@@ -140,6 +140,8 @@ paths:
       summary: An Array of key managers configured
       description: |
         this will provide key managers configured
+      parameters:
+        - $ref: '#/parameters/requestedTenant'
       responses:
         200:
           description: An array of key managers
@@ -436,6 +438,10 @@ definitions:
         type: array
         items:
           type: string
+      subscription:
+        type: array
+        items:
+          type: string
   RevokedJWTList:
     type: array
     items:
@@ -552,6 +558,8 @@ definitions:
   #-----------------------------------------------------
   Application:
     properties:
+      uuid:
+        type: string
       id:
         type: integer
       name:
@@ -680,6 +688,8 @@ definitions:
         type: string
       keyType:
         type: string
+      keyManager:
+        type: string
 
   #---------------------  --------------------------------
   # The Throttle Policy resource
@@ -792,6 +802,8 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/ApiPolicyConditionGroup'
+       applicableLevel:
+        type: string
 
   #-----------------------------------------------------
   # The API Policy Condition  Group resource
