@@ -19,24 +19,19 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
-import Tabs from '@material-ui/core/Tabs';
-import Tab from '@material-ui/core/Tab';
 import Box from '@material-ui/core/Box';
 import Typography from '@material-ui/core/Typography';
-import Paper from '@material-ui/core/Paper';
-import ExpansionPanel from '@material-ui/core/ExpansionPanel';
-import ExpansionPanelSummary from '@material-ui/core/ExpansionPanelSummary';
-import ExpansionPanelDetails from '@material-ui/core/ExpansionPanelDetails';
-import Icon from '@material-ui/core/Icon';
 import { FormattedMessage, injectIntl } from 'react-intl';
 import Loading from 'AppComponents/Base/Loading/Loading';
 import CircularProgress from '@material-ui/core/CircularProgress';
-
+import Tabs from '@material-ui/core/Tabs';
+import Tab from '@material-ui/core/Tab';
 import Alert from 'AppComponents/Shared/Alert';
-import ProvideOAuthKeys from 'AppComponents/Shared/AppsAndKeys/ProvideOAuthKeys';
+import ImportExternalApp from 'AppComponents/Shared/AppsAndKeys/ImportExternalApp';
 import Application from 'AppData/Application';
 import AuthManager from 'AppData/AuthManager';
-import Settings from 'AppComponents/Shared/SettingsContext';
+import InlineMessage from 'AppComponents/Shared/InlineMessage';
+import WarningIcon from '@material-ui/icons/Warning';
 import API from 'AppData/api';
 import KeyConfiguration from './KeyConfiguration';
 import ViewKeys from './ViewKeys';
@@ -48,15 +43,20 @@ import Progress from '../Progress';
 const styles = (theme) => ({
     root: {
         padding: theme.spacing(3),
-        '& span, & h5, & label, & input': {
+        '& span, & h6, & label, & input': {
             color: theme.palette.getContrastText(theme.palette.background.paper),
         },
+        '& input:disabled': {
+            backgroundColor: '#f8f8f8',
+            color: '#9d9d9d',
+        },
+        position: 'relative',
     },
     button: {
         marginLeft: 0,
         '& span': {
             color: theme.palette.getContrastText(theme.palette.primary.main),
-        }
+        },
     },
     cleanUpButton: {
         marginLeft: 15,
@@ -84,14 +84,35 @@ const styles = (theme) => ({
         marginBottom: theme.spacing(2),
         marginTop: theme.spacing(2),
     },
+    muiFormGroupRoot: {
+        flexDirection: 'row',
+    },
+    formControl: {
+    },
+    subTitle: {
+        fontWeight: 400,
+    },
+    tabPanel: {
+        paddingLeft: theme.spacing(2),
+        '& .MuiBox-root': {
+            padding: 0,
+        }
+    },
+    warningIcon: {
+        color: '#ff9a00',
+        fontSize: 20,
+        marginRight: 10,
+    },
 });
 
 function TabPanel(props) {
-    const { children, value, index, ...other } = props;
+    const {
+        children, value, index, ...other
+    } = props;
 
     return (
         <div
-            role="tabpanel"
+            role='tabpanel'
             hidden={value !== index}
             id={`nav-tabpanel-${index}`}
             aria-labelledby={`nav-tab-${index}`}
@@ -99,18 +120,57 @@ function TabPanel(props) {
         >
             {value === index && (
                 <Box p={3}>
-                    <Typography>{children}</Typography>
+                    {children}
                 </Box>
             )}
         </div>
     );
-};
+}
 
 TabPanel.propTypes = {
-  children: PropTypes.node,
-  index: PropTypes.any.isRequired,
-  value: PropTypes.any.isRequired,
+    children: PropTypes.node,
+    index: PropTypes.any.isRequired,
+    value: PropTypes.any.isRequired,
 };
+
+const StyledTabs = withStyles({
+    indicator: {
+        display: 'flex',
+        justifyContent: 'center',
+        backgroundColor: 'transparent',
+        '& > span': {
+            width: '98%',
+            backgroundColor: '#ffffff',
+        },
+        transition: 'none',
+    },
+    flexContainer: {
+        borderBottom: 'solid 1px #666',
+        backgroundColor: '#efefef',
+        '& button:first-child': {
+            borderLeft: 'none',
+        }
+    },
+})((props) => <Tabs {...props} TabIndicatorProps={{ children: <span /> }} />);
+
+
+const StyledTab = withStyles((theme) => ({
+    root: {
+        textTransform: 'none',
+        color: '#666',
+        fontWeight: theme.typography.fontWeightRegular,
+        fontSize: theme.typography.pxToRem(15),
+        marginRight: theme.spacing(1),
+        '&:focus': {
+            opacity: 1,
+        },
+    },
+    selected: {
+        backgroundColor: '#fff',
+        borderLeft: 'solid 1px #666',
+        borderRight: 'solid 1px #666',
+    },
+}))((props) => <Tab disableRipple {...props} />);
 
 /**
  *  @param {event} event event
@@ -132,18 +192,18 @@ class TokenManager extends React.Component {
             isKeyJWT: false,
             keyRequest: {
                 keyType,
-                serverSupportedGrantTypes: [],
-                supportedGrantTypes: [],
+                selectedGrantTypes: null,
                 callbackUrl: '',
-                validityTime: 3600,
                 additionalProperties: {},
                 keyManager: '',
+                validityTime: 3600,
+                scopes: ['default'],
             },
-            keyManagers: [],
-            selectedTab: 'Default',
+            keyManagers: null,
+            selectedTab: null,
             providedConsumerKey: '',
             providedConsumerSecret: '',
-            generateEnabled: true,
+            validating: false,
         };
         this.keyStates = {
             COMPLETED: 'COMPLETED',
@@ -171,85 +231,106 @@ class TokenManager extends React.Component {
     componentDidMount() {
         this.loadApplication();
     }
-
-    setGenerateEnabled = (state) => {
-        this.setState({ generateEnabled: state });
+    componentDidUpdate(nextProps) {
+        const { keyType: nextKeyType } = nextProps;
+        const { keyType: prevKeyType } = this.props;
+        if(nextKeyType !== prevKeyType) {
+            this.loadApplication();
+        }
     }
+    getDefaultAdditionalProperties(selectedKM) {
+        const { availableGrantTypes, applicationConfiguration } = selectedKM;
+        // Fill the keyRequest.additionalProperties from the selectedKM.applicationConfiguration defaultValues.
+        const additionalProperties = {};
 
-    /**
-     * get supported grant types from the settings api
-     * deprecated
-     */
-    getserverSupportedGrantTypes = () => {
-        const api = new API();
-        const promisedSettings = api.getSettings();
-        promisedSettings
-            .then((response) => {
-                const { keyRequest } = this.state;
-                const newKeyRequest = { ...keyRequest };
-                newKeyRequest.serverSupportedGrantTypes = response.obj.grantTypes;
-                newKeyRequest.supportedGrantTypes = response.obj.grantTypes.filter((item) => item !== 'authorization_code'
-                    && item !== 'implicit');
-                this.setState({ keyRequest: newKeyRequest });
-            })
-            .catch((error) => {
-                if (process.env.NODE_ENV !== 'production') {
-                    console.log(error);
-                }
-                const { status } = error;
-                if (status === 404) {
-                    this.setState({ notFound: true });
-                }
+        applicationConfiguration.forEach(confItem => {
+            additionalProperties[confItem.name] = confItem.default || '';
+        });
+        return additionalProperties;
+    }
+    handleTabChange = (event, newSelectedTab) => {
+        const { keys, keyManagers, keyRequest } = this.state;
+        const { keyType } = this.props;
+        const selectedKM = keyManagers.find(x => x.name === newSelectedTab);
+        const { availableGrantTypes } = selectedKM;
+
+        if (keys.size > 0 && keys.get(newSelectedTab) && keys.get(newSelectedTab).keyType === keyType) {
+            const { callbackUrl, supportedGrantTypes, additionalProperties } = keys.get(newSelectedTab);
+            const newRequest = {
+                ...keyRequest,
+                callbackUrl,
+                selectedGrantTypes: supportedGrantTypes || availableGrantTypes.filter(type => (type !== 'authorization_code' && type !== 'implicit')),
+                additionalProperties: additionalProperties || this.getDefaultAdditionalProperties(selectedKM),
+            };
+            this.setState({ keyRequest: newRequest, selectedTab: newSelectedTab });
+        } else {
+            // Fill the keyRequest.additionalProperties from the selectedKM.applicationConfiguration defaultValues.
+            this.setState({
+                keyRequest: {
+                    ...keyRequest,
+                    selectedGrantTypes: availableGrantTypes.filter(type => (type !== 'authorization_code' && type !== 'implicit')),
+                    additionalProperties: this.getDefaultAdditionalProperties(selectedKM)
+                },
+                selectedTab: newSelectedTab,
             });
-    };
-
-    /**
-     * get registered key managers from the key-managers store rest api
-     */
-    getRegisteredKeyManagers = () => {
-        const api = new API();
-        const promisedKeyManagers = api.getKeyManagers();
-        promisedKeyManagers
-            .then((response) => {
-                const responseKeyManagerList = [];
-                response.body.list.map((item) => responseKeyManagerList.push(item));
-                this.setState({ keyManagers: responseKeyManagerList });
-            })
-            .catch((error) => {
-                if (process.env.NODE_ENV !== 'production') {
-                    console.log(error);
-                }
-                const { status } = error;
-                if (status === 404) {
-                    this.setState({ notFound: true });
-                }
-            });
-    };
-
-    handleTabChange = (event, newValue) => {
-        this.setState({ selectedTab: newValue });
+        }
     };
 
     /**
      * load application key generation ui
      */
     loadApplication = () => {
-        this.getserverSupportedGrantTypes();
-        this.getRegisteredKeyManagers();
         const { keyType } = this.props;
         if (this.appId) {
-            this.application
-                .then((application) => application.getKeys(keyType))
-                .then((keys) => {
-                    const { keyRequest, selectedTab } = this.state;
+            const api = new API();
+            const promisedKeyManagers = api.getKeyManagers();
+            const promisedGetKeys = this.application
+                .then((application) => application.getKeys(keyType));
+            Promise.all([promisedKeyManagers, promisedGetKeys])
+                .then((response) => {
+                    // processing promisedKeyManagers response
+                    const responseKeyManagerList = [];
+                    response[0].body.list.map((item) => {
+                        if (item.enabled) responseKeyManagerList.push(item);
+                    });
+
+                    if (responseKeyManagerList.length === 0) {
+                        this.setState({ keyManagers: [] });
+                        return;
+                    }
+                    // Selecting a key manager from the list of key managers.
+                    let { selectedTab } = this.state;
+                    if (!selectedTab && responseKeyManagerList.length > 0) {
+                        selectedTab = !!responseKeyManagerList.find(x => x.name === 'Resident Key Manager') ? 'Resident Key Manager'
+                            : responseKeyManagerList[0].name;
+                    }
+                    const selectdKM = responseKeyManagerList.find(x => x.name === selectedTab);
+                    // processing promisedGetKeys response
+                    const keys = response[1];
+                    const { keyRequest } = this.state;
+
                     if (keys.size > 0 && keys.get(selectedTab) && keys.get(selectedTab).keyType === keyType) {
-                        const { callbackUrl, supportedGrantTypes } = keys.get(selectedTab);
+                        const { callbackUrl, supportedGrantTypes, additionalProperties } = keys.get(selectedTab);
                         const newRequest = {
-                            ...keyRequest, callbackUrl, supportedGrantTypes,
+                            ...keyRequest,
+                            callbackUrl: callbackUrl || '',
+                            selectedGrantTypes: supportedGrantTypes || [],
+                            additionalProperties: additionalProperties || this.getDefaultAdditionalProperties(selectdKM),
                         };
-                        this.setState({ keys, keyRequest: newRequest });
+                        this.setState({ keys, keyRequest: newRequest, keyManagers: responseKeyManagerList, selectedTab });
                     } else {
-                        this.setState({ keys });
+                        const selectdKMGrants = selectdKM.availableGrantTypes || [];
+
+                        this.setState({
+                            keys,
+                            keyRequest: {
+                                ...keyRequest,
+                                selectedGrantTypes: selectdKMGrants.filter(type => (type !== 'authorization_code' && type !== 'implicit')),
+                                additionalProperties: this.getDefaultAdditionalProperties(selectdKM),
+                            },
+                            keyManagers: responseKeyManagerList,
+                            selectedTab
+                        });
                     }
                 })
                 .catch((error) => {
@@ -278,16 +359,27 @@ class TokenManager extends React.Component {
      */
     generateKeys() {
         const { keyRequest, keys, selectedTab } = this.state;
-        this.setState({ isLoading: true });
         const {
             keyType, updateSubscriptionData, selectedApp: { tokenType, hashEnabled }, intl,
         } = this.props;
+
+        if ((keyRequest.selectedGrantTypes.includes('implicit')
+            || keyRequest.selectedGrantTypes.includes('authorization_code')) && keyRequest.callbackUrl === '') {
+            Alert.error(intl.formatMessage({
+                id: 'Shared.AppsAndKeys.TokenManager.key.generate.error.callbackempty',
+                defaultMessage: 'Callback URL can not be empty when the Implicit or Application Code grant types selected',
+            }));
+            this.setValidating(true);
+            return;
+        }
+        this.setState({ isLoading: true });
+
         this.application
             .then((application) => {
                 return application.generateKeys(
-                    keyType, keyRequest.supportedGrantTypes,
-                    keyRequest.callbackUrl, keyRequest.validityTime, 
-                    keyRequest.additionalProperties, keyRequest.keyManager
+                    keyType, keyRequest.selectedGrantTypes,
+                    keyRequest.callbackUrl,
+                    keyRequest.additionalProperties, selectedTab,
                 );
             })
             .then((response) => {
@@ -300,10 +392,18 @@ class TokenManager extends React.Component {
                 const isKeyJWT = (tokenType === 'JWT') || hashEnabled;
                 newKeys.set(selectedTab, response);
                 this.setState({ keys: newKeys, isKeyJWT });
-                Alert.info(intl.formatMessage({
-                    id: 'Shared.AppsAndKeys.TokenManager.key.generate.success',
-                    defaultMessage: 'Application keys generated successfully',
-                }));
+                if (response.keyState === this.keyStates.CREATED || response.keyState === this.keyStates.REJECTED) {
+                    Alert.info(intl.formatMessage({
+                        id: 'Shared.AppsAndKeys.TokenManager.key.generate.success.blocked',
+                        defaultMessage: 'Application keys generate request is currently pending approval by the site administrator.',
+                    }));
+                } else {
+                    Alert.info(intl.formatMessage({
+                        id: 'Shared.AppsAndKeys.TokenManager.key.generate.success',
+                        defaultMessage: 'Application keys generated successfully',
+                    }));
+                }
+                
             })
             .catch((error) => {
                 if (process.env.NODE_ENV !== 'production') {
@@ -312,6 +412,8 @@ class TokenManager extends React.Component {
                 const { status } = error;
                 if (status === 404) {
                     this.setState({ notFound: true });
+                } else if (status === 500) {
+                    this.loadApplication();
                 }
                 Alert.error(intl.formatMessage({
                     id: 'Shared.AppsAndKeys.TokenManager.key.generate.error',
@@ -334,13 +436,13 @@ class TokenManager extends React.Component {
                 return application.updateKeys(
                     applicationKey.tokenType,
                     keyType,
-                    keyRequest.supportedGrantTypes,
+                    keyRequest.selectedGrantTypes,
                     keyRequest.callbackUrl,
                     applicationKey.consumerKey,
                     applicationKey.consumerSecret,
-                    applicationKey.additionalProperties,
+                    keyRequest.additionalProperties,
                     selectedTab,
-                    applicationKey.keyMappingId
+                    applicationKey.keyMappingId,
                 );
             })
             .then((response) => {
@@ -359,11 +461,13 @@ class TokenManager extends React.Component {
                 const { status } = error;
                 if (status === 404) {
                     this.setState({ notFound: true });
+                } else if (status === 500) {
+                    this.loadApplication();
                 }
-                Alert.error(intl.formatMessage({
-                    id: 'Shared.AppsAndKeys.TokenManager.key.update.error',
-                    defaultMessage: 'Error occurred when updating application keys',
-                }));
+                const { response } = error;
+                if (response && response.body) {
+                    Alert.error(response.body.message);
+                }
             }).finally(() => this.setState({ isLoading: false }));
     }
 
@@ -410,13 +514,13 @@ class TokenManager extends React.Component {
     /**
      * Provide consumer key and secret of an existing OAuth app to an application
      */
-    provideOAuthKeySecret(selectedTab, keyMappingId) {
-        const { providedConsumerKey, providedConsumerSecret } = this.state;
+    provideOAuthKeySecret() {
         const { keyType, intl } = this.props;
+        const { providedConsumerKey, providedConsumerSecret, selectedTab } = this.state;
 
         this.application
             .then((application) => {
-                return application.provideKeys(keyType, providedConsumerKey, providedConsumerSecret, selectedTab, keyMappingId);
+                return application.provideKeys(keyType, providedConsumerKey, providedConsumerSecret, selectedTab);
             })
             .then(() => {
                 this.setState({ providedConsumerKey: '', providedConsumerSecret: '' });
@@ -439,7 +543,25 @@ class TokenManager extends React.Component {
                 }));
             });
     }
-
+    getKeyManagerDescription() {
+        const { keyManagers, selectedTab } = this.state;
+        const selectedKMObject = keyManagers.filter(item => item.name === selectedTab);
+        if (selectedKMObject && selectedKMObject.length === 1) {
+            return selectedKMObject[0].description;
+        }
+        return '';
+    }
+    setValidating(validatingState) {
+        this.setState({ validating: validatingState });
+    }
+    toTitleCase = (str) => {
+        return str.replace(
+            /\w\S*/g,
+            function (txt) {
+                return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+            }
+        );
+    };
     /**
      *  @returns {Component}
      * @memberof Tokenemanager
@@ -450,9 +572,33 @@ class TokenManager extends React.Component {
         } = this.props;
         const {
             keys, keyRequest, isLoading, isKeyJWT, providedConsumerKey,
-            providedConsumerSecret, generateEnabled, selectedTab, keyManagers
+            providedConsumerSecret, selectedTab, keyManagers, validating,
         } = this.state;
-        if (!keys) {
+        if (keyManagers && keyManagers.length === 0) {
+            return <div className={classes.root}>
+                <Box mb={1}>
+                    <Typography variant='h5' className={classes.keyTitle}>
+                        {this.toTitleCase(keyType)}
+                        <FormattedMessage
+                            id='Shared.AppsAndKeys.TokenManager.oauth2.keys.main.title'
+                            defaultMessage=' OAuth2 Keys'
+                        />
+                    </Typography>
+                </Box>
+                <InlineMessage type='info' className={classes.dialogContainer}>
+                    <Typography variant='h5' component='h3'>
+                        <FormattedMessage id='Shared.AppsAndKeys.TokenManager.no.km' defaultMessage='No Key Managers' />
+                    </Typography>
+                    <Typography component='p'>
+                        <FormattedMessage
+                            id='Shared.AppsAndKeys.TokenManager.no.km.content'
+                            defaultMessage='No Key Managers active to generate keys.'
+                        />
+                    </Typography>
+                </InlineMessage>
+            </div>
+        }
+        if (!keys || !selectedTab || !keyRequest.selectedGrantTypes) {
             return <Loading />;
         }
         const username = AuthManager.getUser().name;
@@ -461,11 +607,8 @@ class TokenManager extends React.Component {
         if (selectedApp.owner && username.toLowerCase() === selectedApp.owner.toLowerCase()) {
             isUserOwner = true;
         }
-        const key = keys.size > 0 && keys.get(selectedTab) && (keys.get(selectedTab).keyType === keyType) && keys.get(selectedTab);
+        const key = keys.size > 0 && keys.get(selectedTab) && (keys.get(selectedTab).keyType === keyType) ? keys.get(selectedTab) : null;
 
-        if (key && key.token) {
-            keyRequest.validityTime = key.token.validityTime;
-        }
         if (summary) {
             if (keys) {
                 return (
@@ -484,7 +627,7 @@ class TokenManager extends React.Component {
                 return (<Progress />);
             }
         }
-        if (keys.size > 0 && keys.get(selectedTab) && keys.get(selectedTab).keyType === keyType && key && key.keyState === 'APPROVED' && !key.consumerKey) {
+        if (key && key.keyState === 'APPROVED' && !key.consumerKey) {
             return (
                 <>
                     <Typography className={classes.cleanUpInfoText} variant='subtitle1'>
@@ -511,223 +654,160 @@ class TokenManager extends React.Component {
         if (key && (key.keyState === this.keyStates.CREATED || key.keyState === this.keyStates.REJECTED)) {
             return <WaitingForApproval keyState={key.keyState} states={this.keyStates} />;
         }
-        const keyGrantTypes = key ? key.supportedGrantTypes : [];
-        const settingsContext = this.context;
-        const { mapExistingAuthApps } = settingsContext.settings;
-
         return (
-            <div className={classes.root}>
-                <Paper className={classes.paper}>
-                    <Tabs
-                        value={selectedTab}
-                        indicatorColor="primary"
-                        textColor="primary"
-                        onChange={this.handleTabChange}
-                        aria-label="key manager tabs"
-                    >
-                        {keyManagers.map(keymanager => (
-                            <Tab label={keymanager.displayName || keymanager.name} value={keymanager.name} disabled={!keymanager.enabled}/>
-                        ))}
-                        
-                    </Tabs>
-                    {keyManagers.map(keymanager => (
-                        <TabPanel value={selectedTab} index={keymanager.name}>
-                            <ExpansionPanel defaultExpanded>
-                                <ExpansionPanelSummary expandIcon={<Icon>expand_more</Icon>}>
-                                    <Typography className={classes.heading} variant='subtitle1'>
-                                        {
-                                            keys.size > 0 && keys.get(selectedTab) && keys.get(selectedTab).keyType === keyType
-                                                ? (
-                                                    <FormattedMessage
-                                                        defaultMessage='Key Configurations'
-                                                        id='Shared.AppsAndKeys.TokenManager.update.configuration'
-                                                    />
-                                                )
-                                                : (
-                                                    <FormattedMessage
-                                                        defaultMessage='Key Configuration'
-                                                        id='Shared.AppsAndKeys.TokenManager.key.configuration'
-                                                    />
-                                                )
-                                        }
-                                    </Typography>    
-                                </ExpansionPanelSummary>
-                                <ExpansionPanelDetails className={classes.keyConfigWrapper}>
-                                    <div>
-                                        <Typography className={classes.heading} variant='subtitle1'>
-                                            {
-                                                keyType === 'PRODUCTION' ? 'Production ' : 'Sandbox '}
-                                                    <FormattedMessage
-                                                        defaultMessage='Key and Secret'
-                                                            id='Shared.AppsAndKeys.TokenManager.key.and.secret'
-                                                    />
-                                        </Typography>
-                                        <ViewKeys
-                                            selectedApp={selectedApp}
-                                            selectedTab={selectedTab}
-                                            keyType={keyType}
-                                            keys={keys}
-                                            isKeyJWT={isKeyJWT}
-                                            selectedGrantTypes={keyGrantTypes}
-                                            isUserOwner={isUserOwner}
-                                            hashEnabled={keymanager.enableTokenHashing || hashEnabled}
-                                        />
-                                    </div>
-                                    <KeyConfiguration
-                                        keys={keys}
-                                        key={key}
-                                        selectedApp={selectedApp}
-                                        selectedTab={selectedTab}
-                                        keyType={keyType}
-                                        updateKeyRequest={this.updateKeyRequest}
-                                        keyRequest={keyRequest}
-                                        isUserOwner={isUserOwner}
-                                        isKeysAvailable={keys.size > 0 && keys.get(selectedTab) && keys.get(selectedTab).keyType === keyType}
-                                        setGenerateEnabled={this.setGenerateEnabled}
-                                        keyManagerConfig={keymanager}
+            <>
+                {(keyManagers && keyManagers.length > 1) && (<StyledTabs
+                    value={selectedTab}
+                    indicatorColor='primary'
+                    textColor='primary'
+                    onChange={this.handleTabChange}
+                    aria-label='key manager tabs'
+                >
+                    {keyManagers.map((keymanager) => (
+                        <StyledTab label={keymanager.displayName || keymanager.name} value={keymanager.name} disabled={!keymanager.enabled} />
+                    ))}
+                </StyledTabs>)}
+                <div className={classes.root}>
+                    <Box mb={1}>
+                        <Typography variant='h5' className={classes.keyTitle}>
+                            {this.toTitleCase(keyType)}
+                            <FormattedMessage
+                                id='Shared.AppsAndKeys.TokenManager.oauth2.keys.main.title'
+                                defaultMessage=' OAuth2 Keys'
+                            />
+                        </Typography>
+                    </Box>
+                    {(keyManagers && keyManagers.length > 0) && keyManagers.map(keymanager => (
+                        <TabPanel value={selectedTab} index={keymanager.name} className={classes.tabPanel}>
+                            <Box display='flex' flexDirection='row'>
+                                <Typography className={classes.heading} variant='h6' component='h6' className={classes.subTitle}>
+                                    <FormattedMessage
+                                        defaultMessage='Key and Secret'
+                                        id='Shared.AppsAndKeys.TokenManager.key.and.secret'
                                     />
-                                    <div className={classes.generateWrapper}>
-                                        <ScopeValidation
-                                            resourcePath={resourcePaths.APPLICATION_GENERATE_KEYS}
-                                            resourceMethod={resourceMethods.POST}
-                                        >
-                                            {!isUserOwner ? (
-                                                <>
-                                                    <Button
-                                                        variant='contained'
-                                                        color='primary'
-                                                        className={classes.button}
-                                                        onClick={
-                                                            keys.size > 0 && keys.get(selectedTab) && keys.get(selectedTab).keyType === keyType ? this.updateKeys : this.generateKeys
-                                                        }
-                                                        disabled={!isUserOwner || isLoading || !keymanager.enableTokenGeneration}
-                                                    >
-                                                        {keys.size > 0 && keys.get(selectedTab) && keys.get(selectedTab).keyType === keyType ? 'Update keys' : 'Generate Keys'}
-                                                        {isLoading && <CircularProgress size={20} />}
-                                                    </Button>
-                                                    <Typography variant='caption'>
-                                                        <FormattedMessage
-                                                            defaultMessage='Only owner can generate or update keys'
-                                                            id='Shared.AppsAndKeys.TokenManager.key.and.user.owner'
-                                                        />
-                                                    </Typography>
-                                                </>
-                                            ) : (
+                                </Typography>
+                                {
+                                    keymanager.enableMapOAuthConsumerApps && (
+                                        <Box ml={2}>
+                                            <ImportExternalApp
+                                                onChange={this.handleOnChangeProvidedOAuth}
+                                                consumerKey={providedConsumerKey}
+                                                consumerSecret={providedConsumerSecret}
+                                                isUserOwner={isUserOwner}
+                                                key={key}
+                                                provideOAuthKeySecret={this.provideOAuthKeySecret}
+                                            />
+                                        </Box>
+                                    )
+                                }
+                            </Box>
+                            <Box m={2}>
+                                <ViewKeys
+                                    selectedApp={selectedApp}
+                                    selectedTab={selectedTab}
+                                    keyType={keyType}
+                                    keys={keys}
+                                    isKeyJWT={isKeyJWT}
+                                    selectedGrantTypes={keyRequest.selectedGrantTypes}
+                                    isUserOwner={isUserOwner}
+                                    hashEnabled={keymanager.enableTokenHashing || hashEnabled}
+                                    keyManagerConfig={keymanager}
+                                />
+                            </Box>
+                            <Typography className={classes.heading} variant='h6' component='h6' className={classes.subTitle}>
+                                {
+                                    key
+                                        ? (
+                                            <FormattedMessage
+                                                defaultMessage='Key Configurations'
+                                                id='Shared.AppsAndKeys.TokenManager.update.configuration'
+                                            />
+                                        )
+                                        : (
+                                            <FormattedMessage
+                                                defaultMessage='Key Configuration'
+                                                id='Shared.AppsAndKeys.TokenManager.key.configuration'
+                                            />
+                                        )
+                                }
+                            </Typography>
+                            <Box m={2}>
+                                <KeyConfiguration
+                                    keys={keys}
+                                    key={key}
+                                    selectedApp={selectedApp}
+                                    selectedTab={selectedTab}
+                                    keyType={keyType}
+                                    updateKeyRequest={this.updateKeyRequest}
+                                    keyRequest={keyRequest}
+                                    isUserOwner={isUserOwner}
+                                    isKeysAvailable={key}
+                                    keyManagerConfig={keymanager}
+                                    validating={validating}
+                                />
+                                <div className={classes.generateWrapper}>
+                                    <ScopeValidation
+                                        resourcePath={resourcePaths.APPLICATION_GENERATE_KEYS}
+                                        resourceMethod={resourceMethods.POST}
+                                    >
+                                        {!isUserOwner ? (
+                                            <>
                                                 <Button
                                                     variant='contained'
                                                     color='primary'
                                                     className={classes.button}
-                                                    onClick={keys.size > 0 && keys.get(selectedTab) && keys.get(selectedTab).keyType === keyType  ? this.updateKeys : this.generateKeys}
-                                                    disabled={!generateEnabled || isLoading || !keymanager.enableTokenGeneration}
+                                                    onClick={
+                                                        key ? this.updateKeys : this.generateKeys
+                                                    }
+                                                    disabled={!isUserOwner || isLoading || !keymanager.enableOAuthAppCreation}
                                                 >
-                                                    {keys.size > 0 && keys.get(selectedTab) && keys.get(selectedTab).keyType === keyType ? 'Update' : 'Generate Keys'}
+                                                    {key ? 'Update keys' : 'Generate Keys'}
                                                     {isLoading && <CircularProgress size={20} />}
                                                 </Button>
-                                            )}
-                                        </ScopeValidation>
-                                    </div>
-                                    {
-                                        mapExistingAuthApps && !(keys.get(selectedTab).keyType === keyType) && (
-                                            <Paper className={classes.paper}>
-                                                <ExpansionPanel defaultExpanded>
-                                                    <ExpansionPanelSummary expandIcon={<Icon>expand_more</Icon>}>
-                                                        <Typography className={classes.heading} variant='subtitle1'>
+                                                <Typography variant='caption'>
+                                                    <FormattedMessage
+                                                        defaultMessage='Only owner can generate or update keys'
+                                                        id='Shared.AppsAndKeys.TokenManager.key.and.user.owner'
+                                                    />
+                                                </Typography>
+                                            </>
+                                        ) : (
+                                                <Box display='flex'>  
+                                                    <Button
+                                                        variant='contained'
+                                                        color='primary'
+                                                        className={classes.button}
+                                                        onClick={key ? this.updateKeys : this.generateKeys}
+                                                        disabled={isLoading || !keymanager.enableOAuthAppCreation}
+                                                    >
+                                                        {key ? 'Update' : 'Generate Keys'}
+                                                        {isLoading && <CircularProgress size={20} />}
+                                                    </Button>
+                                                    {!keymanager.enableOAuthAppCreation && (<Box m={2} display='flex'>
+                                                        <WarningIcon className={classes.warningIcon} />
+                                                        <Typography variant="body1">
                                                             <FormattedMessage
-                                                                defaultMessage='Provide Existing OAuth Keys'
-                                                                id='Shared.AppsAndKeys.TokenManager.provide.oauth'
+                                                                defaultMessage='Oauth app creation disabled for {kmName} key manager'
+                                                                id='Shared.AppsAndKeys.TokenManager.app.creation.disable.warn'
+                                                                values={{ kmName: keymanager.displayName || keymanager.name }}
                                                             />
                                                         </Typography>
-                                                    </ExpansionPanelSummary>
-                                                    <ExpansionPanelDetails className={classes.keyConfigWrapper}>
-                                                        <ProvideOAuthKeys
-                                                            onChange={this.handleOnChangeProvidedOAuth}
-                                                            consumerKey={providedConsumerKey}
-                                                            consumerSecret={providedConsumerSecret}
-                                                            isUserOwner={isUserOwner}
-                                                        />
-                                                    </ExpansionPanelDetails>
-                                                </ExpansionPanel>
-                                                <div className={classes.generateWrapper}>
-                                                    <ScopeValidation
-                                                        resourcePath={resourcePaths.APPLICATION_GENERATE_KEYS}
-                                                        resourceMethod={resourceMethods.POST}
-                                                    >
-                                                        {!isUserOwner ? (
-                                                            <>
-                                                                <Button
-                                                                    variant='contained'
-                                                                    color='primary'
-                                                                    className={classes.button}
-                                                                    onClick={this.provideOAuthKeySecret(selectedTab, keys.get(selectedTab).keyMappingId)}
-                                                                    disabled={!isUserOwner}
-                                                                >
-                                                                    {
-                                                                        keys.size > 0 && keys.get(selectedTab) && keys.get(selectedTab).keyType === keyType
-                                                                            ? (
-                                                                                <FormattedMessage
-                                                                                    defaultMessage='Update'
-                                                                                    id='Shared.AppsAndKeys.TokenManager.provide.
-                                                                                    oauth.button.update'
-                                                                                />
-                                                                            )
-                                                                            : (
-                                                                                <FormattedMessage
-                                                                                    defaultMessage='Provide'
-                                                                                    id='Shared.AppsAndKeys.TokenManager.
-                                                                                    provide.oauth.button.provide'
-                                                                                />
-                                                                            )
-                                                                    }
-                                                                </Button>
-                                                                <Typography variant='caption'>
-                                                                    <FormattedMessage
-                                                                        defaultMessage='Only owner can provide keys'
-                                                                        id='Shared.AppsAndKeys.TokenManager.key.provide.user.owner'
-                                                                    />
-                                                                </Typography>
-                                                            </>
-                                                        ) : (
-                                                            <Button
-                                                                variant='contained'
-                                                                color='primary'
-                                                                className={classes.button}
-                                                                onClick={this.provideOAuthKeySecret(selectedTab, keys.get(selectedTab).keyMappingId)}
-                                                            >
-                                                                {
-                                                                    keys.size > 0 && keys.get(selectedTab) && keys.get(selectedTab).keyType === keyType
-                                                                        ? (
-                                                                            <FormattedMessage
-                                                                                defaultMessage='Update'
-                                                                                id='Shared.AppsAndKeys.TokenManager.
-                                                                                provide.oauth.button.update'
-                                                                            />
-                                                                        )
-                                                                        : (
-                                                                            <FormattedMessage
-                                                                                defaultMessage='Provide'
-                                                                                id='Shared.AppsAndKeys.
-                                                                                TokenManager.provide.oauth.button.provide'
-                                                                            />
-                                                                        )
-                                                                }
-                                                            </Button>
-                                                        )}
-                                                    </ScopeValidation>
-                                                </div>
-                                            </Paper>
-                                        )
-                                    }
-                                </ExpansionPanelDetails>
-                            </ExpansionPanel>
+                                                    </Box>)}
+                                                </Box>
+                                            )}
+                                    </ScopeValidation>
+                                </div>
+
+                            </Box>
                         </TabPanel>
                     ))}
-                </Paper>
-            </div>
+                </div>
+            </>
         );
     }
 }
 TokenManager.defaultProps = {
-    updateSubscriptionData: () => {},
+    updateSubscriptionData: () => { },
     summary: false,
 };
 TokenManager.propTypes = {

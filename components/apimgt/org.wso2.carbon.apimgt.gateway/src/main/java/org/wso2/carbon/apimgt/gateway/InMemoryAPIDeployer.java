@@ -20,6 +20,7 @@ package org.wso2.carbon.apimgt.gateway;
 
 import com.google.gson.Gson;
 import org.apache.axis2.AxisFault;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.apimgt.api.gateway.GatewayAPIDTO;
@@ -29,9 +30,12 @@ import org.wso2.carbon.apimgt.impl.dto.GatewayArtifactSynchronizerProperties;
 import org.wso2.carbon.apimgt.impl.gatewayartifactsynchronizer.ArtifactRetriever;
 import org.wso2.carbon.apimgt.impl.gatewayartifactsynchronizer.exception.ArtifactSynchronizerException;
 import org.wso2.carbon.apimgt.gateway.internal.ServiceReferenceHolder;
+import org.wso2.carbon.apimgt.impl.utils.APIGatewayAdminClient;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -40,6 +44,7 @@ import java.util.Set;
 public class InMemoryAPIDeployer {
 
     private static Log log = LogFactory.getLog(InMemoryAPIDeployer.class);
+    private boolean debugEnabled = log.isDebugEnabled();
     APIGatewayAdmin apiGatewayAdmin;
     ArtifactRetriever artifactRetriever;
     GatewayArtifactSynchronizerProperties gatewayArtifactSynchronizerProperties;
@@ -59,7 +64,7 @@ public class InMemoryAPIDeployer {
      * @param gatewayLabel - Label of the Gateway
      * @return True if API artifact retrieved from the storage and successfully deployed without any error. else false
      */
-    public boolean deployAPI(String apiId, String gatewayLabel) {
+    public boolean deployAPI(String apiId, String gatewayLabel) throws  ArtifactSynchronizerException {
 
         if (gatewayArtifactSynchronizerProperties.isRetrieveFromStorageEnabled() &&
                 gatewayArtifactSynchronizerProperties.getGatewayLabels().contains(gatewayLabel)) {
@@ -67,18 +72,28 @@ public class InMemoryAPIDeployer {
                 try {
                     String gatewayRuntimeArtifact = artifactRetriever.retrieveArtifact(apiId, gatewayLabel,
                             APIConstants.GatewayArtifactSynchronizer.GATEWAY_INSTRUCTION_PUBLISH);
-                    if (gatewayRuntimeArtifact != null) {
+                    if (StringUtils.isNotEmpty(gatewayRuntimeArtifact)) {
                         GatewayAPIDTO gatewayAPIDTO = new Gson().fromJson(gatewayRuntimeArtifact, GatewayAPIDTO.class);
-                        apiGatewayAdmin.deployAPI(gatewayAPIDTO);
+                        APIGatewayAdminClient apiGatewayAdminClient = new APIGatewayAdminClient();
+                        apiGatewayAdminClient.deployAPI(gatewayAPIDTO);
+                        if (debugEnabled) {
+                            log.debug("API with " + apiId + " is deployed in gateway with the label of " + gatewayLabel);
+                        }
                         return true;
                     } else {
-                        log.error("Error retrieving artifacts for API " + apiId + ". Storage returned null");
+                        String msg = "Error retrieving artifacts for API " + apiId + ". Storage returned null";
+                        log.error(msg);
+                        throw new ArtifactSynchronizerException(msg);
                     }
-                } catch (AxisFault | ArtifactSynchronizerException e) {
-                    log.error("Error deploying " + apiId + " in Gateway", e);
+                } catch (IOException | ArtifactSynchronizerException e) {
+                    String msg = "Error deploying"  + apiId +  "in Gateway";
+                    log.error(msg, e);
+                    throw new ArtifactSynchronizerException(msg, e);
                 }
             } else {
-                log.error("Artifact retriever not found");
+                String msg = "Artifact retriever not found";
+                log.error(msg);
+                throw new ArtifactSynchronizerException(msg);
             }
         }
         return false;
@@ -91,36 +106,46 @@ public class InMemoryAPIDeployer {
      * @return True if all API artifacts retrieved from the storage and successfully deployed without any error. else
      * false
      */
-    public boolean deployAllAPIsAtGatewayStartup (Set<String> assignedGatewayLabels) {
+    public boolean deployAllAPIsAtGatewayStartup (Set<String> assignedGatewayLabels) throws
+            ArtifactSynchronizerException {
 
         if (gatewayArtifactSynchronizerProperties.isRetrieveFromStorageEnabled()) {
             if (artifactRetriever != null) {
                 try {
                     Iterator<String> it = assignedGatewayLabels.iterator();
+                    APIGatewayAdminClient apiGatewayAdminClient = new APIGatewayAdminClient();
                     while (it.hasNext()) {
                         String label = it.next();
                         List<String> gatewayRuntimeArtifacts = ServiceReferenceHolder
                                 .getInstance().getArtifactRetriever().retrieveAllArtifacts(label);
-                        for (String APIruntimeArtifact :gatewayRuntimeArtifacts){
+                        for (String runtimeArtifact :gatewayRuntimeArtifacts){
                             GatewayAPIDTO gatewayAPIDTO = null;
                             try {
-                                if (APIruntimeArtifact != null) {
-                                    gatewayAPIDTO = new Gson().fromJson(APIruntimeArtifact, GatewayAPIDTO.class);
+                                if (StringUtils.isNotEmpty(runtimeArtifact)) {
+                                    gatewayAPIDTO = new Gson().fromJson(runtimeArtifact, GatewayAPIDTO.class);
                                     log.info("Deploying synapse artifacts of " + gatewayAPIDTO.getName());
-                                    apiGatewayAdmin.deployAPI(gatewayAPIDTO);
+                                    apiGatewayAdminClient.deployAPI(gatewayAPIDTO);
                                 }
                             } catch (AxisFault axisFault) {
                                 log.error("Error in deploying" + gatewayAPIDTO.getName()+ " to the Gateway ");
                                 continue;
                             }
                         }
+
+                        if (debugEnabled) {
+                            log.debug("APIs deployed in gateway with the label of " + label);
+                        }
                     }
                     return true;
-                } catch (ArtifactSynchronizerException e ) {
-                    log.error("Error  deploying APIs to the Gateway " + e );
+                } catch (ArtifactSynchronizerException | IOException e ) {
+                    String msg = "Error  deploying APIs to the Gateway ";
+                    log.error(msg, e);
+                    throw new ArtifactSynchronizerException(msg, e);
                 }
             } else {
-                log.error("Artifact retriever not found");
+                String msg = "Artifact retriever not found";
+                log.error(msg);
+                throw new ArtifactSynchronizerException(msg);
             }
         }
         return false;
@@ -133,7 +158,7 @@ public class InMemoryAPIDeployer {
      * @param gatewayLabel - Label of the Gateway
      * @return True if API artifact retrieved from the storage and successfully undeployed without any error. else false
      */
-    public boolean unDeployAPI(String apiId, String gatewayLabel) {
+    public boolean unDeployAPI(String apiId, String gatewayLabel) throws  ArtifactSynchronizerException {
 
         if (gatewayArtifactSynchronizerProperties.isRetrieveFromStorageEnabled() &&
                 gatewayArtifactSynchronizerProperties.getGatewayLabels().contains(gatewayLabel)) {
@@ -141,19 +166,29 @@ public class InMemoryAPIDeployer {
                 try {
                     String gatewayRuntimeArtifact = artifactRetriever
                             .retrieveArtifact(apiId, gatewayLabel,
-                                    APIConstants.GatewayArtifactSynchronizer.GATEWAY_INSTRUCTION_REMOVE);
-                    if (gatewayRuntimeArtifact != null) {
+                                    APIConstants.GatewayArtifactSynchronizer.GATEWAY_INSTRUCTION_ANY);
+                    if (StringUtils.isNotEmpty(gatewayRuntimeArtifact)) {
                         GatewayAPIDTO gatewayAPIDTO = new Gson().fromJson(gatewayRuntimeArtifact, GatewayAPIDTO.class);
-                        apiGatewayAdmin.unDeployAPI(gatewayAPIDTO);
+                        APIGatewayAdminClient apiGatewayAdminClient = new APIGatewayAdminClient();
+                        apiGatewayAdminClient.unDeployAPI(gatewayAPIDTO);
+                        if (debugEnabled) {
+                            log.debug("API with " + apiId + " is undeployed in gateway with the label of " + gatewayLabel);
+                        }
                         return true;
                     } else {
-                        log.error("Error retrieving artifacts for API " + apiId + ". Storage returned null");
+                        String msg = "Error retrieving artifacts for API " + apiId + ". Storage returned null";
+                        log.error(msg);
+                        throw new ArtifactSynchronizerException(msg);
                     }
-                } catch (AxisFault | ArtifactSynchronizerException e) {
-                    log.error("Error undeploying " + apiId + " in Gateway", e);
+                } catch (ArtifactSynchronizerException | IOException e) {
+                    String msg = "Error undeploying " + apiId + " in Gateway";
+                    log.error(msg, e);
+                    throw new ArtifactSynchronizerException(msg, e);
                 }
             } else {
-                log.error("Artifact retriever not found");
+                String msg = "Artifact retriever not found";
+                log.error(msg);
+                throw new ArtifactSynchronizerException(msg);
             }
         }
         return false;
@@ -166,7 +201,7 @@ public class InMemoryAPIDeployer {
      * @param gatewayLabel - Label of the Gateway
      * @return DTO Object that contains the information and artifacts of the API for the given label
      */
-    public GatewayAPIDTO getAPIArtifact(String apiId, String gatewayLabel) {
+    public GatewayAPIDTO getAPIArtifact(String apiId, String gatewayLabel) throws ArtifactSynchronizerException {
 
         GatewayAPIDTO gatewayAPIDTO = null;
         if (gatewayArtifactSynchronizerProperties.getGatewayLabels().contains(gatewayLabel)) {
@@ -174,19 +209,56 @@ public class InMemoryAPIDeployer {
                 try {
                     String gatewayRuntimeArtifact = artifactRetriever.retrieveArtifact(apiId, gatewayLabel,
                             APIConstants.GatewayArtifactSynchronizer.GATEWAY_INSTRUCTION_PUBLISH);
-                    if (gatewayRuntimeArtifact != null) {
+                    if (StringUtils.isNotEmpty(gatewayRuntimeArtifact)) {
                         gatewayAPIDTO = new Gson().fromJson(gatewayRuntimeArtifact, GatewayAPIDTO.class);
+                        if (debugEnabled) {
+                            log.debug("Retrieved artifacts for API  " + apiId + " retrieved from eventhub");
+                        }
                     } else {
-                        log.error("Error retrieving artifacts for API " + apiId + ". Storage returned null");
+                        String msg = "Error retrieving artifacts for API " + apiId + ". Storage returned null";
+                        log.error(msg);
+                        throw new ArtifactSynchronizerException(msg);
                     }
-                } catch (ArtifactSynchronizerException e) {
-                    log.error("Error retrieving artifacts of " + apiId + " from storage", e);
+                } catch (ArtifactSynchronizerException | IOException e) {
+                    String msg =   "Error in retrieving artifacts for API " + apiId;
+                    log.error(msg);
+                    throw new ArtifactSynchronizerException(msg);
                 }
             } else {
-                log.error("Artifact retriever not found");
+                String msg = "Artifact retriever not found";
+                log.error(msg);
+                throw new ArtifactSynchronizerException(msg);
             }
         }
         return gatewayAPIDTO;
     }
 
+
+    /**
+     * Retrieve artifacts from the storage
+     *
+     *@param apiName - Name of the API
+     *@param version - version of the API
+     *@param tenantDomain - Tenant Domain of the API
+     * @return Map that contains the UUID and label of the API
+     */
+    public Map <String, String> getGatewayAPIAttributes(String apiName, String version, String tenantDomain)
+            throws  ArtifactSynchronizerException {
+        Map<String, String> apiAttributes = null;
+        if (artifactRetriever != null) {
+            try {
+                apiAttributes = artifactRetriever.retrieveAttributes(apiName, version, tenantDomain);
+                log.debug("API Attributes retrieved for " + apiName + "  from storage");
+            } catch (ArtifactSynchronizerException e) {
+                String msg = "Error retrieving artifacts of " + apiName + " from storage";
+                log.error(msg, e);
+                throw new ArtifactSynchronizerException(msg, e);
+            }
+        } else {
+            String msg = "Artifact retriever not found";
+            log.error(msg);
+            throw new ArtifactSynchronizerException(msg);
+        }
+        return apiAttributes;
+    }
 }

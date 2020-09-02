@@ -29,6 +29,7 @@ import org.wso2.carbon.apimgt.api.model.KeyManagerConfiguration;
 import org.wso2.carbon.apimgt.api.model.KeyManagerConnectorConfiguration;
 import org.wso2.carbon.apimgt.impl.AMDefaultKeyManagerImpl;
 import org.wso2.carbon.apimgt.impl.APIConstants;
+import org.wso2.carbon.apimgt.impl.APIManagerConfiguration;
 import org.wso2.carbon.apimgt.impl.dto.ClaimMappingDto;
 import org.wso2.carbon.apimgt.impl.dto.JWKSConfigurationDTO;
 import org.wso2.carbon.apimgt.impl.dto.KeyManagerDto;
@@ -37,6 +38,7 @@ import org.wso2.carbon.apimgt.impl.dto.TokenIssuerDto;
 import org.wso2.carbon.apimgt.impl.internal.ServiceReferenceHolder;
 import org.wso2.carbon.apimgt.impl.jwt.JWTValidator;
 import org.wso2.carbon.apimgt.impl.jwt.JWTValidatorImpl;
+import org.wso2.carbon.apimgt.impl.loader.KeyManagerConfigurationDataRetriever;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 
 import java.util.Collections;
@@ -54,7 +56,7 @@ public class KeyManagerHolder {
 
     private static Log log = LogFactory.getLog(KeyManagerHolder.class);
     private static Map<String, TenantKeyManagerDto> tenantWiseMap = new HashMap<>();
-
+    private static Map<String, KeyManagerDto> globalJWTValidatorMap = new HashMap<>();
     public static void addKeyManagerConfiguration(String tenantDomain, String name, String type,
                                                   KeyManagerConfiguration keyManagerConfiguration)
             throws APIManagementException {
@@ -71,6 +73,11 @@ public class KeyManagerHolder {
         if (keyManagerConfiguration.isEnabled()) {
             KeyManager keyManager = null;
             JWTValidator jwtValidator = null;
+            APIManagerConfiguration apiManagerConfiguration =
+                    ServiceReferenceHolder.getInstance().getAPIManagerConfigurationService()
+                            .getAPIManagerConfiguration();
+            String defaultKeyManagerType =
+                    apiManagerConfiguration.getFirstProperty(APIConstants.DEFAULT_KEY_MANAGER_TYPE);
             KeyManagerConnectorConfiguration keyManagerConnectorConfiguration =
                     ServiceReferenceHolder.getInstance().getKeyManagerConnectorConfiguration(type);
             if (keyManagerConnectorConfiguration != null) {
@@ -78,6 +85,13 @@ public class KeyManagerHolder {
                     try {
                         keyManager = (KeyManager) Class
                                 .forName(keyManagerConnectorConfiguration.getImplementation()).newInstance();
+                        keyManager.setTenantDomain(tenantDomain);
+                        if (StringUtils.isNotEmpty(defaultKeyManagerType) && defaultKeyManagerType.equals(type)){
+                            keyManagerConfiguration.addParameter(APIConstants.KEY_MANAGER_USERNAME,
+                                    apiManagerConfiguration.getFirstProperty(APIConstants.API_KEY_VALIDATOR_USERNAME));
+                            keyManagerConfiguration.addParameter(APIConstants.KEY_MANAGER_PASSWORD,
+                                    apiManagerConfiguration.getFirstProperty(APIConstants.API_KEY_VALIDATOR_PASSWORD));
+                        }
                         keyManager.loadConfiguration(keyManagerConfiguration);
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
                         throw new APIManagementException("Error while loading keyManager configuration", e);
@@ -117,7 +131,7 @@ public class KeyManagerHolder {
 
     public static Map<String, KeyManagerDto> getTenantKeyManagers(String tenantDomain) {
 
-        TenantKeyManagerDto tenantKeyManagerDto = tenantWiseMap.get(tenantDomain);
+        TenantKeyManagerDto tenantKeyManagerDto = getTenantKeyManagerDto(tenantDomain);
         if (tenantKeyManagerDto != null) {
             return tenantKeyManagerDto.getKeyManagerMap();
         } else {
@@ -220,31 +234,50 @@ public class KeyManagerHolder {
 
     public static KeyManager getKeyManagerInstance(String tenantDomain, String keyManagerName) {
 
-        TenantKeyManagerDto tenantKeyManagerDto = tenantWiseMap.get(tenantDomain);
-        if (tenantKeyManagerDto == null) {
-            return null;
+        TenantKeyManagerDto tenantKeyManagerDto = getTenantKeyManagerDto(tenantDomain);
+        if (tenantKeyManagerDto != null) {
+            KeyManagerDto keyManagerDto = tenantKeyManagerDto.getKeyManagerByName(keyManagerName);
+            if (keyManagerDto == null) {
+                return null;
+            }
+            return keyManagerDto.getKeyManager();
         }
-        KeyManagerDto keyManagerDto = tenantKeyManagerDto.getKeyManagerByName(keyManagerName);
-        if (keyManagerDto == null) {
-            return null;
-        }
-        return keyManagerDto.getKeyManager();
+        return null;
     }
+
     public static KeyManagerDto getKeyManagerByIssuer(String tenantDomain, String issuer) {
 
-        TenantKeyManagerDto tenantKeyManagerDto = tenantWiseMap.get(tenantDomain);
+        if (globalJWTValidatorMap.containsKey(issuer)) {
+            return globalJWTValidatorMap.get(issuer);
+        }
+        TenantKeyManagerDto tenantKeyManagerDto = getTenantKeyManagerDto(tenantDomain);
         if (tenantKeyManagerDto != null) {
             return tenantKeyManagerDto.getKeyManagerDtoByIssuer(issuer);
         }
         return null;
     }
 
-    public static JWTValidator getJWTValidator(String tenantDomain, String issuer) {
+    private static TenantKeyManagerDto getTenantKeyManagerDto(String tenantDomain) {
 
         TenantKeyManagerDto tenantKeyManagerDto = tenantWiseMap.get(tenantDomain);
         if (tenantKeyManagerDto == null) {
-            return null;
+            synchronized ("KeyManagerHolder".concat(tenantDomain)) {
+                if (tenantKeyManagerDto == null) {
+                    new KeyManagerConfigurationDataRetriever(tenantDomain).run();
+                    tenantKeyManagerDto = tenantWiseMap.get(tenantDomain);
+                }
+            }
         }
-        return tenantKeyManagerDto.getJWTValidatorByIssuer(issuer);
+        return tenantKeyManagerDto;
+    }
+    public static void addGlobalJWTValidators(TokenIssuerDto tokenIssuerDto) {
+
+        KeyManagerDto keyManagerDto = new KeyManagerDto();
+        keyManagerDto.setIssuer(tokenIssuerDto.getIssuer());
+        keyManagerDto.setName(APIConstants.KeyManager.DEFAULT_KEY_MANAGER);
+        JWTValidator jwtValidator = new JWTValidatorImpl();
+        jwtValidator.loadTokenIssuerConfiguration(tokenIssuerDto);
+        keyManagerDto.setJwtValidator(jwtValidator);
+        globalJWTValidatorMap.put(tokenIssuerDto.getIssuer(), keyManagerDto);
     }
 }

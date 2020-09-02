@@ -45,6 +45,7 @@ import API from 'AppData/api';
 import Configurations from 'Config';
 import ChipInput from 'material-ui-chip-input';
 import PropTypes from 'prop-types';
+import InlineProgress from 'AppComponents/AdminPages/Addons/InlineProgress';
 
 const styles = (theme) => ({
     alertsWrapper: {
@@ -52,6 +53,7 @@ const styles = (theme) => ({
         '& span, & h5, & label, & input, & td, & li': {
             color: theme.palette.getContrastText(theme.palette.background.paper),
         },
+        marginBottom: theme.spacing(15),
     },
     manageAlertHeading: {
         marginBottom: theme.spacing(),
@@ -86,7 +88,7 @@ const ManageAlerts = (props) => {
     const [emails, setEmailsList] = useState([]);
     const [supportedAlerts, setSupportedAlerts] = useState();
     const [subscribedAlerts, setSubscribedAlerts] = useState([]);
-    const [isAnalyticsEnabled, setAnalyticsEnabled] = useState(false);
+    const [isAnalyticsEnabled, setAnalyticsEnabled] = useState();
     const [isInProgress, setInProgress] = useState({ subscribing: false, unSubscribing: false });
     const [unsubscribeAll, setUnsubscribeAll] = useState(false);
     const api = new API();
@@ -143,7 +145,7 @@ const ManageAlerts = (props) => {
                 id: 'Manage.Alerts.abnormal.request.access.description',
                 defaultMessage: 'This alert is triggered if there is a change in the resource access pattern '
                 + 'of a user of a particular application. These alerts could be treated as an indication of a '
-                + 'suspicious activity made by a user over your application.',
+                + 'suspicious activity by a user over your application.',
             }),
         },
         5: {
@@ -157,7 +159,7 @@ const ManageAlerts = (props) => {
                 defaultMessage: 'This alert is triggered if there is either a change in the request source IP '
                 + 'for a particular application by a user or if the request is from an IP used before a '
                 + 'time period of 30 days (default). These alerts could be treated as an indication of a '
-                + 'suspicious activity made by a user over an application.',
+                + 'suspicious activity by a user over an application.',
             }),
         },
         6: {
@@ -395,6 +397,14 @@ const ManageAlerts = (props) => {
             </Typography>
         ),
     };
+
+    if (isAnalyticsEnabled === undefined) {
+        return (
+            <ContentBase pageStyle='paperLess'>
+                <InlineProgress />
+            </ContentBase>
+        );
+    }
 
     return (
         <>

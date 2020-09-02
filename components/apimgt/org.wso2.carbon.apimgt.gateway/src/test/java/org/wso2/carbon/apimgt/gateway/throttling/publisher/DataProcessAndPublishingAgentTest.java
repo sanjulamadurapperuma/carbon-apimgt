@@ -61,7 +61,6 @@ public class DataProcessAndPublishingAgentTest {
         ThrottleProperties throttleProperties = new ThrottleProperties();
         DataPublisher dataPublisher = Mockito.mock(DataPublisher.class);
         Mockito.when(dataPublisher.tryPublish(Mockito.any(Event.class))).thenReturn(true);
-        throttleProperties.setEnabled(true);
         DataProcessAndPublishingAgent dataProcessAndPublishingAgent = new DataProcessAndPublishingAgentWrapper
                 (throttleProperties);
         AuthenticationContext authenticationContext = new AuthenticationContext();
@@ -88,7 +87,6 @@ public class DataProcessAndPublishingAgentTest {
     @Test
     public void setDataReferenceWithoutApiLevelTier() throws Exception {
         ThrottleProperties throttleProperties = new ThrottleProperties();
-        throttleProperties.setEnabled(true);
         DataProcessAndPublishingAgent dataProcessAndPublishingAgent = new DataProcessAndPublishingAgentWrapper
                 (throttleProperties);
         AuthenticationContext authenticationContext = new AuthenticationContext();
@@ -103,7 +101,6 @@ public class DataProcessAndPublishingAgentTest {
     @Test
     public void setDataReferenceWithHeaderConditionEnableWithNullHeaderMap() throws Exception {
         ThrottleProperties throttleProperties = new ThrottleProperties();
-        throttleProperties.setEnabled(true);
         throttleProperties.setEnableHeaderConditions(true);
         DataProcessAndPublishingAgent dataProcessAndPublishingAgent = new DataProcessAndPublishingAgentWrapper
                 (throttleProperties);
@@ -130,7 +127,6 @@ public class DataProcessAndPublishingAgentTest {
     @Test
     public void setDataReferenceWithHeaderConditionEnable() throws Exception {
         ThrottleProperties throttleProperties = new ThrottleProperties();
-        throttleProperties.setEnabled(true);
         throttleProperties.setEnableHeaderConditions(true);
         DataProcessAndPublishingAgent dataProcessAndPublishingAgent = new DataProcessAndPublishingAgentWrapper
                 (throttleProperties);
@@ -157,7 +153,6 @@ public class DataProcessAndPublishingAgentTest {
     @Test
     public void setIPCondition() throws Exception {
         ThrottleProperties throttleProperties = new ThrottleProperties();
-        throttleProperties.setEnabled(true);
         DataProcessAndPublishingAgent dataProcessAndPublishingAgent = new DataProcessAndPublishingAgentWrapper
                 (throttleProperties);
         AuthenticationContext authenticationContext = new AuthenticationContext();
@@ -185,7 +180,6 @@ public class DataProcessAndPublishingAgentTest {
     @Test
     public void testEnableQueryParamCondition() throws Exception {
         ThrottleProperties throttleProperties = new ThrottleProperties();
-        throttleProperties.setEnabled(true);
         throttleProperties.setEnableQueryParamConditions(true);
         DataProcessAndPublishingAgent dataProcessAndPublishingAgent = new DataProcessAndPublishingAgentWrapper
                 (throttleProperties);
@@ -216,7 +210,6 @@ public class DataProcessAndPublishingAgentTest {
     @Test
     public void testEnableQueryParamConditionWithoutQueryParams() throws Exception {
         ThrottleProperties throttleProperties = new ThrottleProperties();
-        throttleProperties.setEnabled(true);
         throttleProperties.setEnableQueryParamConditions(true);
         throttleProperties.setEnableJwtConditions(true);
         DataProcessAndPublishingAgent dataProcessAndPublishingAgent = new DataProcessAndPublishingAgentWrapper
@@ -246,7 +239,6 @@ public class DataProcessAndPublishingAgentTest {
     @Test
     public void testEnableQueryParamConditionWithJwtToken() throws Exception {
         ThrottleProperties throttleProperties = new ThrottleProperties();
-        throttleProperties.setEnabled(true);
         throttleProperties.setEnableJwtConditions(true);
         DataProcessAndPublishingAgent dataProcessAndPublishingAgent = new DataProcessAndPublishingAgentWrapper
                 (throttleProperties);
@@ -282,7 +274,6 @@ public class DataProcessAndPublishingAgentTest {
     @Test
     public void testContentAwareTierPresent() throws Exception {
         ThrottleProperties throttleProperties = new ThrottleProperties();
-        throttleProperties.setEnabled(true);
         DataProcessAndPublishingAgent dataProcessAndPublishingAgent = new DataProcessAndPublishingAgentWrapper
                 (throttleProperties);
         AuthenticationContext authenticationContext = new AuthenticationContext();
@@ -310,7 +301,6 @@ public class DataProcessAndPublishingAgentTest {
     @Test
     public void testContentAwareTierPresentAndContentLengthNotPresent() throws Exception {
         ThrottleProperties throttleProperties = new ThrottleProperties();
-        throttleProperties.setEnabled(true);
         DataProcessAndPublishingAgent dataProcessAndPublishingAgent = new DataProcessAndPublishingAgentWrapper
                 (throttleProperties);
         AuthenticationContext authenticationContext = new AuthenticationContext();
@@ -326,6 +316,59 @@ public class DataProcessAndPublishingAgentTest {
         Mockito.when(((Axis2MessageContext) messageContext).getAxis2MessageContext()).thenReturn(axis2MsgCntxt);
         Mockito.when(messageContext.getProperty(RESTConstants.SYNAPSE_REST_API)).thenReturn("admin--PizzaShackAPI");
         TreeMap headers = new TreeMap();
+        Mockito.when(axis2MsgCntxt.getProperty(org.apache.axis2.context.MessageContext.TRANSPORT_HEADERS))
+                .thenReturn(headers);
+        VerbInfoDTO verbInfoDTO = new VerbInfoDTO();
+        verbInfoDTO.setContentAware(false);
+        ArrayList<VerbInfoDTO> list = new ArrayList<VerbInfoDTO>();
+        list.add(verbInfoDTO);
+        Mockito.when(messageContext.getProperty(APIConstants.VERB_INFO_DTO)).thenReturn(list);
+        dataProcessAndPublishingAgent.setDataReference(applicationLevelThrottleKey, applicationLevelTier,
+                apiLevelThrottleKey, null, subscriptionLevelThrottleKey, subscriptionLevelTier,
+                resourceLevelThrottleKey, resourceLevelTier, authorizedUser, apiContext, apiVersion, appTenant,
+                apiTenant, appId, messageContext, authenticationContext);
+        dataProcessAndPublishingAgent.run();
+    }
+    @Test
+    public void testIgnoreClientPortFromXForwardedForHeader() throws Exception {
+        ThrottleProperties throttleProperties = new ThrottleProperties();
+        DataProcessAndPublishingAgent dataProcessAndPublishingAgent = new DataProcessAndPublishingAgentWrapper
+                (throttleProperties);
+        AuthenticationContext authenticationContext = new AuthenticationContext();
+        MessageContext messageContext = Mockito.mock(Axis2MessageContext.class);
+        org.apache.axis2.context.MessageContext axis2MsgCntxt = Mockito.mock(org.apache.axis2.context.MessageContext
+                .class);
+        Mockito.when(((Axis2MessageContext) messageContext).getAxis2MessageContext()).thenReturn(axis2MsgCntxt);
+        Mockito.when(messageContext.getProperty(RESTConstants.SYNAPSE_REST_API)).thenReturn("admin--PizzaShackAPI");
+        TreeMap headers = new TreeMap();
+        headers.put(APIMgtGatewayConstants.X_FORWARDED_FOR, "192.168.1.1:80");
+        Mockito.when(axis2MsgCntxt.getProperty(org.apache.axis2.context.MessageContext.TRANSPORT_HEADERS))
+                .thenReturn(headers);
+        VerbInfoDTO verbInfoDTO = new VerbInfoDTO();
+        verbInfoDTO.setContentAware(false);
+        ArrayList<VerbInfoDTO> list = new ArrayList<VerbInfoDTO>();
+        list.add(verbInfoDTO);
+        Mockito.when(messageContext.getProperty(APIConstants.VERB_INFO_DTO)).thenReturn(list);
+        dataProcessAndPublishingAgent.setDataReference(applicationLevelThrottleKey, applicationLevelTier,
+                apiLevelThrottleKey, null, subscriptionLevelThrottleKey, subscriptionLevelTier,
+                resourceLevelThrottleKey, resourceLevelTier, authorizedUser, apiContext, apiVersion, appTenant,
+                apiTenant, appId, messageContext, authenticationContext);
+        dataProcessAndPublishingAgent.run();
+    }
+
+    @Test
+    public void testXForwardedForHeaderIPV6() throws Exception {
+        ThrottleProperties throttleProperties = new ThrottleProperties();
+        DataProcessAndPublishingAgent dataProcessAndPublishingAgent = new DataProcessAndPublishingAgentWrapper
+                (throttleProperties);
+        AuthenticationContext authenticationContext = new AuthenticationContext();
+        MessageContext messageContext = Mockito.mock(Axis2MessageContext.class);
+        org.apache.axis2.context.MessageContext axis2MsgCntxt = Mockito.mock(org.apache.axis2.context.MessageContext
+                .class);
+        Mockito.when(((Axis2MessageContext) messageContext).getAxis2MessageContext()).thenReturn(axis2MsgCntxt);
+        Mockito.when(messageContext.getProperty(RESTConstants.SYNAPSE_REST_API)).thenReturn("admin--PizzaShackAPI");
+        TreeMap headers = new TreeMap();
+        headers.put(APIMgtGatewayConstants.X_FORWARDED_FOR, "0:0:0:0:0:0:0:1");
         Mockito.when(axis2MsgCntxt.getProperty(org.apache.axis2.context.MessageContext.TRANSPORT_HEADERS))
                 .thenReturn(headers);
         VerbInfoDTO verbInfoDTO = new VerbInfoDTO();

@@ -19,6 +19,9 @@ import org.wso2.carbon.apimgt.rest.api.util.annotations.Scope;
 public class SettingsKeyManagerConfigurationDTO   {
   
     private String type = null;
+    private String displayName = null;
+    private String defaultConsumerKeyClaim = null;
+    private String defaultScopesClaim = null;
     private List<KeyManagerConfigurationDTO> configurations = new ArrayList<>();
 
   /**
@@ -29,13 +32,64 @@ public class SettingsKeyManagerConfigurationDTO   {
   }
 
   
-  @ApiModelProperty(example = "wso2is", value = "")
+  @ApiModelProperty(example = "default", value = "")
   @JsonProperty("type")
   public String getType() {
     return type;
   }
   public void setType(String type) {
     this.type = type;
+  }
+
+  /**
+   **/
+  public SettingsKeyManagerConfigurationDTO displayName(String displayName) {
+    this.displayName = displayName;
+    return this;
+  }
+
+  
+  @ApiModelProperty(example = "default", value = "")
+  @JsonProperty("displayName")
+  public String getDisplayName() {
+    return displayName;
+  }
+  public void setDisplayName(String displayName) {
+    this.displayName = displayName;
+  }
+
+  /**
+   **/
+  public SettingsKeyManagerConfigurationDTO defaultConsumerKeyClaim(String defaultConsumerKeyClaim) {
+    this.defaultConsumerKeyClaim = defaultConsumerKeyClaim;
+    return this;
+  }
+
+  
+  @ApiModelProperty(example = "azp", value = "")
+  @JsonProperty("defaultConsumerKeyClaim")
+  public String getDefaultConsumerKeyClaim() {
+    return defaultConsumerKeyClaim;
+  }
+  public void setDefaultConsumerKeyClaim(String defaultConsumerKeyClaim) {
+    this.defaultConsumerKeyClaim = defaultConsumerKeyClaim;
+  }
+
+  /**
+   **/
+  public SettingsKeyManagerConfigurationDTO defaultScopesClaim(String defaultScopesClaim) {
+    this.defaultScopesClaim = defaultScopesClaim;
+    return this;
+  }
+
+  
+  @ApiModelProperty(example = "scope", value = "")
+  @JsonProperty("defaultScopesClaim")
+  public String getDefaultScopesClaim() {
+    return defaultScopesClaim;
+  }
+  public void setDefaultScopesClaim(String defaultScopesClaim) {
+    this.defaultScopesClaim = defaultScopesClaim;
   }
 
   /**
@@ -66,12 +120,15 @@ public class SettingsKeyManagerConfigurationDTO   {
     }
     SettingsKeyManagerConfigurationDTO settingsKeyManagerConfiguration = (SettingsKeyManagerConfigurationDTO) o;
     return Objects.equals(type, settingsKeyManagerConfiguration.type) &&
+        Objects.equals(displayName, settingsKeyManagerConfiguration.displayName) &&
+        Objects.equals(defaultConsumerKeyClaim, settingsKeyManagerConfiguration.defaultConsumerKeyClaim) &&
+        Objects.equals(defaultScopesClaim, settingsKeyManagerConfiguration.defaultScopesClaim) &&
         Objects.equals(configurations, settingsKeyManagerConfiguration.configurations);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(type, configurations);
+    return Objects.hash(type, displayName, defaultConsumerKeyClaim, defaultScopesClaim, configurations);
   }
 
   @Override
@@ -80,6 +137,9 @@ public class SettingsKeyManagerConfigurationDTO   {
     sb.append("class SettingsKeyManagerConfigurationDTO {\n");
     
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
+    sb.append("    displayName: ").append(toIndentedString(displayName)).append("\n");
+    sb.append("    defaultConsumerKeyClaim: ").append(toIndentedString(defaultConsumerKeyClaim)).append("\n");
+    sb.append("    defaultScopesClaim: ").append(toIndentedString(defaultScopesClaim)).append("\n");
     sb.append("    configurations: ").append(toIndentedString(configurations)).append("\n");
     sb.append("}");
     return sb.toString();

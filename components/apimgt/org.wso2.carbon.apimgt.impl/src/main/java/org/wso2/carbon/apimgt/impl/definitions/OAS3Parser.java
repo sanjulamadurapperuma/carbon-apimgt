@@ -256,9 +256,14 @@ public class OAS3Parser extends APIDefinition {
      * @param genCode String builder
      */
     private void setDefaultGeneratedResponse(StringBuilder genCode, String responseCode) {
-        genCode.append("\n/*if (!responses[").append(responseCode).append("]) {\n").append("  responses[")
-                .append(responseCode).append("] = [];\n").append("}\n").append("responses[")
-                .append(responseCode).append("][\"application/(json or xml)\"] = {}/<>*/\n");
+        if (responseCode.equals("default")) {
+            responseCode = "\"" + responseCode + "\"";
+        }
+        genCode.append("if (!responses[").append(responseCode).append("]) {\n" +
+                "  responses[").append(responseCode).append("] = [];\n" +
+                "}\n" +
+                "responses[").append(responseCode).append("][\"application/json\"] = \"\";\n" +
+                "responses[").append(responseCode).append("][\"application/xml\"] = \"\";\n\n");
     }
 
     /**
@@ -272,10 +277,16 @@ public class OAS3Parser extends APIDefinition {
      */
     private String getGeneratedResponsePayloads(String responseCode, String example, String type, boolean initialized) {
         StringBuilder genRespPayload = new StringBuilder();
+        if (responseCode.equals("default")) {
+            responseCode = "\"" + responseCode + "\"";
+        }
+        if (StringUtils.isBlank(example) || example.equals("null")) {
+            example = "\"\"";
+        }
         if (!initialized) {
             genRespPayload.append("\nif (!responses[").append(responseCode).append("]) {").append("\n responses [").append(responseCode).append("] = [];").append("\n}");
         }
-        genRespPayload.append("\nresponses[").append(responseCode).append("][\"application/").append(type).append("\"] = \n").append(example).append("\n");
+        genRespPayload.append("\nresponses[").append(responseCode).append("][\"application/").append(type).append("\"] = ").append(example).append(";\n");
         return genRespPayload.toString();
     }
 
@@ -288,9 +299,9 @@ public class OAS3Parser extends APIDefinition {
      * @return script with mock payloads and conditions to handle not implemented
      */
     private String getMandatoryScriptSection(int minResponseCode, StringBuilder payloadVariables) {
-        return "var accept = \"\\\"\"+mc.getProperty('AcceptHeader')+\"\\\"\";" +
+        return "var accept = mc.getProperty('AcceptHeader');" +
                 "\nvar responseCode = mc.getProperty('query.param.responseCode');" +
-                "\nvar responseCodeStr = \"\\\"\"+responseCode+\"\\\"\";" +
+                "\nvar responseCodeSC;" +
                 "\nvar responses = [];\n" +
                 payloadVariables +
                 "\nresponses[501] = [];" +
@@ -299,13 +310,21 @@ public class OAS3Parser extends APIDefinition {
                 "\n\"description\" : \"Not Implemented\"" +
                 "}\n" +
                 "responses[501][\"application/xml\"] = <response><code>501</code><description>Not Implemented</description></response>;\n\n" +
-                "if (!responses[responseCode]) {\n" +
-                " responseCode = 501;\n" +
-                "}\n\n" +
                 "if (responseCode == null) {\n" +
                 " responseCode = " + minResponseCode + ";\n" +   //assign lowest response code
-                " responseCodeStr = \"" + minResponseCode + "\";\n" +
                 "}\n\n" +
+                "if (!responses[responseCode]) {\n" +
+                "  if (responses[\"default\"]) {\n" +
+                "    responseCode = \"default\"\n" +
+                "  } else {\n" +
+                "    responseCode = 501;\n" +
+                "  }\n" +
+                "}\n" +
+                "if (responseCode === \"default\") {\n" +
+                "  responseCodeSC = mc.getProperty('query.param.responseCode');\n" +
+                "} else {\n" +
+                "  responseCodeSC = responseCode;\n" +
+                "}\n" +
                 "if (accept == null || !responses[responseCode][accept]) {\n";
     }
 
@@ -321,29 +340,29 @@ public class OAS3Parser extends APIDefinition {
         if (hasJsonPayload && hasXmlPayload) {
             responseSection = " accept = \"application/json\";\n" +
                     "}\n\n" +
-                    "if (accept === \"application/json\") {\n" +
+                    "if (accept == \"application/json\") {\n" +
                     " mc.setProperty('CONTENT_TYPE', 'application/json');\n" +
-                    " mc.setProperty('HTTP_SC', responseCodeStr);\n" +
+                    " mc.setProperty('HTTP_SC', responseCodeSC + \"\");\n" +
                     " mc.setPayloadJSON(responses[responseCode][\"application/json\"]);\n" +
-                    "} else if (accept === \"application/xml\") {\n" +
+                    "} else if (accept == \"application/xml\") {\n" +
                     " mc.setProperty('CONTENT_TYPE', 'application/xml');\n" +
-                    " mc.setProperty('HTTP_SC', responseCodeStr);\n" +
+                    " mc.setProperty('HTTP_SC', responseCodeSC + \"\");\n" +
                     " mc.setPayloadXML(responses[responseCode][\"application/xml\"]);\n" +
                     "}";
         } else if (hasJsonPayload) {
             responseSection = " accept = \"application/json\"; // assign whatever available\n" +
                     "}\n\n" +
-                    "if (accept === \"application/json\") {\n" +
+                    "if (accept == \"application/json\") {\n" +
                     " mc.setProperty('CONTENT_TYPE', 'application/json');\n" +
-                    " mc.setProperty('HTTP_SC', responseCodeStr);\n" +
+                    " mc.setProperty('HTTP_SC', responseCodeSC + \"\");\n" +
                     " mc.setPayloadJSON(responses[responseCode][\"application/json\"]);\n" +
                     "}";
         } else if (hasXmlPayload) {
             responseSection = " accept = \"application/xml\"; // assign whatever available\n" +
                     "}\n\n" +
-                    "if (accept === \"application/xml\") {\n" +
+                    "if (accept == \"application/xml\") {\n" +
                     " mc.setProperty('CONTENT_TYPE', 'application/xml');\n" +
-                    " mc.setProperty('HTTP_SC', responseCodeStr);\n" +
+                    " mc.setProperty('HTTP_SC', responseCodeSC + \"\");\n" +
                     " mc.setPayloadXML(responses[responseCode][\"application/xml\"]);\n" +
                     "}";
         }
@@ -426,11 +445,13 @@ public class OAS3Parser extends APIDefinition {
         OpenAPI openAPI = getOpenAPI(resourceConfigsJSON);
         Map<String, SecurityScheme> securitySchemes;
         SecurityScheme securityScheme;
+        OAuthFlows oAuthFlows;
         OAuthFlow oAuthFlow;
         Scopes scopes;
         if (openAPI.getComponents() != null && (securitySchemes = openAPI.getComponents().getSecuritySchemes()) != null
                 && (securityScheme = securitySchemes.get(OPENAPI_SECURITY_SCHEMA_KEY)) != null
-                && (oAuthFlow = securityScheme.getFlows().getImplicit()) != null
+                && (oAuthFlows = securityScheme.getFlows()) != null
+                && (oAuthFlow = oAuthFlows.getImplicit()) != null
                 && (scopes = oAuthFlow.getScopes()) != null) {
             Set<Scope> scopeSet = new HashSet<>();
             for (Map.Entry<String, String> entry : scopes.entrySet()) {
@@ -767,6 +788,7 @@ public class OAS3Parser extends APIDefinition {
         if (oAuthFlow.getScopes() == null) {
             oAuthFlow.setScopes(new Scopes());
         }
+        oAuthFlow.setAuthorizationUrl("");
 
         if (api.getAuthorizationHeader() != null) {
             openAPI.addExtension(APIConstants.X_WSO2_AUTH_HEADER, api.getAuthorizationHeader());
@@ -926,7 +948,8 @@ public class OAS3Parser extends APIDefinition {
         if (scopes != null && !scopes.isEmpty()) {
             Map<String, String> scopeBindings = new HashMap<>();
             for (Scope scope : scopes) {
-                oas3Scopes.put(scope.getKey(), scope.getDescription());
+                String description = scope.getDescription() != null ? scope.getDescription() : "";
+                oas3Scopes.put(scope.getKey(), description);
                 scopeBindings.put(scope.getKey(), scope.getRoles());
             }
             oAuthFlow.addExtension(APIConstants.SWAGGER_X_SCOPES_BINDINGS, scopeBindings);
@@ -1341,13 +1364,101 @@ public class OAS3Parser extends APIDefinition {
      */
     @Override
     public String processOtherSchemeScopes(String swaggerContent) throws APIManagementException {
+        OpenAPI openAPI = getOpenAPI(swaggerContent);
+        Set<Scope> legacyScopes = getScopesFromExtensions(openAPI);
+
+        //In case default scheme already exists we check whether the legacy x-wso2-scopes are there in the default scheme
+        //If not we proceed to process legacy scopes to make sure old local scopes work in migrated pack too.
+        //This is to fix https://github.com/wso2/product-apim/issues/8724
+        if (isDefaultGiven(swaggerContent) && !legacyScopes.isEmpty()) {
+            SecurityScheme defaultScheme = openAPI.getComponents().getSecuritySchemes()
+                    .get(OPENAPI_SECURITY_SCHEMA_KEY);
+            OAuthFlows oAuthFlows = defaultScheme.getFlows();
+            if (oAuthFlows != null) {
+                OAuthFlow oAuthFlow = oAuthFlows.getImplicit();
+                if (oAuthFlow != null) {
+                    Scopes defaultScopes = oAuthFlow.getScopes();
+                    if (defaultScopes != null) {
+                        for (Scope legacyScope : legacyScopes) {
+                            if (!defaultScopes.containsKey(legacyScope.getKey())) {
+                                openAPI = processLegacyScopes(openAPI);
+                                return Json.pretty(openAPI);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         if (!isDefaultGiven(swaggerContent)) {
-            OpenAPI openAPI = getOpenAPI(swaggerContent);
+            openAPI = processLegacyScopes(openAPI);
             openAPI = injectOtherScopesToDefaultScheme(openAPI);
             openAPI = injectOtherResourceScopesToDefaultScheme(openAPI);
             return Json.pretty(openAPI);
         }
         return swaggerContent;
+    }
+
+    /**
+     * This method will extract scopes from legacy x-wso2-security and add them to default scheme
+     * @param openAPI openAPI definition
+     * @return
+     * @throws APIManagementException
+     */
+    private OpenAPI processLegacyScopes(OpenAPI openAPI) throws APIManagementException {
+        Set<Scope> scopes = getScopesFromExtensions(openAPI);
+
+        if (!scopes.isEmpty()) {
+            if (openAPI.getComponents() == null) {
+                openAPI.setComponents(new Components());
+            }
+            Map<String, SecurityScheme> securitySchemes = openAPI.getComponents().getSecuritySchemes();
+            if (securitySchemes == null) {
+                securitySchemes = new HashMap<>();
+                openAPI.getComponents().setSecuritySchemes(securitySchemes);
+            }
+            SecurityScheme securityScheme = securitySchemes.get(OPENAPI_SECURITY_SCHEMA_KEY);
+            if (securityScheme == null) {
+                securityScheme = new SecurityScheme();
+                securityScheme.setType(SecurityScheme.Type.OAUTH2);
+                securitySchemes.put(OPENAPI_SECURITY_SCHEMA_KEY, securityScheme);
+                List<SecurityRequirement> security = new ArrayList<SecurityRequirement>();
+                SecurityRequirement secReq = new SecurityRequirement();
+                secReq.addList(OPENAPI_SECURITY_SCHEMA_KEY, new ArrayList<String>());
+                security.add(secReq);
+                openAPI.setSecurity(security);
+            }
+            if (securityScheme.getFlows() == null) {
+                securityScheme.setFlows(new OAuthFlows());
+            }
+            OAuthFlow oAuthFlow = securityScheme.getFlows().getImplicit();
+            if (oAuthFlow == null) {
+                oAuthFlow = new OAuthFlow();
+                securityScheme.getFlows().setImplicit(oAuthFlow);
+            }
+            oAuthFlow.setAuthorizationUrl("");
+            Scopes oas3Scopes = oAuthFlow.getScopes() != null ? oAuthFlow.getScopes() : new Scopes();
+
+            if (scopes != null && !scopes.isEmpty()) {
+                Map<String, String> scopeBindings = new HashMap<>();
+                if (oAuthFlow.getExtensions() != null) {
+                    scopeBindings =
+                            (Map<String, String>) oAuthFlow.getExtensions().get(APIConstants.SWAGGER_X_SCOPES_BINDINGS)
+                                    != null ?
+                                    (Map<String, String>) oAuthFlow.getExtensions()
+                                            .get(APIConstants.SWAGGER_X_SCOPES_BINDINGS) :
+                                    new HashMap<>();
+
+                }
+                for (Scope scope : scopes) {
+                    oas3Scopes.put(scope.getKey(), scope.getDescription());
+                    scopeBindings.put(scope.getKey(), scope.getRoles());
+                }
+                oAuthFlow.addExtension(APIConstants.SWAGGER_X_SCOPES_BINDINGS, scopeBindings);
+            }
+            oAuthFlow.setScopes(oas3Scopes);
+        }
+        return openAPI;
     }
 
     /**
@@ -1364,8 +1475,21 @@ public class OAS3Parser extends APIDefinition {
 
         if (openAPI.getComponents() != null && (securitySchemes = openAPI.getComponents().getSecuritySchemes()) != null) {
             //If there is no default type schemes set a one
-            SecurityScheme newDefault = new SecurityScheme();
-            securitySchemes.put(OPENAPI_SECURITY_SCHEMA_KEY, newDefault);
+            SecurityScheme defaultScheme = securitySchemes.get(OPENAPI_SECURITY_SCHEMA_KEY);
+            if (defaultScheme == null) {
+                SecurityScheme newDefault = new SecurityScheme();
+                newDefault.setType(SecurityScheme.Type.OAUTH2);
+                //Populating the default security scheme with default values
+                OAuthFlows newDefaultFlows = new OAuthFlows();
+                OAuthFlow newDefaultFlow = new OAuthFlow();
+                newDefaultFlow.setAuthorizationUrl("https://test.com");
+                Scopes newDefaultScopes = new Scopes();
+                newDefaultFlow.setScopes(newDefaultScopes);
+                newDefaultFlows.setImplicit(newDefaultFlow);
+                newDefault.setFlows(newDefaultFlows);
+
+                securitySchemes.put(OPENAPI_SECURITY_SCHEMA_KEY, newDefault);
+            }
             for (Map.Entry<String, SecurityScheme> entry : securitySchemes.entrySet()) {
                 if (!OPENAPI_SECURITY_SCHEMA_KEY.equals(entry.getKey()) && "oauth2".equals(entry.getValue().getType().toString())) {
                     otherSetOfSchemes.add(entry.getKey());
@@ -1473,8 +1597,8 @@ public class OAS3Parser extends APIDefinition {
         for (String pathKey : paths.keySet()) {
             PathItem pathItem = paths.get(pathKey);
             Map<PathItem.HttpMethod, Operation> operationsMap = pathItem.readOperationsMap();
-            SecurityRequirement updatedDefaultSecurityRequirement = new SecurityRequirement();
             for (Map.Entry<PathItem.HttpMethod, Operation> entry : operationsMap.entrySet()) {
+                SecurityRequirement updatedDefaultSecurityRequirement = new SecurityRequirement();
                 PathItem.HttpMethod httpMethod = entry.getKey();
                 Operation operation = entry.getValue();
                 List<SecurityRequirement> securityRequirements = operation.getSecurity();
@@ -1518,13 +1642,12 @@ public class OAS3Parser extends APIDefinition {
     /**
      * This method returns api that is attached with api extensions related to micro-gw
      *
-     * @param apiDefinition                  String
-     * @param api                            API
-     * @param isBasepathExtractedFromSwagger boolean
+     * @param apiDefinition String
+     * @param api           API
      * @return API
      */
     @Override
-    public API setExtensionsToAPI(String apiDefinition, API api, boolean isBasepathExtractedFromSwagger) throws APIManagementException {
+    public API setExtensionsToAPI(String apiDefinition, API api) throws APIManagementException {
         OpenAPI openAPI = getOpenAPI(apiDefinition);
         Map<String, Object> extensions = openAPI.getExtensions();
         if (extensions == null) {
@@ -1574,13 +1697,6 @@ public class OAS3Parser extends APIDefinition {
         String throttleTier = OASParserUtil.getThrottleTierFromSwagger(extensions);
         if (StringUtils.isNotBlank(throttleTier)) {
             api.setApiLevelPolicy(throttleTier);
-        }
-        //Setup Basepath
-        String basePath = OASParserUtil.getBasePathFromSwagger(extensions);
-        if (StringUtils.isNotBlank(basePath) && isBasepathExtractedFromSwagger) {
-            basePath = basePath.replace("{version}", api.getId().getVersion());
-            api.setContextTemplate(basePath);
-            api.setContext(basePath);
         }
         return api;
     }

@@ -5,6 +5,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
@@ -42,7 +43,8 @@ public class KeyManagerConfigurationDataRetriever extends TimerTask {
                     apiManagerConfiguration.getEventHubConfigurationDto();
             if (eventHubConfigurationDto != null && eventHubConfigurationDto.isEnabled()) {
                 try {
-                    String url = eventHubConfigurationDto.getServiceUrl() + "/keymanagers";
+                    String url = eventHubConfigurationDto.getServiceUrl().concat(APIConstants.INTERNAL_WEB_APP_EP)
+                            .concat("/keymanagers");
                     byte[] credentials = Base64.encodeBase64((eventHubConfigurationDto.getUsername() + ":" +
                             eventHubConfigurationDto.getPassword()).getBytes());
                     HttpGet method = new HttpGet(url);
@@ -58,7 +60,31 @@ public class KeyManagerConfigurationDataRetriever extends TimerTask {
                     do {
                         try {
                             httpResponse = httpClient.execute(method);
-                            retry = false;
+                            if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+                                String responseString = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
+                                KeyManagerConfiguration[] keyManagerConfigurations =
+                                        new Gson().fromJson(responseString, KeyManagerConfiguration[].class);
+                                for (KeyManagerConfiguration keyManagerConfiguration : keyManagerConfigurations) {
+                                    if (keyManagerConfiguration.isEnabled()) {
+                                        try {
+                                            ServiceReferenceHolder.getInstance().getKeyManagerConfigurationService()
+                                                    .addKeyManagerConfiguration(
+                                                            keyManagerConfiguration.getTenantDomain(),
+                                                            keyManagerConfiguration.getName(),
+                                                            keyManagerConfiguration.getType(),
+                                                            keyManagerConfiguration);
+                                        } catch (APIManagementException e) {
+                                            log.error("Error while configuring Key Manager " +
+                                                    keyManagerConfiguration.getName() +
+                                                    " in tenant " + keyManagerConfiguration.getTenantDomain(), e);
+                                        }
+                                    }
+                                }
+                                retry = false;
+                            } else {
+                                retry = true;
+                                retryCount++;
+                            }
                         } catch (IOException ex) {
                             retryCount++;
                             int maxRetries = 15;
@@ -74,25 +100,6 @@ public class KeyManagerConfigurationDataRetriever extends TimerTask {
                             }
                         }
                     } while (retry);
-                    String responseString = EntityUtils.toString(httpResponse.getEntity(), "UTF-8");
-                    KeyManagerConfiguration[] keyManagerConfigurations =
-                            new Gson().fromJson(responseString, KeyManagerConfiguration[].class);
-                    if (responseString != null && !responseString.isEmpty()) {
-                    }
-                    for (KeyManagerConfiguration keyManagerConfiguration : keyManagerConfigurations) {
-                        if (keyManagerConfiguration.isEnabled()){
-                            try {
-                                ServiceReferenceHolder.getInstance().getKeyManagerConfigurationService()
-                                        .addKeyManagerConfiguration(keyManagerConfiguration.getTenantDomain(),
-                                                keyManagerConfiguration.getName(), keyManagerConfiguration.getType(),
-                                                keyManagerConfiguration);
-                            } catch (APIManagementException e) {
-                                log.error("Error while configuring Key Manager "+ keyManagerConfiguration.getName() +
-                                        " in tenant " + keyManagerConfiguration.getTenantDomain(), e);
-                            }
-                        }
-                    }
-
                 } catch (InterruptedException | IOException  e) {
                     log.error("Error while retrieving key manager configurations", e);
                 }

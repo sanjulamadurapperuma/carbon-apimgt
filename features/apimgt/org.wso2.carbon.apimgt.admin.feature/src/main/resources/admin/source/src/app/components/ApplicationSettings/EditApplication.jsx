@@ -23,7 +23,6 @@ import TextField from '@material-ui/core/TextField';
 import { FormattedMessage } from 'react-intl';
 import { makeStyles } from '@material-ui/core/styles';
 import FormDialogBase from 'AppComponents/AdminPages/Addons/FormDialogBase';
-import Alert from 'AppComponents/Shared/Alert';
 
 const useStyles = makeStyles((theme) => ({
     error: {
@@ -50,6 +49,7 @@ function reducer(state, { field, value }) {
  */
 function Edit(props) {
     const classes = useStyles();
+    const restApi = new API();
     const {
         updateList, dataRow, icon, triggerButtonText, title, applicationList,
     } = props;
@@ -76,55 +76,62 @@ function Edit(props) {
     };
 
     const validateOwner = () => {
-        const valid = { invalid: false, error: '' };
+        let validationError = '';
 
         const applicationsWithSameName = applicationList.filter(
             (app) => app.name === name && app.owner === owner,
         );
-        if (applicationsWithSameName.length > 0) {
-            valid.error = `${owner} already has an application with name: ${name}`;
-            valid.invalid = true;
-        }
-        // todo: Validate whether the owner is an existing subscriber or not.
 
-        return valid;
+        const promiseValidation = new Promise((resolve, reject) => {
+            if (applicationsWithSameName.length > 0) {
+                validationError = `${owner} already has an application with name: ${name}`;
+                reject(validationError);
+            }
+            const basicScope = 'apim:subscribe';
+            restApi.getUserScope(owner, basicScope)
+                .then(() => {
+                    // This api returns 200 when only the $owner has the $basicScope.
+                    resolve();
+                }).catch((error) => {
+                    const { response } = error;
+                    // This api returns 404 when the $owner is not found.
+                    // identify the case specially with error code 901502 and display error.
+                    if (response.body) {
+                        if (response.body.code === 901502) {
+                            validationError = `${owner} is not a valid Subscriber`;
+                            reject(validationError);
+                        }
+                    } else {
+                        validationError = 'Something went wrong when validating user';
+                        reject(validationError);
+                    }
+                });
+        });
+
+        return promiseValidation;
     };
 
-    const getAllFormErrors = () => {
-        let errorText = '';
-        const valid = validateOwner(applicationList);
-        if (valid.invalid) {
-            errorText += valid.error;
-        }
-
-        return errorText;
-    };
     const formSaveCallback = () => {
-        const formErrors = getAllFormErrors();
-        if (formErrors !== '') {
-            Alert.error(formErrors);
-            return false;
-        }
-
-        const restApi = new API();
-        return restApi.updateApplicationOwner(id, owner)
-            .then(() => {
-                return (
-                    <FormattedMessage
-                        id='AdminPages.ApplicationSettings.Edit.form.edit.successful'
-                        defaultMessage='Application owner changed successfully'
-                    />
-                );
-            })
-            .catch((error) => {
-                const { response } = error;
-                if (response.body) {
-                    throw response.body.description;
-                }
-            })
-            .finally(() => {
-                updateList();
-            });
+        return validateOwner().then(() => {
+            return restApi.updateApplicationOwner(id, owner)
+                .then(() => {
+                    return (
+                        <FormattedMessage
+                            id='AdminPages.ApplicationSettings.Edit.form.edit.successful'
+                            defaultMessage='Application owner changed successfully'
+                        />
+                    );
+                })
+                .catch((error) => {
+                    const { response } = error;
+                    if (response.body) {
+                        throw response.body.description;
+                    }
+                })
+                .finally(() => {
+                    updateList();
+                });
+        });
     };
 
     return (
@@ -160,7 +167,13 @@ function Edit(props) {
                 onChange={onChange}
                 label='Owner'
                 fullWidth
-                helperText='Enter a new Owner'
+                helperText={(
+                    <FormattedMessage
+                        id='AdminPages.ApplicationSettings.Edit.form.helperText'
+                        defaultMessage={'Enter a new Owner. '
+                        + 'Make sure the new owner has logged into the Developer Portal at least once'}
+                    />
+                )}
                 variant='outlined'
             />
         </FormDialogBase>

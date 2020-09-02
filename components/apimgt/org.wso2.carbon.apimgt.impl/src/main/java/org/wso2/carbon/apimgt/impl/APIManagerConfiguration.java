@@ -798,6 +798,12 @@ public class APIManagerConfiguration {
             String dcrEPPassword = MiscellaneousUtil.resolve(dcrEPPasswordOmElement, secretResolver);
             dcrEPPassword = APIUtil.replaceSystemProperty(dcrEPPassword);
             workflowProperties.setdCREndpointPassword(dcrEPPassword);
+            
+            OMElement listTasksElement = workflowConfigurationElement
+                    .getFirstChildWithName(new QName(APIConstants.WorkflowConfigConstants.LIST_PENDING_TASKS));
+            if (listTasksElement != null) {
+                workflowProperties.setListTasks(JavaUtils.isTrueExplicitly(listTasksElement.getText()));
+            }
 
         }
     }
@@ -812,14 +818,6 @@ public class APIManagerConfiguration {
         OMElement throttleConfigurationElement = element.getFirstChildWithName(new QName(APIConstants
                 .AdvancedThrottleConstants.THROTTLING_CONFIGURATIONS));
         if (throttleConfigurationElement != null) {
-            // Check advance throttling enabled
-            OMElement enableAdvanceThrottlingElement = throttleConfigurationElement
-                    .getFirstChildWithName(new QName(APIConstants.AdvancedThrottleConstants
-                            .ENABLE_ADVANCE_THROTTLING));
-            if (enableAdvanceThrottlingElement != null) {
-                throttleProperties.setEnabled(JavaUtils.isTrueExplicitly(enableAdvanceThrottlingElement
-                        .getText()));
-            }
             // Check unlimited tier enabled
             OMElement enableUnlimitedTierElement = throttleConfigurationElement
                     .getFirstChildWithName(new QName(APIConstants.AdvancedThrottleConstants
@@ -861,8 +859,6 @@ public class APIManagerConfiguration {
                         (enabledSubscriptionLevelSpikeArrestElement
                                 .getText()));
             }
-            // if advance Throttling enable
-            if (throttleProperties.isEnabled()) {
                 // Reading TrafficManager configuration
                 OMElement trafficManagerConfigurationElement = throttleConfigurationElement.getFirstChildWithName(new
                         QName(APIConstants.AdvancedThrottleConstants.TRAFFIC_MANAGER));
@@ -1265,7 +1261,6 @@ public class APIManagerConfiguration {
                 }
                 throttleProperties.setBlockCondition(blockConditionRetrieverConfiguration);
 
-            }
         }
     }
 
@@ -1301,6 +1296,10 @@ public class APIManagerConfiguration {
                     omElement.getFirstChildWithName(new QName(APIConstants.JWT_HEADER));
             if (jwtHeaderElement != null) {
                 jwtConfigurationDto.setJwtHeader(jwtHeaderElement.getText());
+            }
+            OMElement jwtUserClaimsElement =omElement.getFirstChildWithName(new QName(APIConstants.ENABLE_USER_CLAIMS));
+            if (jwtUserClaimsElement != null ){
+                jwtConfigurationDto.setEnableUserClaims(Boolean.parseBoolean(jwtUserClaimsElement.getText()));
             }
             OMElement gatewayJWTConfigurationElement =
                     omElement.getFirstChildWithName(new QName(APIConstants.GATEWAY_JWT_GENERATOR));
@@ -1487,7 +1486,17 @@ public class APIManagerConfiguration {
         while (tokenIssuersElement.hasNext()) {
             OMElement issuerElement = (OMElement) tokenIssuersElement.next();
             String issuer = issuerElement.getAttributeValue(new QName("issuer"));
+            OMElement consumerKeyClaimElement =
+                    issuerElement.getFirstChildWithName(new QName(APIConstants.TokenIssuer.CONSUMER_KEY_CLAIM));
+            OMElement scopesElement =
+                    issuerElement.getFirstChildWithName(new QName(APIConstants.TokenIssuer.SCOPES_CLAIM));
             TokenIssuerDto tokenIssuerDto = new TokenIssuerDto(issuer);
+            if (consumerKeyClaimElement != null){
+                tokenIssuerDto.setConsumerKeyClaim(consumerKeyClaimElement.getText());
+            }
+            if (scopesElement != null){
+                tokenIssuerDto.setScopesClaim(scopesElement.getText());
+            }
             OMElement jwksConfiguration =
                     issuerElement.getFirstChildWithName(new QName(APIConstants.TokenIssuer.JWKS_CONFIGURATION));
             if (jwksConfiguration != null) {
@@ -1534,10 +1543,13 @@ public class APIManagerConfiguration {
         OMElement enableElement = omElement.getFirstChildWithName(new QName(APIConstants.KeyManager.ENABLE));
         if (enableElement != null && Boolean.parseBoolean(enableElement.getText())) {
             eventHubConfigurationDto.setEnabled(true);
-            OMElement serviceUrl = omElement.getFirstChildWithName(new QName(APIConstants.KeyManager.SERVICE_URL));
-            if (serviceUrl != null) {
-                eventHubConfigurationDto.setServiceUrl(
-                        APIUtil.replaceSystemProperty(serviceUrl.getText()).concat(APIConstants.INTERNAL_WEB_APP_EP));
+            OMElement serviceUrlElement = omElement.getFirstChildWithName(new QName(APIConstants.KeyManager.SERVICE_URL));
+            if (serviceUrlElement != null) {
+                String serviceUrl = APIUtil.replaceSystemProperty(serviceUrlElement.getText());
+                if (StringUtils.isNotEmpty(serviceUrl)) {
+                    serviceUrl = serviceUrl.split("/" + APIConstants.SERVICES_URL_RELATIVE_PATH)[0];
+                    eventHubConfigurationDto.setServiceUrl(serviceUrl);
+                }
             }
             OMElement initDelay = omElement.getFirstChildWithName(new QName(APIConstants.KeyManager.INIT_DELAY));
             if (initDelay != null) {
@@ -1608,7 +1620,7 @@ public class APIManagerConfiguration {
         return eventHubConfigurationDto;
     }
 
-    private void setRuntimeArtifactsSyncPublisherConfig (OMElement omElement){
+    private void setRuntimeArtifactsSyncPublisherConfig (OMElement omElement) {
 
         OMElement enableElement = omElement
                 .getFirstChildWithName(new QName(APIConstants.GatewayArtifactSynchronizer.ENABLE_CONFIG));
@@ -1628,15 +1640,24 @@ public class APIManagerConfiguration {
             log.debug("Artifact saver Element is not set. Set to default DB Saver");
         }
 
+        OMElement dataSourceElement = omElement.getFirstChildWithName(
+                new QName(APIConstants.GatewayArtifactSynchronizer.DATA_SOURCE_NAME));
+        if (dataSourceElement != null) {
+            String dataSource = dataSourceElement.getText();
+            gatewayArtifactSynchronizerProperties.setArtifactSynchronizerDataSource(dataSource);
+        } else {
+            log.debug("Data Source Element is not set. Set to default Data Source");
+        }
+
         OMElement publishDirectlyToGatewayElement = omElement
-                .getFirstChildWithName(new QName(APIConstants.GatewayArtifactSynchronizer.PUBLISH_DIRECTLY_TO_GW_CONFIG));
+                .getFirstChildWithName(new QName(APIConstants.GatewayArtifactSynchronizer
+                        .PUBLISH_DIRECTLY_TO_GW_CONFIG));
         if (publishDirectlyToGatewayElement != null) {
             gatewayArtifactSynchronizerProperties.setPublishDirectlyToGatewayEnabled(
                     JavaUtils.isTrueExplicitly(publishDirectlyToGatewayElement.getText()));
         } else {
             log.debug("Publish directly to gateway is not set. Set to default true");
         }
-
     }
 
     private void setRuntimeArtifactsSyncGatewayConfig (OMElement omElement){
@@ -1659,6 +1680,24 @@ public class APIManagerConfiguration {
             log.debug("Artifact retriever Element is not set. Set to default DB Retriever");
         }
 
+        OMElement retryDurationElement = omElement.getFirstChildWithName(
+                new QName(APIConstants.GatewayArtifactSynchronizer.RETRY_DUARTION));
+        if (retrieverElement != null) {
+            long retryDuration = Long.valueOf(retryDurationElement.getText());
+            gatewayArtifactSynchronizerProperties.setRetryDuartion(retryDuration);
+        } else {
+            log.debug("Retry Duration Element is not set. Set to default duaration");
+        }
+
+        OMElement dataRetrievalModeElement = omElement.getFirstChildWithName(
+                new QName(APIConstants.GatewayArtifactSynchronizer.DATA_RETRIEVAL_MODE));
+        if (dataRetrievalModeElement!= null) {
+            String dataRetrievalMode= dataRetrievalModeElement.getText();
+            gatewayArtifactSynchronizerProperties.setGatewayStartup(dataRetrievalMode);
+        } else {
+            log.debug("Gateway Startup mode is not set. Set to Sync Mode");
+        }
+
         OMElement gatewayLabelElement = omElement
                 .getFirstChildWithName(new QName(APIConstants.GatewayArtifactSynchronizer.GATEWAY_LABELS_CONFIG));
         if (gatewayLabelElement != null) {
@@ -1670,6 +1709,15 @@ public class APIManagerConfiguration {
                     gatewayArtifactSynchronizerProperties.getGatewayLabels().add(labelElement.getText());
                 }
             }
+        }
+
+        OMElement eventWaitingTimeElement = omElement
+                .getFirstChildWithName(new QName(APIConstants.GatewayArtifactSynchronizer.EVENT_WAITING_TIME_CONFIG));
+        if (eventWaitingTimeElement!= null) {
+            long eventWaitingTime = Long.valueOf(eventWaitingTimeElement.getText());
+            gatewayArtifactSynchronizerProperties.setEventWaitingTime(eventWaitingTime);
+        } else {
+            log.debug("Gateway Startup mode is not set. Set to Sync Mode");
         }
     }
 

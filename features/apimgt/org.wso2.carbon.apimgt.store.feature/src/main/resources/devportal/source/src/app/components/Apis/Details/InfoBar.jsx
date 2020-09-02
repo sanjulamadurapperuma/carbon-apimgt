@@ -295,7 +295,7 @@ class InfoBar extends React.Component {
                 if (name === 'all'){
                     response = 'All Applicable';
                 } else {
-                    response = keyManagers;
+                    response = keyManagers.join();
                 }
             });
         }
@@ -581,8 +581,8 @@ class InfoBar extends React.Component {
                                                                 <Icon className={classes.iconOdd}>games</Icon>
                                                                 <span className={classes.iconTextWrapper}>
                                                                     <FormattedMessage
-                                                                        id='Apis.Details.InfoBar.available.mgLabels'
-                                                                        defaultMessage='Available Microgateways'
+                                                                        id='Apis.Details.InfoBar.available.gLabels'
+                                                                        defaultMessage='Available Gateways'
                                                                     />
                                                                 </span>
                                                             </div>
@@ -636,7 +636,7 @@ class InfoBar extends React.Component {
                     </Collapse>
                 )}
                 <div className={classes.infoContentBottom}>
-                    <a className={classes.expandWrapper} onClick={this.toggleOverview}>
+                    <Button className={classes.expandWrapper} onClick={this.toggleOverview}>
                         <div className={classes.buttonView}>
                             {showOverview ? (
                                 <Typography className={classes.buttonOverviewText}>
@@ -649,7 +649,7 @@ class InfoBar extends React.Component {
                             )}
                             {showOverview ? <Icon>arrow_drop_up</Icon> : <Icon>arrow_drop_down</Icon>}
                         </div>
-                    </a>
+                    </Button>
                 </div>
             </div>
         );

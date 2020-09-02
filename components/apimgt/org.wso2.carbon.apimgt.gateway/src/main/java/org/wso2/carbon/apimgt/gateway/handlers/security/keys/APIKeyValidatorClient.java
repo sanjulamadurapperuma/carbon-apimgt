@@ -25,6 +25,7 @@ import org.wso2.carbon.apimgt.gateway.handlers.security.APISecurityException;
 import org.wso2.carbon.apimgt.impl.dto.APIKeyValidationInfoDTO;
 import org.wso2.carbon.apimgt.keymgt.APIKeyMgtException;
 import org.wso2.carbon.apimgt.keymgt.service.APIKeyValidationService;
+import org.wso2.carbon.apimgt.keymgt.service.TokenValidationContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,12 +73,24 @@ public class APIKeyValidatorClient {
         }
     }
 
+    public boolean validateScopes(TokenValidationContext tokenValidationContext, String tenantDomain)
+            throws APISecurityException {
+
+        try {
+            return apiKeyValidationService.validateScopes(tokenValidationContext, tenantDomain);
+        } catch (APIKeyMgtException e) {
+            String message = "Error while accessing backend services for token scope validation";
+            log.error(message, e);
+            throw new APISecurityException(APISecurityConstants.API_AUTH_GENERAL_ERROR, message, e);
+        }
+    }
+
     public ArrayList<URITemplate> getAllURITemplates(String context, String apiVersion
                                                     ) throws APISecurityException {
 
         try {
             return apiKeyValidationService.getAllURITemplates(context, apiVersion);
-        } catch (APIKeyMgtException | APIManagementException e) {
+        } catch (APIManagementException e) {
             log.error("Error while retrieving data from datastore", e);
             throw new APISecurityException(APISecurityConstants.API_AUTH_GENERAL_ERROR,
                     "Error while retrieving data from datastore", e);

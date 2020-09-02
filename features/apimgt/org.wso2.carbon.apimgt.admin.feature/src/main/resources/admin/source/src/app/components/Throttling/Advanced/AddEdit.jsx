@@ -42,6 +42,9 @@ const useStyles = makeStyles((theme) => ({
     hr: {
         border: 'solid 1px #efefef',
     },
+    root: {
+        marginBottom: theme.spacing(15),
+    },
 }));
 
 
@@ -73,10 +76,9 @@ function reducer(state, { field, value }) {
                 nextState.defaultLimit.bandwidth = {
                     timeUnit, unitTime, dataAmount: 0, dataUnit: 'KB',
                 };
-                nextState.defaultLimit.bandwidth.type = 'BANDWIDTHLIMIT';
+                nextState.defaultLimit.type = 'BANDWIDTHLIMIT';
                 nextState.defaultLimit.requestCount = null;
             }
-            nextState.defaultLimit[field] = value;
             return nextState;
         case 'dataUnit':
         case 'requestCount':
@@ -105,6 +107,7 @@ function AddEdit(props) {
     const [saving, setSaving] = useState(false);
     const intl = useIntl();
     const { match: { params: { id } }, history } = props;
+    const editMode = id !== undefined;
     const initialState = {
         policyName: '',
         description: '',
@@ -152,6 +155,11 @@ function AddEdit(props) {
                         id: 'Throttling.Advanced.AddEdit.is.empty.error',
                         defaultMessage: ' is empty',
                     })}`;
+                } else if (fieldValue.length > 60) {
+                    error = intl.formatMessage({
+                        id: 'Throttling.Advanced.AddEdit.policy.name.too.long.error.msg',
+                        defaultMessage: 'Throttling policy name is too long',
+                    });
                 } else if (fieldValue !== '' && /\s/g.test(fieldValue)) {
                     error = `Policy name ${intl.formatMessage({
                         id: 'Throttling.Advanced.AddEdit.empty.error',
@@ -160,6 +168,7 @@ function AddEdit(props) {
                 }
                 break;
             case 'description':
+                break;
             case 'requestCount':
             case 'dataAmount':
             case 'unitTime':
@@ -268,15 +277,15 @@ function AddEdit(props) {
             title={
                 id ? `${intl.formatMessage({
                     id: 'Throttling.Advanced.AddEdit.title.edit',
-                    defaultMessage: 'Advanced Throttle Policy - Edit ',
+                    defaultMessage: 'Advance Rate Limiting Policy - Edit ',
                 })} ${policyName}` : intl.formatMessage({
                     id: 'Throttling.Advanced.AddEdit.title.new',
-                    defaultMessage: 'Advanced Throttle Policy - Create new',
+                    defaultMessage: 'Advanced Rate Limiting Policy - Create new',
                 })
             }
             help={<HelpLinks />}
         >
-            <Box component='div' m={2}>
+            <Box component='div' m={2} className={classes.root}>
                 <Grid container spacing={2}>
                     <Grid item xs={12} md={12} lg={3}>
                         <Typography color='inherit' variant='subtitle2' component='div'>
@@ -299,6 +308,7 @@ function AddEdit(props) {
                                 autoFocus
                                 margin='dense'
                                 name='policyName'
+                                disabled={editMode}
                                 value={policyName}
                                 onChange={onChange}
                                 label={(

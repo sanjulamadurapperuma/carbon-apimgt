@@ -9,11 +9,13 @@ import com.google.gson.JsonPrimitive;
 import org.apache.commons.lang.StringUtils;
 import org.wso2.carbon.apimgt.api.dto.KeyManagerConfigurationDTO;
 import org.wso2.carbon.apimgt.impl.APIConstants;
+import org.wso2.carbon.apimgt.impl.kmclient.model.OpenIdConnectConfiguration;
 import org.wso2.carbon.apimgt.rest.api.admin.v1.dto.ClaimMappingEntryDTO;
 import org.wso2.carbon.apimgt.rest.api.admin.v1.dto.KeyManagerCertificatesDTO;
 import org.wso2.carbon.apimgt.rest.api.admin.v1.dto.KeyManagerDTO;
 import org.wso2.carbon.apimgt.rest.api.admin.v1.dto.KeyManagerInfoDTO;
 import org.wso2.carbon.apimgt.rest.api.admin.v1.dto.KeyManagerListDTO;
+import org.wso2.carbon.apimgt.rest.api.admin.v1.dto.KeyManagerWellKnownResponseDTO;
 import org.wso2.carbon.apimgt.rest.api.admin.v1.dto.TokenValidationDTO;
 
 import java.util.ArrayList;
@@ -92,6 +94,11 @@ public class KeyManagerMappingUtil {
         if (issuerElement != null) {
             keyManagerDTO.setIssuer(issuerElement.getAsString());
             jsonObject.remove(APIConstants.KeyManager.ISSUER);
+        }
+        JsonElement wellKnownEndpointElement = jsonObject.get(APIConstants.KeyManager.WELL_KNOWN_ENDPOINT);
+        if (wellKnownEndpointElement != null) {
+            keyManagerDTO.setWellKnownEndpoint(wellKnownEndpointElement.getAsString());
+            jsonObject.remove(APIConstants.KeyManager.WELL_KNOWN_ENDPOINT);
         }
         JsonElement certificateValueElement = jsonObject.get(APIConstants.KeyManager.CERTIFICATE_VALUE);
         JsonElement certificateTypeElement = jsonObject.get(APIConstants.KeyManager.CERTIFICATE_TYPE);
@@ -228,6 +235,9 @@ public class KeyManagerMappingUtil {
         if (StringUtils.isNotEmpty(keyManagerDTO.getAuthorizeEndpoint())) {
             additionalProperties.put(APIConstants.KeyManager.AUTHORIZE_ENDPOINT, keyManagerDTO.getAuthorizeEndpoint());
         }
+        if (StringUtils.isNotEmpty(keyManagerDTO.getWellKnownEndpoint())) {
+            additionalProperties.put(APIConstants.KeyManager.WELL_KNOWN_ENDPOINT, keyManagerDTO.getWellKnownEndpoint());
+        }
         additionalProperties
                 .put(APIConstants.KeyManager.ENABLE_OAUTH_APP_CREATION, keyManagerDTO.isEnableOAuthAppCreation());
         additionalProperties.put(APIConstants.KeyManager.ENABLE_MAP_OAUTH_CONSUMER_APPS,
@@ -269,4 +279,32 @@ public class KeyManagerMappingUtil {
         return jsonObject;
     }
 
+    public static KeyManagerWellKnownResponseDTO fromOpenIdConnectConfigurationToKeyManagerConfiguration(
+            OpenIdConnectConfiguration openIdConnectConfiguration) {
+        KeyManagerWellKnownResponseDTO keyManagerWellKnownResponseDTO = new KeyManagerWellKnownResponseDTO();
+        if (openIdConnectConfiguration != null){
+            keyManagerWellKnownResponseDTO.setValid(true);
+            KeyManagerDTO keyManagerDto = new KeyManagerDTO();
+            keyManagerDto.setIssuer(openIdConnectConfiguration.getIssuer());
+            keyManagerDto.setIntrospectionEndpoint(openIdConnectConfiguration.getIntrospectionEndpoint());
+            keyManagerDto.setClientRegistrationEndpoint(openIdConnectConfiguration.getRegistrationEndpoint());
+            keyManagerDto.setAuthorizeEndpoint(openIdConnectConfiguration.getAuthorizeEndpoint());
+            keyManagerDto.setTokenEndpoint(openIdConnectConfiguration.getTokenEndpoint());
+            keyManagerDto.setRevokeEndpoint(openIdConnectConfiguration.getRevokeEndpoint());
+            keyManagerDto.setEnabled(true);
+            keyManagerDto.setEnableTokenGeneration(true);
+            keyManagerDto.setEnableMapOAuthConsumerApps(true);
+            keyManagerDto.setEnableOAuthAppCreation(true);
+            keyManagerDto.setEnableSelfValidationJWT(true);
+            keyManagerDto.setAvailableGrantTypes(openIdConnectConfiguration.getGrantTypesSupported());
+            if (StringUtils.isNotEmpty(openIdConnectConfiguration.getJwksEndpoint())){
+                KeyManagerCertificatesDTO keyManagerCertificatesDTO = new KeyManagerCertificatesDTO();
+                keyManagerCertificatesDTO.setType(KeyManagerCertificatesDTO.TypeEnum.JWKS);
+                keyManagerCertificatesDTO.setValue(openIdConnectConfiguration.getJwksEndpoint());
+                keyManagerDto.setCertificates(keyManagerCertificatesDTO);
+            }
+            keyManagerWellKnownResponseDTO.setValue(keyManagerDto);
+        }
+        return keyManagerWellKnownResponseDTO;
+    }
 }

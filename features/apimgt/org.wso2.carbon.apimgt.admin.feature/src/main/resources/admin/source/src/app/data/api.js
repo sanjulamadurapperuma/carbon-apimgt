@@ -128,6 +128,23 @@ class API extends Resource {
         });
         return promisedSettings.then(response => response.body);
     }
+
+    /**
+     * Retrieve scopes for a particular user
+     */
+    getUserScope(username, scope) {
+        return this.client.then((client) => {
+            const data = {
+                username: username,
+                scopeName: btoa(scope),
+            };
+            return client.apis['System Scopes'].systemScopesScopeNameGet(
+                data,
+                this._requestMetaData(),
+            );
+        });
+    }
+
     /**
      * Get list of advanced throttling policies
      */
@@ -607,37 +624,14 @@ class API extends Resource {
     }
 
     /**
-     * Get detected bot data -- Mock api call.
-     * todo: replace with actual api when available.
+     * Get Detected bot data
      */
     getDetectedBotData() {
-        const mockBotData = {
-            body: [
-                {
-                    recordtime: '5:08 PM Friday, May 22, 2020',
-                    messageID: '12345678902345678', 
-                    apiMethod: 'GET',
-                    headersSet: ['header1','header2','header3'],
-                    messageBody: null,
-                    clientIP: '127.0.0.1'
-                },
-                {
-                    recordtime: '5:10 PM Friday, May 22, 2020',
-                    messageID: '123456876502345678', 
-                    apiMethod: 'POST',
-                    headersSet: ['header1','header2','header3'],
-                    messageBody: '{name:johndoe@gmail.com, password:psw}',
-                    clientIP: '127.0.0.1'
-                }
-            ]
-        };
-        const promiseBotData = new Promise((resolve) => {
-            setTimeout(() => {
-                // resolve({body:[]});
-                resolve(mockBotData);
-            }, 100);
+        return this.client.then((client) => {
+            return client.apis['default'].getBotDetectionData(
+                this._requestMetaData(),
+            );
         });
-        return promiseBotData;
     }
 
     /**
@@ -645,7 +639,7 @@ class API extends Resource {
      */
     botDetectionNotifyingEmailsGet() {
         return this.client.then((client) => {
-            return client.apis['default'].get_botData_getEmailList(
+            return client.apis['Bot Detection Alert Subscriptions'].getBotDetectionAlertSubscriptions(
                 this._requestMetaData(),
             );
         });
@@ -663,7 +657,7 @@ class API extends Resource {
                 body: data,
                 'Content-Type': 'application/json',
             };
-            return client.apis['default'].post_botData_addEmail(
+            return client.apis['Bot Detection Alert Subscriptions'].subscribeForBotDetectionAlerts(
                 payload,
                 this._requestMetaData(),
             );
@@ -675,7 +669,7 @@ class API extends Resource {
      */
     deleteBotDetectionNotifyingEmail(id) {
         return this.client.then((client) => {
-            return client.apis['default'].delete_botData_deleteEmail(
+            return client.apis['Bot Detection Alert Subscriptions'].unsubscribeFromBotDetectionAlerts(
                 { uuid: id },
                 this._requestMetaData(),
             );
@@ -700,13 +694,25 @@ class API extends Resource {
     uploadTenantTheme(file) {
         return this.client.then(
             client => {
-                return client.apis['default'].post_tenant_theme_import({
+                return client.apis['Tenant Theme'].importTenantTheme({
                     file: file,
                 });
             },
             this._requestMetaData({
                 'Content-Type': 'multipart/form-data',
             }),
+        );
+    }
+
+    /**
+     * Export a Tenant Theme
+     */
+    exportTenantTheme() {
+        return this.client.then(
+            client => {
+                return client.apis['Tenant Theme'].exportTenantTheme();
+            },
+            this._requestMetaData(),
         );
     }
 
@@ -757,8 +763,6 @@ class API extends Resource {
         });
     }
 
-
-
     /**
      * Get lis of keymanagers Registrered
      */
@@ -770,6 +774,29 @@ class API extends Resource {
         });
     }
 
+    /**
+     * Discover keymanager from well known url
+     */
+    keyManagersDiscover(url) {
+        return this.client.then((client) => {
+            return client.apis['Key Manager (Collection)'].post_key_managers_discover(
+                this._requestMetaData(),
+            );
+        });
+    }
+
+    keyManagersDiscover(requestData) {
+        return this.client.then((client) => {
+            const payload = {
+                ...requestData,
+                'Content-Type': 'application/json',
+            };
+            return client.apis['Key Manager (Collection)'].post_key_managers_discover(
+                payload,
+                this._requestMetaData(),
+            );
+        });
+    }
         /**
      * Get details of an Application Throttling Policy
      */

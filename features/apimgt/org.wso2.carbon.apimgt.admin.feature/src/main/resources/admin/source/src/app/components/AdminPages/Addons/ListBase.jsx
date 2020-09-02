@@ -31,7 +31,6 @@ import { makeStyles } from '@material-ui/core/styles';
 import SearchIcon from '@material-ui/icons/Search';
 import RefreshIcon from '@material-ui/icons/Refresh';
 import Card from '@material-ui/core/Card';
-import CardActionArea from '@material-ui/core/CardActionArea';
 import CardActions from '@material-ui/core/CardActions';
 import CardContent from '@material-ui/core/CardContent';
 import MUIDataTable from 'mui-datatables';
@@ -56,6 +55,12 @@ const useStyles = makeStyles((theme) => ({
     },
     button: {
         borderColor: 'rgba(255, 255, 255, 0.7)',
+    },
+    tableCellWrapper: {
+        '& td': {
+            'word-break': 'break-all',
+            'white-space': 'normal',
+        },
     },
 }));
 
@@ -195,12 +200,10 @@ function ListBase(props) {
                 pageStyle='small'
             >
                 <Card className={classes.root}>
-                    <CardActionArea>
-                        <CardContent>
-                            {emptyBoxTitle}
-                            {emptyBoxContent}
-                        </CardContent>
-                    </CardActionArea>
+                    <CardContent>
+                        {emptyBoxTitle}
+                        {emptyBoxContent}
+                    </CardContent>
                     <CardActions>
                         {addButtonOverride || (
                             EditComponent && (<EditComponent updateList={fetchData} {...addButtonProps} />)
@@ -269,15 +272,16 @@ function ListBase(props) {
                         </Toolbar>
                     </AppBar>
                 )}
-
-                {data && data.length > 0 && (
-                    <MUIDataTable
-                        title={null}
-                        data={data}
-                        columns={columns}
-                        options={options}
-                    />
-                )}
+                <div className={classes.tableCellWrapper}>
+                    {data && data.length > 0 && (
+                        <MUIDataTable
+                            title={null}
+                            data={data}
+                            columns={columns}
+                            options={options}
+                        />
+                    )}
+                </div>
                 {data && data.length === 0 && (
                     <div className={classes.contentWrapper}>
                         <Typography color='textSecondary' align='center'>

@@ -153,18 +153,23 @@ function AddEdit(props) {
 
     const validate = (fieldName, value) => {
         let error = '';
-        const schema = Joi.string().max(30).regex(/^[^~!@#;:%^*()+={}|\\<>"',&$\s+]*$/);
+        const schema = Joi.string().regex(/^[^~!@#;:%^*()+={}|\\<>"',&$\s+]*$/);
         switch (fieldName) {
             case 'policyName':
                 if (value === '') {
                     error = intl.formatMessage({
                         id: 'Throttling.Application.Policy.policy.name.empty',
-                        defaultMessage: 'Name is Emptys',
+                        defaultMessage: 'Name is Empty',
                     });
                 } else if (value.indexOf(' ') !== -1) {
                     error = intl.formatMessage({
                         id: 'Throttling.Application.Policy.policy.name.space',
                         defaultMessage: 'Name contains spaces',
+                    });
+                } else if (value.length > 60) {
+                    error = intl.formatMessage({
+                        id: 'Throttling.Application.Policy.policy.name.too.long',
+                        defaultMessage: 'Application policy name is too long',
                     });
                 } else if (schema.validate(value).error) {
                     error = intl.formatMessage({
@@ -382,7 +387,13 @@ function AddEdit(props) {
                     },
                 }}
                 error={validationError.policyName}
-                helperText={validationError.policyName && validationError.policyName}
+                helperText={validationError.policyName ? validationError.policyName
+                    : (
+                        <FormattedMessage
+                            id='Admin.Throttling.Application.Throttling.Policy.add.name.helper.text'
+                            defaultMessage='Name of the throttle policy'
+                        />
+                    )}
             />
             <TextField
                 margin='dense'
@@ -390,6 +401,12 @@ function AddEdit(props) {
                 label='Description'
                 fullWidth
                 variant='outlined'
+                helperText={(
+                    <FormattedMessage
+                        id='Admin.Throttling.Application.Throttling.Policy.add.description.helper.text'
+                        defaultMessage='Description of the throttle policy'
+                    />
+                )}
                 value={description}
                 onChange={onChange}
             />
@@ -440,8 +457,14 @@ function AddEdit(props) {
                                 validate('requestCount', value);
                             },
                         }}
-                        error={validationError.requestCountValue}
-                        helperText={validationError.requestCountValue && validationError.requestCountValue}
+                        error={validationError.requestCount}
+                        helperText={validationError.requestCount ? validationError.requestCount
+                            : (
+                                <FormattedMessage
+                                    id='Admin.Throttling.Application.Throttling.Policy.add.request.count.helper.text'
+                                    defaultMessage='Number of requests allowed'
+                                />
+                            )}
                     />
                 ) : (
                     <Grid className={classes.unitTime}>
@@ -462,7 +485,13 @@ function AddEdit(props) {
                                 },
                             }}
                             error={validationError.dataAmount}
-                            helperText={validationError.dataAmount && validationError.dataAmount}
+                            helperText={validationError.dataAmount ? validationError.dataAmount
+                                : (
+                                    <FormattedMessage
+                                        id='Admin.Throttling.Application.Throttling.Policy.add.data.amount.helper.text'
+                                        defaultMessage='Bandwidth allowed'
+                                    />
+                                )}
                         />
                         <FormControl className={classes.unitTimeSelection}>
                             <Select
@@ -497,7 +526,13 @@ function AddEdit(props) {
                             },
                         }}
                         error={validationError.unitTime}
-                        helperText={validationError.unitTime && validationError.unitTime}
+                        helperText={validationError.unitTime ? validationError.unitTime
+                            : (
+                                <FormattedMessage
+                                    id='Admin.Throttling.Application.Throttling.Policy.add.time.helper.text'
+                                    defaultMessage='Time configuration'
+                                />
+                            )}
                     />
                     <FormControl className={classes.unitTimeSelection}>
                         <Select

@@ -17,6 +17,11 @@
 */
 package org.wso2.carbon.apimgt.impl;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -42,20 +47,23 @@ import org.wso2.carbon.apimgt.api.model.botDataAPI.BotDetectionData;
 import org.wso2.carbon.apimgt.impl.alertmgt.AlertMgtConstants;
 import org.wso2.carbon.apimgt.impl.dao.ApiMgtDAO;
 import org.wso2.carbon.apimgt.impl.dao.constants.SQLConstants;
+import org.wso2.carbon.apimgt.impl.dto.WorkflowProperties;
 import org.wso2.carbon.apimgt.impl.internal.ServiceReferenceHolder;
 import org.wso2.carbon.apimgt.impl.keymgt.KeyMgtNotificationSender;
 import org.wso2.carbon.apimgt.impl.monetization.DefaultMonetizationImpl;
 import org.wso2.carbon.apimgt.impl.service.KeyMgtRegistrationService;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 import org.wso2.carbon.context.CarbonContext;
+import org.wso2.carbon.core.util.CryptoException;
+import org.wso2.carbon.core.util.CryptoUtil;
 import org.wso2.carbon.utils.multitenancy.MultitenantUtils;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -326,6 +334,9 @@ public class APIAdminImpl implements APIAdmin {
             APIUtil.getAndSetDefaultKeyManagerConfiguration(defaultKeyManagerConfiguration);
             keyManagerConfigurationsByTenant.add(defaultKeyManagerConfiguration);
         }
+        for (KeyManagerConfigurationDTO keyManagerConfigurationDTO : keyManagerConfigurationsByTenant) {
+            decryptKeyManagerConfigurationValues(keyManagerConfigurationDTO);
+        }
         return keyManagerConfigurationsByTenant;
     }
 
@@ -363,7 +374,7 @@ public class APIAdminImpl implements APIAdmin {
                 APIConstants.KeyManager.DEFAULT_KEY_MANAGER.equals(keyManagerConfigurationDTO.getName())) {
             APIUtil.getAndSetDefaultKeyManagerConfiguration(keyManagerConfigurationDTO);
         }
-
+        maskValues(keyManagerConfigurationDTO);
         return keyManagerConfigurationDTO;
     }
 
@@ -385,10 +396,103 @@ public class APIAdminImpl implements APIAdmin {
         }
         validateKeyManagerConfiguration(keyManagerConfigurationDTO);
         keyManagerConfigurationDTO.setUuid(UUID.randomUUID().toString());
-        apiMgtDAO.addKeyManagerConfiguration(keyManagerConfigurationDTO);
+        KeyManagerConfigurationDTO keyManagerConfigurationToStore =
+                new KeyManagerConfigurationDTO(keyManagerConfigurationDTO);
+        encryptKeyManagerConfigurationValues(null, keyManagerConfigurationToStore);
+        apiMgtDAO.addKeyManagerConfiguration(keyManagerConfigurationToStore);
         new KeyMgtNotificationSender()
                 .notify(keyManagerConfigurationDTO, APIConstants.KeyManager.KeyManagerEvent.ACTION_ADD);
         return keyManagerConfigurationDTO;
+    }
+
+    private void encryptKeyManagerConfigurationValues(KeyManagerConfigurationDTO retrievedKeyManagerConfigurationDTO,
+                                                      KeyManagerConfigurationDTO updatedKeyManagerConfigurationDto)
+            throws APIManagementException {
+
+        KeyManagerConnectorConfiguration keyManagerConnectorConfiguration = ServiceReferenceHolder.getInstance()
+                .getKeyManagerConnectorConfiguration(updatedKeyManagerConfigurationDto.getType());
+        if (keyManagerConnectorConfiguration != null) {
+            Map<String, Object> additionalProperties = updatedKeyManagerConfigurationDto.getAdditionalProperties();
+            for (ConfigurationDto configurationDto : keyManagerConnectorConfiguration
+                    .getConnectionConfigurations()) {
+                if (configurationDto.isMask()) {
+                    String value = (String) additionalProperties.get(configurationDto.getName());
+                    if (APIConstants.DEFAULT_MODIFIED_ENDPOINT_PASSWORD.equals(value)) {
+                        Object unModifiedValue = retrievedKeyManagerConfigurationDTO.getAdditionalProperties()
+                                .get(configurationDto.getName());
+                        additionalProperties.replace(configurationDto.getName(), unModifiedValue);
+                    } else if (StringUtils.isNotEmpty(value)) {
+                        additionalProperties.replace(configurationDto.getName(), encryptValues(value));
+                    }
+                }
+            }
+        }
+    }
+
+    private KeyManagerConfigurationDTO decryptKeyManagerConfigurationValues(
+            KeyManagerConfigurationDTO keyManagerConfigurationDTO)
+            throws APIManagementException {
+
+        Map<String, Object> additionalProperties = keyManagerConfigurationDTO.getAdditionalProperties();
+        for (Map.Entry<String, Object> entry : additionalProperties.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            if (value != null) {
+                additionalProperties.replace(key, decryptValue(value));
+            }
+        }
+        return keyManagerConfigurationDTO;
+    }
+
+    private Object decryptValue(Object value) throws APIManagementException {
+
+        if (value instanceof String) {
+            return getDecryptedValue((String) value);
+        } else if (value instanceof List) {
+            List valueList = (List) value;
+            List decryptedValues = new ArrayList<>();
+            for (Object s : valueList) {
+                decryptedValues.add(decryptValue(s));
+            }
+            return decryptedValues;
+        } else if (value instanceof Map) {
+            Map<String, Object> map = (Map<String, Object>) value;
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                String key = entry.getKey();
+                Object entryValue = entry.getValue();
+                map.replace(key, decryptValue(entryValue));
+            }
+            return map;
+        }
+        return value;
+    }
+
+    private String getDecryptedValue(String value) throws APIManagementException {
+
+        try {
+            JsonElement encryptedJsonValue = new JsonParser().parse(value);
+            if (encryptedJsonValue instanceof JsonObject) {
+                JsonObject jsonObject = (JsonObject) encryptedJsonValue;
+                JsonPrimitive encryptedValue = jsonObject.getAsJsonPrimitive(APIConstants.ENCRYPTED_VALUE);
+                if (encryptedValue.isBoolean()) {
+                    JsonPrimitive valueElement = jsonObject.getAsJsonPrimitive(APIConstants.VALUE);
+                    if (encryptedValue.getAsBoolean()) {
+                        if (valueElement.isString()) {
+                            CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
+                            return new String(cryptoUtil.decrypt(valueElement.getAsString().getBytes()));
+                        }
+                    }
+                }
+            }
+        } catch (CryptoException e) {
+            throw new APIManagementException("Error while Decrypting value", e);
+        } catch (JsonParseException e) {
+            // check Element is a json element
+            if (log.isDebugEnabled()) {
+                log.debug("Error while parsing element " + value, e);
+            }
+        }
+        return value;
     }
 
     @Override
@@ -396,9 +500,15 @@ public class APIAdminImpl implements APIAdmin {
             KeyManagerConfigurationDTO keyManagerConfigurationDTO)
             throws APIManagementException {
         validateKeyManagerConfiguration(keyManagerConfigurationDTO);
+        KeyManagerConfigurationDTO oldKeyManagerConfiguration =
+                apiMgtDAO.getKeyManagerConfigurationByID(keyManagerConfigurationDTO.getTenantDomain(),
+                        keyManagerConfigurationDTO.getUuid());
+        encryptKeyManagerConfigurationValues(oldKeyManagerConfiguration, keyManagerConfigurationDTO);
         apiMgtDAO.updateKeyManagerConfiguration(keyManagerConfigurationDTO);
+        KeyManagerConfigurationDTO decryptedKeyManagerConfiguration =
+                decryptKeyManagerConfigurationValues(keyManagerConfigurationDTO);
         new KeyMgtNotificationSender()
-                .notify(keyManagerConfigurationDTO, APIConstants.KeyManager.KeyManagerEvent.ACTION_UPDATE);
+                .notify(decryptedKeyManagerConfiguration, APIConstants.KeyManager.KeyManagerEvent.ACTION_UPDATE);
         return keyManagerConfigurationDTO;
     }
 
@@ -408,9 +518,14 @@ public class APIAdminImpl implements APIAdmin {
         KeyManagerConfigurationDTO keyManagerConfigurationDTO =
                 apiMgtDAO.getKeyManagerConfigurationByID(tenantDomain, id);
         if (keyManagerConfigurationDTO != null) {
-            apiMgtDAO.deleteKeyManagerConfigurationById(id, tenantDomain);
-            new KeyMgtNotificationSender()
-                    .notify(keyManagerConfigurationDTO, APIConstants.KeyManager.KeyManagerEvent.ACTION_DELETE);
+            if (!APIConstants.KeyManager.DEFAULT_KEY_MANAGER.equals(keyManagerConfigurationDTO.getName())) {
+                apiMgtDAO.deleteKeyManagerConfigurationById(id, tenantDomain);
+                new KeyMgtNotificationSender()
+                        .notify(keyManagerConfigurationDTO, APIConstants.KeyManager.KeyManagerEvent.ACTION_DELETE);
+            } else {
+                throw new APIManagementException(APIConstants.KeyManager.DEFAULT_KEY_MANAGER + " couldn't delete",
+                        ExceptionCodes.INTERNAL_ERROR);
+            }
         }
     }
 
@@ -424,41 +539,35 @@ public class APIAdminImpl implements APIAdmin {
                 APIConstants.KeyManager.DEFAULT_KEY_MANAGER.equals(keyManagerConfiguration.getName())) {
             APIUtil.getAndSetDefaultKeyManagerConfiguration(keyManagerConfiguration);
         }
+        maskValues(keyManagerConfiguration);
         return keyManagerConfiguration;
     }
 
-    /**
-     * configure email list to which the alert needs to be sent
-     */
-    public void addBotDataEmailConfiguration(String email) throws APIManagementException, SQLException {
+    @Override
+    public void addBotDetectionAlertSubscription(String email) throws APIManagementException {
 
-        apiMgtDAO.addBotDataEmailConfiguration(email);
+        apiMgtDAO.addBotDetectionAlertSubscription(email);
     }
 
-    /**
-     * retrieve the configured email list
-     */
-    public List<BotDetectionData> retrieveSavedBotDataEmailList() throws APIManagementException {
+    @Override
+    public List<BotDetectionData> getBotDetectionAlertSubscriptions() throws APIManagementException {
 
-        List<BotDetectionData> list;
-        list = apiMgtDAO.retrieveSavedBotDataEmailList();
-        return list;
+        return apiMgtDAO.getBotDetectionAlertSubscriptions();
     }
 
-    /**
-     * remove all configured email list
-     */
-    public void deleteBotDataEmailList(String uuid) throws APIManagementException, SQLException {
+    @Override
+    public void deleteBotDetectionAlertSubscription(String uuid) throws APIManagementException {
 
-        apiMgtDAO.deleteBotDataEmailList(uuid);
+        apiMgtDAO.deleteBotDetectionAlertSubscription(uuid);
     }
 
-    /**
-     * Retrieve all bot detected data
-     *
-     * @return list of bot detected data
-     * @throws APIManagementException
-     */
+    @Override
+    public BotDetectionData getBotDetectionAlertSubscription(String field, String value) throws APIManagementException {
+
+        return apiMgtDAO.getBotDetectionAlertSubscription(field, value);
+    }
+
+    @Override
     public List<BotDetectionData> retrieveBotDetectionData() throws APIManagementException {
 
         List<BotDetectionData> botDetectionDatalist = new ArrayList<>();
@@ -543,7 +652,7 @@ public class APIAdminImpl implements APIAdmin {
 
         return apiMgtDAO.getAllCategories(tenantId);
     }
-
+    @Override
     public List<APICategory> getAPICategoriesOfTenant(int tenantId) throws APIManagementException {
         String username = CarbonContext.getThreadLocalCarbonContext().getUsername();
         List<APICategory> categories = getAllAPICategoriesOfTenant(tenantId);
@@ -626,10 +735,76 @@ public class APIAdminImpl implements APIAdmin {
                             missingRequiredConfigurations) + " is/are required",
                             ExceptionCodes.REQUIRED_KEY_MANAGER_CONFIGURATION_MISSING);
                 }
+                if (!keyManagerConfigurationDTO.getAdditionalProperties()
+                        .containsKey(APIConstants.KeyManager.CONSUMER_KEY_CLAIM)) {
+                    if (StringUtils.isNotEmpty(keyManagerConnectorConfiguration.getDefaultConsumerKeyClaim())) {
+                        keyManagerConfigurationDTO.addProperty(APIConstants.KeyManager.CONSUMER_KEY_CLAIM,
+                                keyManagerConnectorConfiguration.getDefaultConsumerKeyClaim());
+                    }
+                }
+                if (!keyManagerConfigurationDTO.getAdditionalProperties()
+                        .containsKey(APIConstants.KeyManager.SCOPES_CLAIM)) {
+                    if (StringUtils.isNotEmpty(keyManagerConnectorConfiguration.getDefaultScopesClaim())) {
+                        keyManagerConfigurationDTO.addProperty(APIConstants.KeyManager.SCOPES_CLAIM,
+                                keyManagerConnectorConfiguration.getDefaultScopesClaim());
+                    }
+                }
             } else {
                 throw new APIManagementException(
                         "Key Manager Type " + keyManagerConfigurationDTO.getType() + " is invalid.",
                         ExceptionCodes.INVALID_KEY_MANAGER_TYPE);
+            }
+        }
+    }
+
+    private Object encryptValues(Object value) throws APIManagementException {
+
+        try {
+            CryptoUtil cryptoUtil = CryptoUtil.getDefaultCryptoUtil();
+            if (value instanceof String) {
+                String encryptedValue = new String(cryptoUtil.encrypt(((String) value).getBytes()));
+                return getEncryptedValue(encryptedValue);
+            } else if (value instanceof List) {
+                List valueList = (List) value;
+                List encrpytedList = new ArrayList<>();
+                for (Object s : valueList) {
+                    encrpytedList.add(encryptValues(s));
+                }
+                return encrpytedList;
+            } else if (value instanceof Map) {
+                Map<String, Object> map = (Map<String, Object>) value;
+                for (Map.Entry<String, Object> entry : map.entrySet()) {
+                    String key = entry.getKey();
+                    Object entryValue = entry.getValue();
+                    map.replace(key, encryptValues(entryValue));
+                }
+                return map;
+            }
+        } catch (CryptoException e) {
+            throw new APIManagementException("Error while encrypting values", e);
+        }
+        return null;
+    }
+
+    private String getEncryptedValue(String value) {
+
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put(APIConstants.ENCRYPTED_VALUE, true);
+        jsonObject.put(APIConstants.VALUE, value);
+        return jsonObject.toJSONString();
+    }
+
+    private void maskValues(KeyManagerConfigurationDTO keyManagerConfigurationDTO){
+        KeyManagerConnectorConfiguration keyManagerConnectorConfiguration = ServiceReferenceHolder.getInstance()
+                .getKeyManagerConnectorConfiguration(keyManagerConfigurationDTO.getType());
+
+        Map<String, Object> additionalProperties = keyManagerConfigurationDTO.getAdditionalProperties();
+        List<ConfigurationDto> connectionConfigurations =
+                keyManagerConnectorConfiguration.getConnectionConfigurations();
+        for (ConfigurationDto connectionConfiguration : connectionConfigurations) {
+            if (connectionConfiguration.isMask()){
+                additionalProperties.replace(connectionConfiguration.getName(),
+                        APIConstants.DEFAULT_MODIFIED_ENDPOINT_PASSWORD);
             }
         }
     }
@@ -645,7 +820,13 @@ public class APIAdminImpl implements APIAdmin {
      */
     public Workflow[] getworkflows(String workflowType, String status, String tenantDomain)
             throws APIManagementException {
-        return apiMgtDAO.getworkflows(workflowType, status, tenantDomain);
+        WorkflowProperties workflowConfig = org.wso2.carbon.apimgt.impl.internal.ServiceReferenceHolder.
+                getInstance().getAPIManagerConfigurationService().getAPIManagerConfiguration().getWorkflowProperties();
+        if (workflowConfig.isListTasks()) {
+            return apiMgtDAO.getworkflows(workflowType, status, tenantDomain);
+        } else {
+            return new Workflow[0];
+        }
     }
 
     /**
@@ -659,9 +840,14 @@ public class APIAdminImpl implements APIAdmin {
      */
     public Workflow getworkflowReferenceByExternalWorkflowReferenceID(String externelWorkflowRef, String status,
                                                                       String tenantDomain) throws APIManagementException {
-        Workflow workflow = apiMgtDAO.getworkflowReferenceByExternalWorkflowReferenceID(externelWorkflowRef,
-                status, tenantDomain);
-
+        Workflow workflow = null;
+        WorkflowProperties workflowConfig = org.wso2.carbon.apimgt.impl.internal.ServiceReferenceHolder.
+                getInstance().getAPIManagerConfigurationService().getAPIManagerConfiguration().getWorkflowProperties();
+        if (workflowConfig.isListTasks()) {
+            workflow = apiMgtDAO.getworkflowReferenceByExternalWorkflowReferenceID(externelWorkflowRef,
+                    status, tenantDomain);
+        } 
+        
         if (workflow == null) {
             String msg = "External workflow Reference: " + externelWorkflowRef + " was not found.";
             throw new APIMgtResourceNotFoundException(msg);
@@ -732,5 +918,35 @@ public class APIAdminImpl implements APIAdmin {
             }
         }
         return authorizedScopes;
+    }
+
+    @Override
+    public void addTenantTheme(int tenantId, InputStream themeContent) throws APIManagementException {
+
+        apiMgtDAO.addTenantTheme(tenantId, themeContent);
+    }
+
+    @Override
+    public void updateTenantTheme(int tenantId, InputStream themeContent) throws APIManagementException {
+
+        apiMgtDAO.updateTenantTheme(tenantId, themeContent);
+    }
+
+    @Override
+    public InputStream getTenantTheme(int tenantId) throws APIManagementException {
+
+        return apiMgtDAO.getTenantTheme(tenantId);
+    }
+
+    @Override
+    public boolean isTenantThemeExist(int tenantId) throws APIManagementException {
+
+        return apiMgtDAO.isTenantThemeExist(tenantId);
+    }
+
+    @Override
+    public void deleteTenantTheme(int tenantId) throws APIManagementException {
+
+        apiMgtDAO.deleteTenantTheme(tenantId);
     }
 }

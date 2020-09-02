@@ -29,7 +29,6 @@ import { makeStyles } from '@material-ui/core/styles';
 import SearchIcon from '@material-ui/icons/Search';
 import RefreshIcon from '@material-ui/icons/Refresh';
 import Card from '@material-ui/core/Card';
-import CardActionArea from '@material-ui/core/CardActionArea';
 import CardActions from '@material-ui/core/CardActions';
 import CardContent from '@material-ui/core/CardContent';
 import MUIDataTable from 'mui-datatables';
@@ -52,6 +51,8 @@ import localizedFormat from 'dayjs/plugin/localizedFormat';
 import CheckIcon from '@material-ui/icons/Check';
 import ClearIcon from '@material-ui/icons/Clear';
 import Box from '@material-ui/core/Box';
+import CircularProgress from '@material-ui/core/CircularProgress';
+import WarningBase from 'AppComponents/AdminPages/Addons/WarningBase';
 
 const useStyles = makeStyles((theme) => ({
     searchInput: {
@@ -82,6 +83,9 @@ function ListLabels() {
     const intl = useIntl();
     const [data, setData] = useState(null);
     const restApi = new API();
+    const [isUpdating, setIsUpdating] = useState(null);
+    const [buttonValue, setButtonValue] = useState();
+    const [hasListPermission, setHasListPermission] = useState(true);
 
     /**
      * API call to get Detected Data
@@ -106,11 +110,16 @@ function ListLabels() {
                 return workflowlist;
             })
             .catch((error) => {
-                Alert.error(intl.formatMessage({
-                    id: 'Workflow.APIStateChange.apicall.has.errors',
-                    defaultMessage: 'Unable to get workflow pending requests for API State Change',
-                }));
-                throw (error);
+                const { status } = error;
+                if (status === 401) {
+                    setHasListPermission(false);
+                } else {
+                    Alert.error(intl.formatMessage({
+                        id: 'Workflow.APIStateChange.apicall.has.errors',
+                        defaultMessage: 'Unable to get workflow pending requests for API State Change',
+                    }));
+                    throw (error);
+                }
             });
     }
 
@@ -135,7 +144,9 @@ function ListLabels() {
     }, []);
 
     const updateStatus = (referenceId, value) => {
+        setButtonValue(value);
         const body = { status: value, attributes: {}, description: '' };
+        setIsUpdating(true);
         if (value === 'APPROVED') {
             body.description = 'Approve workflow request.';
         }
@@ -146,22 +157,25 @@ function ListLabels() {
         const promisedupdateWorkflow = restApi.updateWorkflow(referenceId, body);
         return promisedupdateWorkflow
             .then(() => {
-                return (
-                    <FormattedMessage
-                        id='Workflow.APIStateChange.update.success'
-                        defaultMessage='workflow status is updated successfully'
-                    />
-                );
+                setIsUpdating(false);
+                Alert.success(intl.formatMessage({
+                    id: 'Workflow.APIStateChange.update.success',
+                    defaultMessage: 'Workflow status is updated successfully.',
+                }));
             })
             .catch((error) => {
-                const { response } = error;
-                if (response.body) {
+                const { response, status } = error;
+                const { body: { description } } = response;
+                if (status === 401) {
+                    Alert.error(description);
+                } else if (response.body) {
                     Alert.error(intl.formatMessage({
                         id: 'Workflow.APIStateChange.updateStatus.has.errors',
                         defaultMessage: 'Unable to complete API state change approve/reject process. ',
                     }));
                     throw (response.body.description);
                 }
+                setIsUpdating(false);
                 return null;
             })
             .then(() => {
@@ -271,7 +285,7 @@ function ListLabels() {
                             {properties.apiProvider}
                             <br />
                             <Tooltip title={format}>
-                                <Typography color='textSecondary'>
+                                <Typography color='textSecondary' variant='caption'>
                                     {time}
                                 </Typography>
                             </Tooltip>
@@ -299,9 +313,14 @@ function ListLabels() {
                                     variant='contained'
                                     size='small'
                                     onClick={() => updateStatus(referenceId, 'APPROVED')}
+                                    disabled={isUpdating}
                                 >
                                     <CheckIcon />
-                                    Approve
+                                    <FormattedMessage
+                                        id='Workflow.APIStateChange.table.button.approve'
+                                        defaultMessage='Approve'
+                                    />
+                                    {(isUpdating && buttonValue === 'APPROVED') && <CircularProgress size={15} /> }
                                 </Button>
                                 &nbsp;&nbsp;
                                 <Button
@@ -309,9 +328,14 @@ function ListLabels() {
                                     variant='contained'
                                     size='small'
                                     onClick={() => updateStatus(referenceId, 'REJECTED')}
+                                    disabled={isUpdating}
                                 >
                                     <ClearIcon />
-                                    Reject
+                                    <FormattedMessage
+                                        id='Workflow.APIStateChange.table.button.reject'
+                                        defaultMessage='Reject'
+                                    />
+                                    {(isUpdating && buttonValue === 'REJECTED') && <CircularProgress size={15} />}
                                 </Button>
                             </Box>
                         </div>
@@ -333,7 +357,7 @@ function ListLabels() {
     const searchActive = true;
     const searchPlaceholder = intl.formatMessage({
         id: 'Workflow.apistatechange.search.default',
-        defaultMessage: 'Search by workflow request description',
+        defaultMessage: 'Search by API, Request state, Current state or Creator',
     });
 
     const filterData = (event) => {
@@ -364,25 +388,20 @@ function ListLabels() {
                 pageStyle='small'
             >
                 <Card className={classes.root}>
-                    <CardActionArea>
-                        <CardContent>
-                            <Typography gutterBottom variant='h5' component='h2'>
-                                <FormattedMessage
-                                    id='Workflow.APIStateChange.List.empty.title.apistatechange'
-                                    defaultMessage='API State Change'
-                                />
-                            </Typography>
-                            <Typography variant='body2' color='textSecondary' component='p'>
-                                <FormattedMessage
-                                    id='Workflow.APIStateChange.List.empty.content.apistatechange'
-                                    defaultMessage={'There are no workflow pending requests for API state change.'
-                                    + 'It is possible to approve or reject workflow pending requests of '
-                                    + 'API state change. Workflow Approval Executor needs to be enabled '
-                                    + 'to approve or reject the requests. '}
-                                />
-                            </Typography>
-                        </CardContent>
-                    </CardActionArea>
+                    <CardContent>
+                        <Typography gutterBottom variant='h5' component='h2'>
+                            <FormattedMessage
+                                id='Workflow.APIStateChange.List.empty.title.apistatechange'
+                                defaultMessage='API State Change'
+                            />
+                        </Typography>
+                        <Typography variant='body2' color='textSecondary' component='p'>
+                            <FormattedMessage
+                                id='Workflow.APIStateChange.List.empty.content.apistatechange'
+                                defaultMessage='There are no pending workflow requests for API state change.'
+                            />
+                        </Typography>
+                    </CardContent>
                     <CardActions>
                         {addButtonOverride || (
                             <span updateList={fetchData} {...addButtonProps} />
@@ -390,6 +409,26 @@ function ListLabels() {
                     </CardActions>
                 </Card>
             </ContentBase>
+        );
+    }
+    if (!hasListPermission) {
+        return (
+            <WarningBase
+                pageProps={pageProps}
+                title={(
+                    <FormattedMessage
+                        id='Workflow.ApiStateChange.permission.denied.title'
+                        defaultMessage='Permission Denied'
+                    />
+                )}
+                content={(
+                    <FormattedMessage
+                        id='Workflow.ApiStateChange.permission.denied.content'
+                        defaultMessage={'You dont have enough permission to view API State Change - '
+                        + 'Approval Tasks. Please contact the site administrator.'}
+                    />
+                )}
+            />
         );
     }
     if (!data) {

@@ -23,6 +23,7 @@ import org.wso2.carbon.apimgt.gateway.MethodStats;
 import org.wso2.carbon.apimgt.gateway.handlers.security.APISecurityConstants;
 import org.wso2.carbon.apimgt.gateway.handlers.security.APISecurityException;
 import org.wso2.carbon.apimgt.impl.dto.APIKeyValidationInfoDTO;
+import org.wso2.carbon.apimgt.keymgt.service.TokenValidationContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,82 +39,50 @@ public class WSAPIKeyDataStore implements APIKeyDataStore {
 
     public static final Log log = LogFactory.getLog(WSAPIKeyDataStore.class);
 
-    private static final APIKeyValidatorClientPool clientPool = APIKeyValidatorClientPool.getInstance();
-
     @MethodStats
     public APIKeyValidationInfoDTO getAPIKeyData(String context, String apiVersion,
                                                  String apiKey, String requiredAuthenticationLevel, String clientDomain,
                                                  String matchingResource, String httpVerb,
                                                  String tenantDomain, List<String> keyManagers)
             throws APISecurityException {
-        APIKeyValidatorClient client = null;
+
+        APIKeyValidatorClient client = new APIKeyValidatorClient();
         try {
-            client = clientPool.get();
             return client.getAPIKeyData(context, apiVersion, apiKey, requiredAuthenticationLevel, clientDomain,
                     matchingResource, httpVerb, tenantDomain, keyManagers);
-        }catch (APISecurityException ex) {
+        } catch (APISecurityException ex) {
             throw new APISecurityException(ex.getErrorCode(),
                     "Resource forbidden", ex);
-       }catch (Exception e) {
+        } catch (Exception e) {
             throw new APISecurityException(APISecurityConstants.API_AUTH_GENERAL_ERROR,
                     "Error while accessing backend services for API key validation", e);
-        } finally {
-            try {
-                if (client != null) {
-                    clientPool.release(client);
-                }
-            } catch (Exception exception) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Releasing client from client pool caused an exception = " + exception.getMessage());
-                }
-            }
         }
     }
 
     @MethodStats
     public ArrayList<URITemplate> getAllURITemplates(String context, String apiVersion
-    )
+                                                    )
             throws APISecurityException {
-        APIKeyValidatorClient client = null;
+
+        APIKeyValidatorClient client = new APIKeyValidatorClient();
         try {
-            client = clientPool.get();
             return client.getAllURITemplates(context, apiVersion);
         } catch (Exception e) {
             throw new APISecurityException(APISecurityConstants.API_AUTH_GENERAL_ERROR,
-                                           "Error while accessing backend services for API key validation", e);
-        } finally {
-            try {
-                if (client != null) {
-                    clientPool.release(client);
-                }
-            } catch (Exception exception) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Releasing client from client pool caused an exception = " + exception.getMessage());
-                }
-            }
+                    "Error while accessing backend services for API key validation", e);
         }
     }
 
     @MethodStats
     public ArrayList<URITemplate> getAPIProductURITemplates(String context, String apiVersion)
-                                                                                throws APISecurityException {
-        APIKeyValidatorClient client = null;
+            throws APISecurityException {
+
+        APIKeyValidatorClient client = new APIKeyValidatorClient();
         try {
-            client = clientPool.get();
             return client.getAPIProductURITemplates(context, apiVersion);
         } catch (Exception e) {
             throw new APISecurityException(APISecurityConstants.API_AUTH_GENERAL_ERROR,
                     "Error while accessing backend services for API key validation", e);
-        } finally {
-            try {
-                if (client != null) {
-                    clientPool.release(client);
-                }
-            } catch (Exception exception) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Releasing client from client pool caused an exception = " + exception.getMessage());
-                }
-            }
         }
     }
 
@@ -122,26 +91,30 @@ public class WSAPIKeyDataStore implements APIKeyDataStore {
                                                         String tenantDomain, String keyManager)
             throws APISecurityException {
 
-        APIKeyValidatorClient client = null;
+        APIKeyValidatorClient client = new APIKeyValidatorClient();
         try {
-            client = clientPool.get();
-            return client.validateSubscription(context, version, consumerKey,tenantDomain, keyManager);
+            return client.validateSubscription(context, version, consumerKey, tenantDomain, keyManager);
         } catch (APISecurityException ex) {
             throw new APISecurityException(ex.getErrorCode(),
                     "Resource forbidden", ex);
         } catch (Exception e) {
             throw new APISecurityException(APISecurityConstants.API_AUTH_GENERAL_ERROR,
                     "Error while accessing backend services for subscription validation", e);
-        } finally {
-            try {
-                if (client != null) {
-                    clientPool.release(client);
-                }
-            } catch (Exception exception) {
-                if (log.isDebugEnabled()) {
-                    log.debug("Releasing client from client pool caused an exception = " + exception.getMessage());
-                }
-            }
+        }
+    }
+
+    @Override
+    public boolean validateScopes(TokenValidationContext tokenValidationContext, String tenantDomain)
+            throws APISecurityException {
+
+        APIKeyValidatorClient client = new APIKeyValidatorClient();
+        try {
+            return client.validateScopes(tokenValidationContext, tenantDomain);
+        } catch (APISecurityException ex) {
+            throw new APISecurityException(ex.getErrorCode(), "Resource forbidden", ex);
+        } catch (Exception e) {
+            throw new APISecurityException(APISecurityConstants.API_AUTH_GENERAL_ERROR,
+                    "Error while accessing backend services for scope validation", e);
         }
     }
 

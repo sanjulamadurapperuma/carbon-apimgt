@@ -17,6 +17,7 @@
  */
 
 import React from 'react';
+import 'AppComponents/Shared/testconsole.css';
 import { withStyles } from '@material-ui/core/styles';
 import PropTypes from 'prop-types';
 import Progress from 'AppComponents/Shared/Progress';
@@ -172,6 +173,7 @@ class TestConsole extends React.Component {
         let urls;
         let httpVal;
         let httpsVal;
+        let basePath;
         const user = AuthManager.getUser();
         const promisedAPI = API.getAPIById(apiObj.id);
         promisedAPI
@@ -234,11 +236,14 @@ class TestConsole extends React.Component {
                     urls = settingsNew.environment.map((endpoints) => { return endpoints.endpoints; });
                     httpVal = urls.map((val) => { return val.http; });
                     httpsVal = urls.map((value) => { return value.https; });
+                    basePath = apiData.context + '/' + apiData.version;
                     newServer.push({ url: httpsVal + apiData.context + '/' + apiData.version });
                     newServer.push({ url: httpVal + apiData.context + '/' + apiData.version });
                 }
                 this.setState({
                     settings: newServer,
+                    host: httpsVal[0].split('//')[1],
+                    baseUrl: basePath,
                 });
             });
     }
@@ -416,7 +421,7 @@ class TestConsole extends React.Component {
         const { classes } = this.props;
         const {
             swagger, api, securitySchemeType, selectedEnvironment, productionAccessToken, sandboxAccessToken,
-            labels, environments, scopes, username, password, selectedKeyType, serverError, settings,
+            labels, environments, scopes, username, password, selectedKeyType, serverError, settings, host, baseUrl,
         } = this.state;
         if (serverError) {
             return (
@@ -425,14 +430,18 @@ class TestConsole extends React.Component {
                 </Typography>
             );
         }
-
-        if (api == null || swagger == null) {
+        if (!api || !swagger || !settings) {
             return <Progress />;
         }
-
         let authorizationHeader = api.authorizationHeader ? api.authorizationHeader : 'Authorization';
         authorizationHeader = 'testkey';
-        swagger.servers = settings;
+        if (!swagger.openapi) {
+            swagger.host = host;
+            swagger.basePath = baseUrl;
+            swagger.schemes = ['https'];
+        } else {
+            swagger.servers = settings;
+        }
         const isProtoTyped = api.lifeCycleStatus.toLowerCase() === 'prototyped';
         const enableForTest = api.enableStore === false;
         return (
@@ -448,7 +457,7 @@ class TestConsole extends React.Component {
                         <Typography variant='caption' component='div' className={classes.helpText}>
                             <FormattedMessage
                                 id='APis.Details.tryout.help.main'
-                                defaultMessage='Test the APIs while in Development stage.'
+                                defaultMessage='Test APIs while in the Development stage.'
                             />
                         </Typography>
                         <div className={classes.messageBox}>
@@ -463,7 +472,7 @@ class TestConsole extends React.Component {
                                     <Typography component='p'>
                                         <FormattedMessage
                                             id='Apis.Details.tryout.initialize.test'
-                                            defaultMessage='Initialize the API to Prototype(testing) state'
+                                            defaultMessage='Initialize the API for the testing phase'
                                         />
                                     </Typography>
                                     <div className={classes.actions}>
@@ -530,15 +539,6 @@ class TestConsole extends React.Component {
                         type='info'
                         message='API should be in prototype(testing) state. Please demote to created state and click
                         on the initialize Test button in the Test Console left menu item.'
-                    />
-                )}
-                {(!isProtoTyped) && (
-                    <Banner
-                        disableActions
-                        dense
-                        paperProps={{ elevation: 1 }}
-                        type='info'
-                        message='This API is not in the prototype-test state.'
                     />
                 )}
             </>

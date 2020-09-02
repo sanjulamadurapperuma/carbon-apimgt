@@ -19,7 +19,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { Route, Switch, Redirect } from 'react-router-dom';
-import MuiThemeProvider from '@material-ui/core/styles/MuiThemeProvider';
+import { ThemeProvider as MuiThemeProvider } from '@material-ui/core/styles';
 import createMuiTheme from '@material-ui/core/styles/createMuiTheme';
 import Hidden from '@material-ui/core/Hidden';
 import ResourceNotFound from 'AppComponents/Base/Errors/ResourceNotFound';
@@ -82,6 +82,14 @@ let theme = createMuiTheme(themeJSON);
 theme = {
     ...theme,
     overrides: {
+        MuiRadio: {
+            colorSecondary: {
+                '&$checked': { color: theme.palette.primary.main },
+                '&$disabled': {
+                    color: theme.palette.action.disabled,
+                },
+            },
+        },
         MuiDrawer: {
             paper: {
                 backgroundColor: '#18202c',

@@ -554,6 +554,14 @@ public interface APIProvider extends APIManager {
     Set getTierPermissions() throws APIManagementException;
 
     /**
+     * Get the given Subscription Throttle Policy Permission
+     *
+     * @return Subscription Throttle Policy
+     * @throws APIManagementException If failed to retrieve Subscription Throttle Policy Permission
+     */
+    Object getThrottleTierPermission(String tierName) throws APIManagementException;
+
+    /**
      * Get the list of Custom InSequences.
      * @return List of available sequences
      * @throws APIManagementException
@@ -1483,11 +1491,8 @@ public interface APIProvider extends APIManager {
      * @param api           API Object
      * @param apiIdentifier api identifier
      * @throws APIManagementException if failed to add the schema as a resource to registry
-     * @throws IOException            if getTenantConfigContent returns nothing (But Never Happens that)
-     * @throws ParseException         for json file reading
      */
-    void publishInPrivateJet(API api, APIIdentifier apiIdentifier) throws ParseException,
-            UserStoreException, RegistryException, IllegalAccessException, InstantiationException, ClassNotFoundException, APIManagementException;
+    void publishInPrivateJet(API api, APIIdentifier apiIdentifier) throws APIManagementException;
 
     /**
      * Retrieve the status information of the deployments of APIs cloud clusters

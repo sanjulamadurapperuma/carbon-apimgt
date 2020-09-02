@@ -349,7 +349,24 @@ ExceptionCodes implements ErrorHandler {
 
     CURRENT_PASSWORD_INCORRECT(901451, "Current password incorrect", 400, "The current password entered is incorrect"),
 
-    PASSWORD_PATTERN_INVALID(901452, "Password pattern invalid", 400, "Password entered is invalid since it doesn't comply with the pattern/policy configured");
+    PASSWORD_PATTERN_INVALID(901452, "Password pattern invalid", 400, "Password entered is invalid since it doesn't comply with the pattern/policy configured"),
+
+    //Tenant theme related codes
+    TENANT_THEME_IMPORT_FAILED(901700, "Failed to import tenant theme of tenant %s", 500,
+            "%s"),
+    TENANT_THEME_EXPORT_FAILED(901701, "Failed to export tenant theme of tenant %s", 500,
+            "%s"),
+    TENANT_THEME_IMPORT_NOT_ALLOWED(901702, "Super Tenant not allowed to import tenant theme", 400,
+            "Super Tenant %s is not allowed to import a tenant theme"),
+
+
+    //API mediation policies related
+    MEDIATION_POLICY_API_ALREADY_EXISTS(901800, "Mediation Policy Already Exists", 409,
+                                            "A mediation policy with the given name is already attached to the API"),
+
+    //mediation policies related common errors
+    MEDIATION_POLICY_NAME_TOO_LONG(900850, "Mediation Policy Name Too Long", 400,
+                                                "The name of the mediation policy exceeds the max length (%s)");
 
     private final long errorCode;
     private final String errorMessage;

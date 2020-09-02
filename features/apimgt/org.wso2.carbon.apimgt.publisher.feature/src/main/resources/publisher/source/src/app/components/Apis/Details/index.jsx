@@ -34,6 +34,7 @@ import PropertiesIcon from '@material-ui/icons/List';
 import SubscriptionsIcon from '@material-ui/icons/RssFeed';
 import MonetizationIcon from '@material-ui/icons/LocalAtm';
 import StoreIcon from '@material-ui/icons/Store';
+import DashboardIcon from '@material-ui/icons/Dashboard';
 import { withStyles } from '@material-ui/core/styles';
 import { injectIntl, defineMessages } from 'react-intl';
 import {
@@ -54,6 +55,7 @@ import LastUpdatedTime from 'AppComponents/Apis/Details/components/LastUpdatedTi
 import Overview from './NewOverview/Overview';
 import DesignConfigurations from './Configuration/DesignConfigurations';
 import RuntimeConfiguration from './Configuration/RuntimeConfiguration';
+import RuntimeConfigurationWebSocket from './Configuration/RuntimeConfigurationWebSocket';
 import LifeCycle from './LifeCycle/LifeCycle';
 import Documents from './Documents';
 import Operations from './Operations/Operations';
@@ -520,8 +522,8 @@ class Details extends Component {
                                 id: 'Apis.Details.index.overview',
                                 defaultMessage: 'overview',
                             })}
-                            iconText='overview'
                             to={pathPrefix + 'overview'}
+                            Icon={<DashboardIcon />}
                         />
                         <LeftMenuItem
                             text={intl.formatMessage({
@@ -540,6 +542,17 @@ class Details extends Component {
                                 })}
                                 route='runtime-configuration'
                                 to={pathPrefix + 'runtime-configuration'}
+                                Icon={<RuntimeConfigurationIcon />}
+                            />
+                        )}
+                        {api.isWebSocket() && (
+                            <LeftMenuItem
+                                text={intl.formatMessage({
+                                    id: 'Apis.Details.index.runtime.configs',
+                                    defaultMessage: 'Runtime Configurations',
+                                })}
+                                route='runtime-configuration'
+                                to={pathPrefix + 'runtime-configuration-websocket'}
                                 Icon={<RuntimeConfigurationIcon />}
                             />
                         )}
@@ -588,7 +601,7 @@ class Details extends Component {
                             <LeftMenuItem
                                 text={intl.formatMessage({
                                     id: 'Apis.Details.index.left.menu.scope',
-                                    defaultMessage: 'scopes',
+                                    defaultMessage: 'Local Scopes',
                                 })}
                                 to={pathPrefix + 'scopes'}
                                 Icon={<ScopesIcon />}
@@ -618,14 +631,17 @@ class Details extends Component {
                             to={pathPrefix + 'documents'}
                             Icon={<DocumentsIcon />}
                         />
-                        <LeftMenuItem
-                            text={intl.formatMessage({
-                                id: 'Apis.Details.index.Tryout',
-                                defaultMessage: 'test console',
-                            })}
-                            to={pathPrefix + 'test-console'}
-                            iconText='test'
-                        />
+                        {!api.isWebSocket() && !isAPIProduct && !api.isGraphql() && !isRestricted(['apim:api_publish'],
+                            api) && (
+                            <LeftMenuItem
+                                text={intl.formatMessage({
+                                    id: 'Apis.Details.index.Tryout',
+                                    defaultMessage: 'test console',
+                                })}
+                                to={pathPrefix + 'test-console'}
+                                iconText='test'
+                            />
+                        )}
                         {!api.isWebSocket() && !isRestricted(['apim:api_publish'], api) && (
                             <LeftMenuItem
                                 text={intl.formatMessage({
@@ -683,6 +699,10 @@ class Details extends Component {
                                 <Route
                                     path={Details.subPaths.RUNTIME_CONFIGURATION}
                                     component={() => <RuntimeConfiguration api={api} />}
+                                />
+                                <Route
+                                    path={Details.subPaths.RUNTIME_CONFIGURATION_WEBSOCKET}
+                                    component={() => <RuntimeConfigurationWebSocket api={api} />}
                                 />
                                 <Route
                                     path={Details.subPaths.CONFIGURATION_PRODUCT}
@@ -788,6 +808,7 @@ Details.subPaths = {
     RUNTIME_CONFIGURATION: '/apis/:api_uuid/runtime-configuration',
     CONFIGURATION_PRODUCT: '/api-products/:apiprod_uuid/configuration',
     RUNTIME_CONFIGURATION_PRODUCT: '/api-products/:apiprod_uuid/runtime-configuration',
+    RUNTIME_CONFIGURATION_WEBSOCKET: '/apis/:api_uuid/runtime-configuration-websocket',
     ENDPOINTS: '/apis/:api_uuid/endpoints',
     ENVIRONMENTS: '/apis/:api_uuid/environments',
     OPERATIONS: '/apis/:api_uuid/operations',

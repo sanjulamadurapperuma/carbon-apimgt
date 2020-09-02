@@ -39,7 +39,6 @@ import org.wso2.carbon.apimgt.api.model.APIStore;
 import org.wso2.carbon.apimgt.api.model.AccessTokenInfo;
 import org.wso2.carbon.apimgt.api.model.ApiTypeWrapper;
 import org.wso2.carbon.apimgt.api.model.Application;
-import org.wso2.carbon.apimgt.api.model.ApplicationConstants;
 import org.wso2.carbon.apimgt.api.model.BlockConditionsDTO;
 import org.wso2.carbon.apimgt.api.model.KeyManager;
 import org.wso2.carbon.apimgt.api.model.LifeCycleEvent;
@@ -402,6 +401,7 @@ public class APIMgtDAOTest {
         subscriber.setTenantId(MultitenantConstants.SUPER_TENANT_ID);
         apiMgtDAO.addSubscriber(subscriber, null);
         Application application = new Application("testApplication2", subscriber);
+        application.setUUID(UUID.randomUUID().toString());
         int applicationId = apiMgtDAO.addApplication(application, subscriber.getName());
         application.setId(applicationId);
         assertTrue(applicationId > 0);
@@ -601,96 +601,7 @@ public class APIMgtDAOTest {
         assertTrue(apiMgtDAO.isPolicyExist(PolicyConstants.POLICY_LEVEL_API, -1234, apiPolicy.getPolicyName()));
     }
 
-    @Test
-    public void testValidateSubscriptionDetails() throws APIManagementException {
 
-        Subscriber subscriber = new Subscriber("sub_user1");
-        subscriber.setEmail("user1@wso2.com");
-        subscriber.setSubscribedDate(new Date());
-        subscriber.setTenantId(MultitenantConstants.SUPER_TENANT_ID);
-        apiMgtDAO.addSubscriber(subscriber, null);
-
-        Application application = new Application("APP-10", subscriber);
-        int applicationId = apiMgtDAO.addApplication(application, subscriber.getName());
-
-        APIIdentifier apiId = new APIIdentifier("provider1", "WSO2-Utils", "V1.0.0");
-        apiId.setTier("T10");
-        API api = new API(apiId);
-        api.setContext("/wso2utils");
-        api.setContextTemplate("/wso2utils/{version}");
-        apiMgtDAO.addAPI(api, MultitenantConstants.SUPER_TENANT_ID);
-        ApiTypeWrapper apiTypeWrapper = new ApiTypeWrapper(api);
-        int subsId = apiMgtDAO.addSubscription(apiTypeWrapper, applicationId, "UNBLOCKED", "sub_user1");
-        String[] apiDetail = apiMgtDAO.getAPIDetailsByContext("/wso2utils");
-        assertTrue(apiDetail.length == 2);
-        assertEquals(apiDetail[0], "WSO2-Utils");
-        assertEquals(apiDetail[1], "provider1");
-        String policyName = "T10";
-        SubscriptionPolicy policy = (SubscriptionPolicy) getSubscriptionPolicy(policyName);
-        policy.setRateLimitCount(20);
-        policy.setTenantId(MultitenantConstants.SUPER_TENANT_ID);
-        policy.setMonetizationPlan(APIConstants.Monetization.FIXED_RATE);
-        apiMgtDAO.addSubscriptionPolicy(policy);
-
-        APIKeyValidationInfoDTO infoDTO = new APIKeyValidationInfoDTO();
-        apiMgtDAO.createApplicationKeyTypeMappingForManualClients(APIConstants.API_KEY_TYPE_PRODUCTION, "APP-10",
-                "sub_user1", "clientId1","Default");
-        Map<String, String> consumerkeyByApplicationIdAndKeyType =
-                apiMgtDAO.getConsumerkeyByApplicationIdAndKeyType(applicationId, APIConstants.API_KEY_TYPE_PRODUCTION);
-        assertEquals(consumerkeyByApplicationIdAndKeyType.get("Default"), "clientId1");
-        assertTrue(apiMgtDAO.isMappingExistsforConsumerKey("Default","clientId1"));
-        boolean validation = apiMgtDAO.validateSubscriptionDetails("/wso2utils", "V1.0.0", "clientId1","Default",
-                infoDTO);
-        APIKeyValidationInfoDTO infoDTO1 = new APIKeyValidationInfoDTO();
-        apiMgtDAO.validateSubscriptionDetails(infoDTO1, "/wso2utils", "V1.0.0", "clientId1", "Default", false);
-        if (validation) {
-            assertEquals(20, infoDTO.getSpikeArrestLimit());
-        } else {
-            assertTrue("Expected validation for subscription details - true, but found - " + validation, validation);
-        }
-        if (infoDTO1.isAuthorized()) {
-            assertEquals(20, infoDTO1.getSpikeArrestLimit());
-        } else {
-            assertTrue("Expected validation for subscription details - true, but found - " + infoDTO1.isAuthorized(),
-                    infoDTO1.isAuthorized());
-        }
-        apiMgtDAO.updateSubscriptionStatus(subsId, APIConstants.SubscriptionStatus.BLOCKED);
-        APIKeyValidationInfoDTO infoDtoForBlocked = new APIKeyValidationInfoDTO();
-        assertFalse(apiMgtDAO.validateSubscriptionDetails("/wso2utils", "V1.0.0", "clientId1", "Default",
-                infoDtoForBlocked));
-        assertEquals(infoDtoForBlocked.getValidationStatus(), APIConstants.KeyValidationStatus.API_BLOCKED);
-        APIKeyValidationInfoDTO infoDtoForBlocked1 = new APIKeyValidationInfoDTO();
-        assertFalse(apiMgtDAO.validateSubscriptionDetails(infoDtoForBlocked1, "/wso2utils", "V1.0.0", "clientId1"
-                ,"Default",false).isAuthorized());
-        assertEquals(infoDtoForBlocked1.getValidationStatus(), APIConstants.KeyValidationStatus.API_BLOCKED);
-        APIKeyValidationInfoDTO infoDtoForOnHold = new APIKeyValidationInfoDTO();
-        apiMgtDAO.updateSubscriptionStatus(subsId, APIConstants.SubscriptionStatus.ON_HOLD);
-        assertFalse(apiMgtDAO.validateSubscriptionDetails("/wso2utils", "V1.0.0", "clientId1", "Default",
-                infoDtoForOnHold));
-        assertEquals(infoDtoForOnHold.getValidationStatus(), APIConstants.KeyValidationStatus.SUBSCRIPTION_INACTIVE);
-        APIKeyValidationInfoDTO infoDtoForOnHold1 = new APIKeyValidationInfoDTO();
-        apiMgtDAO.updateSubscriptionStatus(subsId, APIConstants.SubscriptionStatus.ON_HOLD);
-        assertFalse(apiMgtDAO.validateSubscriptionDetails(infoDtoForOnHold1, "/wso2utils", "V1.0.0", "clientId1",
-                "Default",false).isAuthorized());
-        assertEquals(infoDtoForOnHold1.getValidationStatus(), APIConstants.KeyValidationStatus.SUBSCRIPTION_INACTIVE);
-        apiMgtDAO.updateSubscriptionStatus(subsId, APIConstants.SubscriptionStatus.REJECTED);
-        APIKeyValidationInfoDTO infoDotForRejected = new APIKeyValidationInfoDTO();
-        assertFalse(apiMgtDAO.validateSubscriptionDetails("/wso2utils", "V1.0.0", "clientId1","Default", infoDotForRejected));
-        assertEquals(infoDotForRejected.getValidationStatus(), APIConstants.KeyValidationStatus.SUBSCRIPTION_INACTIVE);
-        APIKeyValidationInfoDTO infoDotForRejected1 = new APIKeyValidationInfoDTO();
-        assertFalse(apiMgtDAO.validateSubscriptionDetails(infoDotForRejected1, "/wso2utils", "V1.0.0", "clientId1",
-                "Default",false).isAuthorized());
-        assertEquals(infoDotForRejected1.getValidationStatus(), APIConstants.KeyValidationStatus.SUBSCRIPTION_INACTIVE);
-        apiMgtDAO.updateSubscriptionStatus(subsId, APIConstants.SubscriptionStatus.PROD_ONLY_BLOCKED);
-        APIKeyValidationInfoDTO infoDotForProdOnlyBlocked = new APIKeyValidationInfoDTO();
-        assertFalse(apiMgtDAO.validateSubscriptionDetails("/wso2utils", "V1.0.0", "clientId1","Default",
-                infoDotForProdOnlyBlocked));
-        assertEquals(infoDotForProdOnlyBlocked.getValidationStatus(), APIConstants.KeyValidationStatus.API_BLOCKED);
-        APIKeyValidationInfoDTO infoDotForProdOnlyBlocked1 = new APIKeyValidationInfoDTO();
-        assertFalse(apiMgtDAO.validateSubscriptionDetails(infoDotForProdOnlyBlocked1, "/wso2utils", "V1.0.0",
-                "clientId1", "Default",false).isAuthorized());
-        assertEquals(infoDotForProdOnlyBlocked1.getValidationStatus(), APIConstants.KeyValidationStatus.API_BLOCKED);
-    }
 
     private Policy getPolicyAPILevelPerUser(String policyName) {
         APIPolicy policy = new APIPolicy(policyName);
@@ -953,19 +864,7 @@ public class APIMgtDAOTest {
         deleteSubscriber(subscriber.getId());
     }
 
-    @Test
-    public void testGetOAuthApplicationFromConsumerKey() throws Exception {
-        OAuthApplicationInfo oAuthApplicationInfo = apiMgtDAO.getOAuthApplication("getOAuthApplication");
-        assertEquals(oAuthApplicationInfo.getCallBackURL(), "http://localhost");
-        assertEquals(oAuthApplicationInfo.getClientId(), "getOAuthApplication");
-        assertEquals(oAuthApplicationInfo.getClientSecret(), "getOAuthApplication");
-        assertEquals(oAuthApplicationInfo.getParameter(ApplicationConstants.OAUTH_CLIENT_NAME),
-                "admin-app1-Production");
-        assertEquals(oAuthApplicationInfo.getParameter(ApplicationConstants.OAUTH_CLIENT_GRANT), "client_credentials");
-        Subscriber subscriber = apiMgtDAO.getOwnerForConsumerApp("getOAuthApplication");
-        assertEquals(subscriber.getTenantId(), -1234);
-        assertEquals(subscriber.getName(), "getOAuthApplication");
-    }
+
 
     @Test
     public void testDeleteSubscriptionsForapiId() throws Exception {
@@ -1007,9 +906,9 @@ public class APIMgtDAOTest {
         String clientIdProduction = UUID.randomUUID().toString();
         String clientIdSandbox = UUID.randomUUID().toString();
         apiMgtDAO.createApplicationKeyTypeMappingForManualClients(APIConstants.API_KEY_TYPE_PRODUCTION, application
-                .getName(), subscriber.getName(), clientIdProduction,"Default");
+                .getName(), subscriber.getName(), clientIdProduction, "Default", UUID.randomUUID().toString());
         apiMgtDAO.createApplicationKeyTypeMappingForManualClients(APIConstants.API_KEY_TYPE_SANDBOX, application
-                .getName(), subscriber.getName(), clientIdSandbox,"Default");
+                .getName(), subscriber.getName(), clientIdSandbox, "Default", UUID.randomUUID().toString());
         int appIdProduction = insertConsumerApp(clientIdProduction, application.getName(), subscriber.getName());
         int appIdSandBox = insertConsumerApp(clientIdSandbox, application.getName(), subscriber.getName());
         String tokenProduction = UUID.randomUUID().toString();

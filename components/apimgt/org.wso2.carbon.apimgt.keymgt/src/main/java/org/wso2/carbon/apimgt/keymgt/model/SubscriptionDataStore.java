@@ -121,5 +121,10 @@ public interface SubscriptionDataStore {
     
     void removeApiPolicy(ApiPolicy apiPolicy);
 
+    boolean isApisInitialized();
+
+    boolean isApiPoliciesInitialized();
+
+    API getDefaultApiByContext(String context);
 }
 

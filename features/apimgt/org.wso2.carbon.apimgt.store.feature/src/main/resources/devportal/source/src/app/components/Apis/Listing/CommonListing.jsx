@@ -179,6 +179,8 @@ class CommonListing extends React.Component {
                 this.showToggle = false;
             }
             defaultApiView = defaultApiView[0];
+        } else {
+            defaultApiView = localStorage.getItem('portal.listType') || defaultApiView;
         }
         this.state = {
             listType: defaultApiView,
@@ -196,6 +198,7 @@ class CommonListing extends React.Component {
      * @memberof CommonListing
      */
     setListType = (value) => {
+        localStorage.setItem('portal.listType', value);
         this.setState({ listType: value });
     };
 
@@ -308,7 +311,7 @@ class CommonListing extends React.Component {
                             <Icon>keyboard_arrow_right</Icon>
                         </div>
                         <div className={classes.rotatedText} onClick={this.toggleLeftMenu}>
-                            <FormattedMessage defaultMessage='Tag Cloud / API Categories' id='Apis.Listing.Listing.ApiTagCloud.title' />
+                            <FormattedMessage defaultMessage='Tags / API Categories' id='Apis.Listing.Listing.ApiTagCloud.title' />
                         </div>
                     </div>
                 )}

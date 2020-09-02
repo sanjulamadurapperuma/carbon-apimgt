@@ -18,23 +18,47 @@
 
 package org.wso2.carbon.apimgt.impl.gatewayartifactsynchronizer;
 
-import com.google.common.io.ByteStreams;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.wso2.carbon.apimgt.api.APIManagementException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.wso2.carbon.apimgt.api.model.Label;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.dao.ApiMgtDAO;
+import org.wso2.carbon.apimgt.impl.dto.EventHubConfigurationDto;
+import org.wso2.carbon.apimgt.impl.dto.GatewayArtifactSynchronizerProperties;
 import org.wso2.carbon.apimgt.impl.gatewayartifactsynchronizer.exception.ArtifactSynchronizerException;
-
-import java.io.ByteArrayInputStream;
+import org.wso2.carbon.apimgt.impl.internal.ServiceReferenceHolder;
+import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class DBRetriever implements ArtifactRetriever {
 
     private static final Log log = LogFactory.getLog(DBRetriever.class);
     protected ApiMgtDAO apiMgtDAO = ApiMgtDAO.getInstance();
+    protected EventHubConfigurationDto eventHubConfigurationDto = ServiceReferenceHolder.getInstance()
+            .getAPIManagerConfigurationService().getAPIManagerConfiguration().getEventHubConfigurationDto();
+    protected GatewayArtifactSynchronizerProperties gatewayArtifactSynchronizerProperties =
+            ServiceReferenceHolder.getInstance().getAPIManagerConfigurationService().getAPIManagerConfiguration()
+                    .getGatewayArtifactSynchronizerProperties();
+    private String baseURL = eventHubConfigurationDto.getServiceUrl() +
+            APIConstants.INTERNAL_WEB_APP_EP ;
 
     @Override
     public void init() throws ArtifactSynchronizerException {
@@ -44,39 +68,129 @@ public class DBRetriever implements ArtifactRetriever {
     @Override
     public String retrieveArtifact(String APIId, String gatewayLabel, String gatewayInstruction)
             throws ArtifactSynchronizerException {
-
-        String gatewayRuntimeArtifacts;
+        CloseableHttpResponse httpResponse = null;
         try {
-            ByteArrayInputStream byteStream =
-                    apiMgtDAO.getGatewayPublishedAPIArtifacts(APIId, gatewayLabel, gatewayInstruction);
-            byte[] bytes = ByteStreams.toByteArray(byteStream);
-            gatewayRuntimeArtifacts = new String(bytes);
-            if (log.isDebugEnabled()) {
-                log.debug("Successfully retrieved Artifact of " + APIId);
-            }
-        } catch (APIManagementException | IOException e) {
-            throw new ArtifactSynchronizerException("Error retrieving Artifact belongs to  " + APIId + " from DB", e);
+            Thread.sleep(gatewayArtifactSynchronizerProperties.getEventWaitingTime());
+        } catch (InterruptedException e) {
+            log.error("Error occurred while waiting to retrieve artifacts from event hub");
         }
-        return gatewayRuntimeArtifacts;
+        try {
+            String endcodedgatewayLabel= URLEncoder.encode(gatewayLabel, APIConstants.DigestAuthConstants.CHARSET);
+            String path = APIConstants.GatewayArtifactSynchronizer.SYNAPSE_ARTIFACTS + "?apiId=" + APIId +
+                    "&gatewayInstruction=" + gatewayInstruction + "&gatewayLabel="+ endcodedgatewayLabel;
+            String endpoint = baseURL + path;
+            httpResponse = invokeService(endpoint);
+            String gatewayRuntimeArtifact = null;
+            if (httpResponse.getEntity() != null ) {
+                gatewayRuntimeArtifact = EntityUtils.toString(httpResponse.getEntity(),
+                        APIConstants.DigestAuthConstants.CHARSET);
+                httpResponse.close();
+            } else {
+                throw new ArtifactSynchronizerException("HTTP response is empty");
+            }
+            return gatewayRuntimeArtifact;
+        } catch (IOException e) {
+            String msg = "Error while executing the http client";
+            log.error(msg, e);
+            throw new ArtifactSynchronizerException(msg, e);
+        }
     }
 
     @Override
     public List<String> retrieveAllArtifacts(String label) throws ArtifactSynchronizerException {
         List<String> gatewayRuntimeArtifactsArray = new ArrayList<>();
+        CloseableHttpResponse httpResponse = null;
         try {
-            List<ByteArrayInputStream> baip = apiMgtDAO.getAllGatewayPublishedAPIArtifacts(label);
-            for (ByteArrayInputStream byteStream :baip){
-                byte[] bytes = ByteStreams.toByteArray(byteStream);
-                String  gatewayRuntimeArtifacts = new String(bytes);
-                gatewayRuntimeArtifactsArray.add(gatewayRuntimeArtifacts);
+            String endcodedgatewayLabel= URLEncoder.encode(label, APIConstants.DigestAuthConstants.CHARSET);
+            String path = APIConstants.GatewayArtifactSynchronizer.GATEAY_SYNAPSE_ARTIFACTS
+                    + "?gatewayLabel="+ endcodedgatewayLabel;
+            String endpoint = baseURL + path;
+            httpResponse = invokeService(endpoint);
+            String responseString;
+            if (httpResponse.getEntity() != null ) {
+                responseString = EntityUtils.toString(httpResponse.getEntity(),
+                        APIConstants.DigestAuthConstants.CHARSET);
+                httpResponse.close();
+            } else {
+                throw new ArtifactSynchronizerException("HTTP response is empty");
             }
-            if (log.isDebugEnabled()){
-                log.debug("Successfully retrieved Artifacts from DB");
+            JSONObject artifactObject = new JSONObject(responseString);
+            JSONArray jArray = (JSONArray)artifactObject.get("list");
+            if (jArray != null) {
+                for (int i = 0; i < jArray.length(); i++) {
+                    gatewayRuntimeArtifactsArray.add(jArray.get(i).toString());
+                }
             }
-        } catch (APIManagementException | IOException e) {
-            throw new ArtifactSynchronizerException("Error retrieving Artifact from DB", e);
+            return gatewayRuntimeArtifactsArray;
+        } catch (IOException e) {
+            String msg = "Error while executing the http client";
+            log.error(msg, e);
+            throw new ArtifactSynchronizerException(msg, e);
         }
-        return gatewayRuntimeArtifactsArray;
+    }
+
+    @Override
+    public Map<String, String> retrieveAttributes(String apiName, String version, String tenantDomain)
+            throws ArtifactSynchronizerException {
+        CloseableHttpResponse httpResponse = null;
+        try {
+            String endcodedVersion= URLEncoder.encode(version, APIConstants.DigestAuthConstants.CHARSET);
+            String path = APIConstants.GatewayArtifactSynchronizer.SYNAPSE_ATTRIBUTES + "?apiName=" + apiName +
+                    "&tenantDomain="+ tenantDomain + "&version=" + endcodedVersion;
+            String endpoint = baseURL + path;
+            httpResponse = invokeService(endpoint);
+            String responseString;
+            if (httpResponse.getEntity() != null ) {
+                responseString = EntityUtils.toString(httpResponse.getEntity(),
+                        APIConstants.DigestAuthConstants.CHARSET);
+                httpResponse.close();
+            } else {
+                throw new ArtifactSynchronizerException("HTTP response is empty");
+            }
+            Map <String, String> apiAttribute = new HashMap<>();
+
+            JSONObject artifactObject = new JSONObject(responseString);
+            String label = null;
+            String apiId = null;
+            try {
+                apiId = (String)artifactObject.get(APIConstants.GatewayArtifactSynchronizer.API_ID);
+                String labelsStr = artifactObject.get(APIConstants.GatewayArtifactSynchronizer.LABELS).toString();
+
+                Set<String> labelsSet = new Gson().fromJson(labelsStr, new TypeToken<HashSet<String>>(){}.getType());
+                Set<String> gatewaySubscribedLabel = gatewayArtifactSynchronizerProperties.getGatewayLabels();
+                if (!labelsSet.isEmpty() || !gatewaySubscribedLabel.isEmpty()){
+                    labelsSet.retainAll(gatewaySubscribedLabel);
+                    if (!labelsSet.isEmpty()){
+                        label = labelsSet.iterator().next();
+                    }
+                }
+            } catch (ClassCastException e){
+                log.error("Unexpected response received from the storage." + e.getMessage());
+            }
+
+            apiAttribute.put(APIConstants.GatewayArtifactSynchronizer.API_ID, apiId);
+            apiAttribute.put(APIConstants.GatewayArtifactSynchronizer.LABEL, label);
+            return apiAttribute;
+        } catch (IOException e) {
+            String msg = "Error while executing the http client";
+            log.error(msg, e);
+            throw new ArtifactSynchronizerException(msg, e);
+        }
+    }
+
+    private CloseableHttpResponse invokeService(String endpoint) throws IOException, ArtifactSynchronizerException {
+        HttpGet method = new HttpGet(endpoint);
+        URL url = new URL(endpoint);
+        String username = eventHubConfigurationDto.getUsername();
+        String password = eventHubConfigurationDto.getPassword();
+        byte[] credentials = Base64.encodeBase64((username + APIConstants.DELEM_COLON + password).
+                getBytes(APIConstants.DigestAuthConstants.CHARSET));
+        int port = url.getPort();
+        String protocol = url.getProtocol();
+        method.setHeader(APIConstants.AUTHORIZATION_HEADER_DEFAULT , APIConstants.AUTHORIZATION_BASIC
+                + new String(credentials, APIConstants.DigestAuthConstants.CHARSET));
+        HttpClient httpClient = APIUtil.getHttpClient(port, protocol);
+        return  APIUtil.executeHTTPRequest(method, httpClient);
     }
 
     @Override

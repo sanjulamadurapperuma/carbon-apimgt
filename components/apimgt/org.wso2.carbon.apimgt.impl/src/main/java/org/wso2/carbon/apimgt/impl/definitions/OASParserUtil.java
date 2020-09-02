@@ -318,7 +318,9 @@ public class OASParserUtil {
                     if (sourceRequestBodies != null) {
                         for (String refKey : refCategoryEntry.getValue()) {
                             RequestBody requestBody = sourceRequestBodies.get(refKey);
-                            components.addRequestBodies(refKey, requestBody);
+                            if (requestBody != null) {
+                                components.addRequestBodies(refKey, requestBody);
+                            }
                         }
                     }
                 }
@@ -329,7 +331,9 @@ public class OASParserUtil {
                     if (sourceSchemas != null) {
                         for (String refKey : refCategoryEntry.getValue()) {
                             Schema schema = sourceSchemas.get(refKey);
-                            components.addSchemas(refKey, schema);
+                            if (schema != null) {
+                                components.addSchemas(refKey, schema);
+                            }
                         }
                     }
                 }
@@ -340,7 +344,9 @@ public class OASParserUtil {
                     if (parameters != null) {
                         for (String refKey : refCategoryEntry.getValue()) {
                             Parameter parameter = parameters.get(refKey);
-                            components.addParameters(refKey, parameter);
+                            if (parameter != null) {
+                                components.addParameters(refKey, parameter);
+                            }
                         }
                     }
                 }
@@ -351,7 +357,9 @@ public class OASParserUtil {
                     if (responses != null) {
                         for (String refKey : refCategoryEntry.getValue()) {
                             ApiResponse response = responses.get(refKey);
-                            components.addResponses(refKey, response);
+                            if (response != null) {
+                                components.addResponses(refKey, response);
+                            }
                         }
                     }
                 }
@@ -362,7 +370,9 @@ public class OASParserUtil {
                     if (headers != null) {
                         for (String refKey : refCategoryEntry.getValue()) {
                             Header header = headers.get(refKey);
-                            components.addHeaders(refKey, header);
+                            if (header != null) {
+                                components.addHeaders(refKey, header);
+                            }
                         }
                     }
                 }
@@ -597,9 +607,10 @@ public class OASParserUtil {
     private static void setRefOfParameters(List<Parameter> parameters, SwaggerUpdateContext context) {
         if (parameters != null) {
             for (Parameter parameter : parameters) {
-                Content content = parameter.getContent();
-
-                extractReferenceFromContent(content, context);
+                String ref = parameter.getSchema().get$ref();
+                if (ref != null) {
+                    addToReferenceObjectMap(ref, context);
+                }
             }
         }
     }
@@ -699,6 +710,9 @@ public class OASParserUtil {
         File[] listOfFiles = new File(extractedLocation).listFiles();
         File archiveDirectory = null;
         if (listOfFiles != null) {
+            if (listOfFiles.length > 1) {
+                throw new APIManagementException("Swagger Definitions should be placed under one root folder.");
+            }
             for (File file: listOfFiles) {
                 if (file.isDirectory()) {
                     archiveDirectory = file.getAbsoluteFile();
@@ -706,7 +720,8 @@ public class OASParserUtil {
                 }
             }
         }
-        //verify whether the zipped input is archive or file.
+        //Verify whether the zipped input is archive or file.
+        //If it is a single  swagger file without remote references it can be imported directly, without zipping.
         if (archiveDirectory == null) {
             throw new APIManagementException("Could not find an archive in the given ZIP file.");
         }
@@ -1322,24 +1337,11 @@ public class OASParserUtil {
      *
      * @param swaggerContent String
      * @param api            API
-     * @param isBasepathExtractedFromSwagger boolean
      * @return API
      */
-    public static API setExtensionsToAPI(String swaggerContent, API api, boolean isBasepathExtractedFromSwagger) throws APIManagementException {
+    public static API setExtensionsToAPI(String swaggerContent, API api) throws APIManagementException {
         APIDefinition apiDefinition = getOASParser(swaggerContent);
-        return apiDefinition.setExtensionsToAPI(swaggerContent, api, isBasepathExtractedFromSwagger);
-    }
-
-    /**
-     * This method returns extension of basepath related to micro-gw
-     *
-     * @param extensions Map<String, Object>
-     * @return String
-     * @throws APIManagementException throws if an error occurred
-     */
-    public static String getBasePathFromSwagger(Map<String, Object> extensions) throws APIManagementException {
-        Object basepath = extensions.get(APIConstants.X_WSO2_BASEPATH);
-        return basepath == null ? null : basepath.toString();
+        return apiDefinition.setExtensionsToAPI(swaggerContent, api);
     }
 
     /**

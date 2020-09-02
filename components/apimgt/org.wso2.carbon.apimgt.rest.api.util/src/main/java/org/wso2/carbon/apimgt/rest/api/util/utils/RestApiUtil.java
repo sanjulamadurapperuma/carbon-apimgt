@@ -42,7 +42,6 @@ import org.wso2.carbon.apimgt.api.ExceptionCodes;
 import org.wso2.carbon.apimgt.api.model.API;
 import org.wso2.carbon.apimgt.api.model.APIIdentifier;
 import org.wso2.carbon.apimgt.api.model.DuplicateAPIException;
-import org.wso2.carbon.apimgt.api.model.KeyManager;
 import org.wso2.carbon.apimgt.api.model.OAuthAppRequest;
 import org.wso2.carbon.apimgt.api.model.OAuthApplicationInfo;
 import org.wso2.carbon.apimgt.api.model.ResourceFile;
@@ -54,7 +53,6 @@ import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.APIManagerConfiguration;
 import org.wso2.carbon.apimgt.impl.APIManagerFactory;
 import org.wso2.carbon.apimgt.impl.definitions.OASParserUtil;
-import org.wso2.carbon.apimgt.impl.factory.KeyManagerHolder;
 import org.wso2.carbon.apimgt.impl.internal.ServiceReferenceHolder;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 import org.wso2.carbon.apimgt.rest.api.util.RestApiConstants;
@@ -612,6 +610,17 @@ public class RestApiUtil {
     }
 
     /**
+     * Check if the specified throwable e is happened as the provided meta information related to api is corrupted
+     *
+     * @param e throwable to check
+     * @return true if the specified throwable e is happened as the provided meta information is corrupted, false otherwise
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public static boolean isDueToMetaInfoIsCorrupted(Throwable e) {
+        return detailedMessageMatches(e, "Error while reading API meta information from path");
+    }
+
+    /**
      * Check if the specified throwable e is happened as the updated/new resource conflicting with an already existing
      * resource
      *
@@ -663,6 +672,18 @@ public class RestApiUtil {
     public static boolean rootCauseMessageMatches (Throwable e, String message) {
         Throwable rootCause = getPossibleErrorCause(e);
         return rootCause.getMessage().contains(message);
+    }
+
+    /**
+     * Check if the message of the detailed message of 'e' matches with the specified message
+     *
+     * @param e       throwable to check
+     * @param message error message
+     * @return true if the message of the root cause of 'e' matches with 'message'
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public static boolean detailedMessageMatches(Throwable e, String message) {
+        return e.getMessage().contains(message);
     }
 
     /**
@@ -877,6 +898,21 @@ public class RestApiUtil {
         NotFoundException notFoundException = buildNotFoundException(description);
         log.error(description, t);
         throw notFoundException;
+    }
+
+    /**
+     * Logs the error, builds a BadRequestException with specified details and throws it
+     *
+     * @param description description of the error
+     * @param t           Throwable instance
+     * @param log         Log instance
+     * @throws BadRequestException
+     */
+    public static void handleMetaInformationFailureError(String description, Throwable t, Log log)
+            throws BadRequestException {
+        BadRequestException badRequestException = buildBadRequestException(description);
+        log.error(description, t);
+        throw badRequestException;
     }
 
     /**
@@ -1396,20 +1432,20 @@ public class RestApiUtil {
      * @return A Dictionary with the white-listed URIs and the associated HTTP methods
      * @throws APIManagementException
      */
-    private static Dictionary<org.wso2.uri.template.URITemplate, List<String>> getWhiteListedURIsToMethodsMapFromConfig()
+    private static Dictionary<org.wso2.uri.template.URITemplate, List<String>> getAllowedURIsToMethodsMapFromConfig()
             throws APIManagementException {
         Hashtable<org.wso2.uri.template.URITemplate, List<String>> uriToMethodsMap = new Hashtable<>();
         APIManagerConfiguration apiManagerConfiguration = ServiceReferenceHolder.getInstance()
                 .getAPIManagerConfigurationService().getAPIManagerConfiguration();
         List<String> uriList = apiManagerConfiguration
-                .getProperty(APIConstants.API_RESTAPI_WHITELISTED_URI_URI);
+                .getProperty(APIConstants.API_RESTAPI_ALLOWED_URI_URI);
         List<String> methodsList = apiManagerConfiguration
-                .getProperty(APIConstants.API_RESTAPI_WHITELISTED_URI_HTTPMethods);
+                .getProperty(APIConstants.API_RESTAPI_ALLOWED_URI_HTTPMethods);
 
         if (uriList != null && methodsList != null) {
             if (uriList.size() != methodsList.size()) {
                 String errorMsg = "Provided White-listed URIs for REST API are invalid."
-                        + " Every 'WhiteListedURI' should include 'URI' and 'HTTPMethods' elements";
+                        + " Every 'allowedURI' should include 'URI' and 'HTTPMethods' elements";
                 log.error(errorMsg);
                 return new Hashtable<>();
             }
@@ -1440,11 +1476,11 @@ public class RestApiUtil {
      * @return A Dictionary with the white-listed URIs and the associated HTTP methods
      * @throws APIManagementException
      */
-    public static Dictionary<org.wso2.uri.template.URITemplate, List<String>> getWhiteListedURIsToMethodsMap()
+    public static Dictionary<org.wso2.uri.template.URITemplate, List<String>> getAllowedURIsToMethodsMap()
             throws APIManagementException {
 
         if (uriToHttpMethodsMap == null) {
-            uriToHttpMethodsMap = getWhiteListedURIsToMethodsMapFromConfig();
+            uriToHttpMethodsMap = getAllowedURIsToMethodsMapFromConfig();
         }
         return uriToHttpMethodsMap;
     }

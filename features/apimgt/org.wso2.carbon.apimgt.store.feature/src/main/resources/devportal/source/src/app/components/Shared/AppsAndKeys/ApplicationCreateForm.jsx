@@ -23,7 +23,6 @@ import { withStyles } from '@material-ui/core/styles';
 import { FormattedMessage, injectIntl } from 'react-intl';
 import PropTypes from 'prop-types';
 import ChipInput from 'material-ui-chip-input';
-import Application from 'AppData/Application';
 
 
 /**
@@ -110,13 +109,25 @@ const ApplicationCreate = (props) => {
         getAttributeValue,
         intl,
         validateName,
+        validateDescription,
         isApplicationSharingEnabled,
         handleAddChip,
         handleDeleteChip,
     } = props;
+    const description = applicationRequest.description || '';
+    const showDescError = () => {
+        const descLength = description.length;
+        const remaining = 512 - descLength;
+        return (`( ${remaining.toString()} ) ${intl.formatMessage({
+            defaultMessage:
+                'characters remaining',
+            id: 'Shared.AppsAndKeys.ApplicationCreateForm.describe.length.error.suffix',
+        })}`)
+    }
     return (
         <form noValidate autoComplete='off' className={classes.applicationForm}>
             <TextField
+                id='application-name'
                 classes={{
                     root: classes.mandatoryStarText,
                 }}
@@ -152,7 +163,7 @@ const ApplicationCreate = (props) => {
                 }}
                 required
                 fullWidth
-                id='outlined-select-currency'
+                id='per-token-quota'
                 select
                 label={(
                     <FormattedMessage
@@ -181,58 +192,27 @@ const ApplicationCreate = (props) => {
                 ))}
             </TextField>
             <TextField
-                classes={{
-                    root: classes.mandatoryStarSelect,
-                }}
-                required
-                fullWidth
-                id='outlined-select-currency'
-                select
-                label={(
-                    <FormattedMessage
-                        defaultMessage='Token Type'
-                        id='Shared.AppsAndKeys.ApplicationCreateForm.token.type'
-                    />
-                )}
-                value={applicationRequest.tokenType}
-                name='tokenType'
-                onChange={handleChange}
-                helperText={(
-                    <FormattedMessage
-                        defaultMessage='Select token type'
-                        id='Shared.AppsAndKeys.ApplicationCreateForm.select.token.type'
-                    />
-                )}
-                margin='normal'
-                variant='outlined'
-            >
-                {Object.entries(Application.TOKEN_TYPES).map(([key, value]) => (
-                    <MenuItem key={value.displayName} value={key}>
-                        {value.displayName}
-                    </MenuItem>
-                ))}
-            </TextField>
-
-            <TextField
+                id='application-description'
                 margin='normal'
                 variant='outlined'
                 fullWidth
-                value={applicationRequest.description}
+                multiline
+                rows={4}
+                value={description}
                 label={intl.formatMessage({
                     defaultMessage: 'Application Description',
                     id: 'Shared.AppsAndKeys.ApplicationCreateForm.application.description.label',
                 })}
-                helperText={intl.formatMessage({
-                    defaultMessage:
-                        'Describe the application',
-                    id: 'Shared.AppsAndKeys.ApplicationCreateForm.describe.the.application.help',
-                })}
+                helperText={showDescError()}
                 name='description'
                 onChange={handleChange}
                 placeholder={intl.formatMessage({
                     defaultMessage: 'My Mobile Application',
                     id: 'Shared.AppsAndKeys.ApplicationCreateForm.my.mobile.application.placeholder',
                 })}
+                error={description !== '' && description.length > 512}
+                onBlur={(e) => validateDescription(e.target.value)}
+
             />
             {allAppAttributes && (
                 Object.entries(allAppAttributes).map((item) => (
@@ -294,6 +274,7 @@ ApplicationCreate.propTypes = {
     handleAttributesChange: PropTypes.func.isRequired,
     getAttributeValue: PropTypes.func.isRequired,
     validateName: PropTypes.func.isRequired,
+    validateDescription: PropTypes.func.isRequired,
     updateApplicationRequest: PropTypes.func.isRequired,
     isRequiredAttribute: PropTypes.func.isRequired,
     isApplicationSharingEnabled: PropTypes.bool.isRequired,

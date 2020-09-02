@@ -25,6 +25,7 @@ import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.model.ConfigurationDto;
 import org.wso2.carbon.apimgt.api.model.KeyManagerConnectorConfiguration;
 import org.wso2.carbon.apimgt.api.model.Scope;
+import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.definitions.OASParserUtil;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 import org.wso2.carbon.apimgt.rest.api.admin.v1.dto.KeyManagerConfigurationDTO;
@@ -33,8 +34,8 @@ import org.wso2.carbon.apimgt.rest.api.admin.v1.dto.SettingsKeyManagerConfigurat
 import org.wso2.carbon.apimgt.rest.api.util.utils.RestApiUtil;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -67,9 +68,12 @@ public class SettingsMappingUtil {
         Map<String, KeyManagerConnectorConfiguration> keyManagerConnectorConfigurationMap =
                 APIUtil.getKeyManagerConfigurations();
         keyManagerConnectorConfigurationMap.forEach((keyManagerName, keyManagerConfiguration) -> {
-            list.add(fromKeyManagerConfigurationToSettingsKeyManagerConfigurationDTO(keyManagerName,
-                    keyManagerConfiguration.getConnectionConfigurations()));
-
+            if (!APIConstants.KeyManager.DEFAULT_KEY_MANAGER_TYPE.equals(keyManagerName)){
+                list.add(fromKeyManagerConfigurationToSettingsKeyManagerConfigurationDTO(keyManagerName,
+                        keyManagerConfiguration.getDisplayName(),keyManagerConfiguration.getDefaultScopesClaim(),
+                        keyManagerConfiguration.getDefaultConsumerKeyClaim(),
+                        keyManagerConfiguration.getConnectionConfigurations()));
+            }
         });
         return list;
     }
@@ -92,12 +96,15 @@ public class SettingsMappingUtil {
     }
 
     private static SettingsKeyManagerConfigurationDTO fromKeyManagerConfigurationToSettingsKeyManagerConfigurationDTO(
-            String keyManagerName,
+            String name, String displayName, String scopesClaim, String consumerKeyClaim,
             List<ConfigurationDto> connectionConfigurationDtoList) {
 
         SettingsKeyManagerConfigurationDTO settingsKeyManagerConfigurationDTO =
                 new SettingsKeyManagerConfigurationDTO();
-        settingsKeyManagerConfigurationDTO.setType(keyManagerName);
+        settingsKeyManagerConfigurationDTO.setDisplayName(displayName);
+        settingsKeyManagerConfigurationDTO.setType(name);
+        settingsKeyManagerConfigurationDTO.setDefaultScopesClaim(scopesClaim);
+        settingsKeyManagerConfigurationDTO.setDefaultConsumerKeyClaim(consumerKeyClaim);
         if (connectionConfigurationDtoList != null) {
             for (ConfigurationDto configurationDto : connectionConfigurationDtoList) {
                 KeyManagerConfigurationDTO keyManagerConfigurationDTO = new KeyManagerConfigurationDTO();

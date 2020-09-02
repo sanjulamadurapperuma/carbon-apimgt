@@ -78,7 +78,6 @@ import org.wso2.carbon.apimgt.api.MonetizationException;
 import org.wso2.carbon.apimgt.api.doc.model.APIResource;
 import org.wso2.carbon.apimgt.api.dto.CertificateInformationDTO;
 import org.wso2.carbon.apimgt.api.dto.ClientCertificateDTO;
-import org.wso2.carbon.apimgt.api.model.*;
 import org.wso2.carbon.apimgt.api.model.graphql.queryanalysis.GraphqlComplexityInfo;
 import org.wso2.carbon.apimgt.api.model.graphql.queryanalysis.GraphqlSchemaType;
 import org.wso2.carbon.apimgt.api.model.API;
@@ -214,7 +213,7 @@ public class ApisApiServiceImpl implements ApisApiService {
             }*/
 
             Map<String, Object> result = apiProvider.searchPaginatedAPIs(newSearchQuery, tenantDomain,
-                    offset, limit, false);
+                    offset, limit, false, !expand);
             Set<API> apis = (Set<API>) result.get("apis");
             allMatchedApis.addAll(apis);
 
@@ -1059,6 +1058,13 @@ public class ApisApiServiceImpl implements ApisApiService {
         return null;
     }
 
+    /**
+     * Method to retrieve Security Audit Report
+     * @param apiId API ID of the API
+     * @param accept Accept header string
+     * @param messageContext Message Context string
+     * @return Response object of Security Audit
+     */
     @Override
     public Response apisApiIdAuditapiGet(String apiId, String accept, MessageContext messageContext) {
         boolean isDebugEnabled = log.isDebugEnabled();
@@ -1141,6 +1147,16 @@ public class ApisApiServiceImpl implements ApisApiService {
         return null;
     }
 
+    /**
+     * Update API Definition before retrieving Security Audit Report
+     * @param apiDefinition API Definition of API
+     * @param apiToken API Token to access Security Audit
+     * @param auditUuid Respective UUID of API in Security Audit
+     * @param baseUrl Base URL to communicate with Security Audit
+     * @param isDebugEnabled Boolean whether debug is enabled
+     * @throws IOException In the event of any problems with the request
+     * @throws APIManagementException In the event of unexpected response
+     */
     private void updateAuditApi(String apiDefinition, String apiToken, String auditUuid, String baseUrl,
                                 boolean isDebugEnabled)
             throws IOException, APIManagementException {
@@ -1176,6 +1192,19 @@ public class ApisApiServiceImpl implements ApisApiService {
         }
     }
 
+    /**
+     * Send API Definition to Security Audit for the first time
+     * @param collectionId Collection ID in which the Definition should be sent to
+     * @param apiToken API Token to access Security Audit
+     * @param apiIdentifier API Identifier object
+     * @param apiDefinition API Definition of API
+     * @param baseUrl Base URL to communicate with Security Audit
+     * @param isDebugEnabled Boolean whether debug is enabled
+     * @return String UUID of API in Security Audit
+     * @throws IOException In the event of any problems in the request
+     * @throws APIManagementException In the event of unexpected response
+     * @throws ParseException In the event of any parse errors from the response
+     */
     private String createAuditApi(String collectionId, String apiToken, APIIdentifier apiIdentifier,
                                   String apiDefinition, String baseUrl, boolean isDebugEnabled)
             throws IOException, APIManagementException, ParseException {
@@ -2234,10 +2263,19 @@ public class ApisApiServiceImpl implements ApisApiService {
      * @return API Lifecycle state information
      */
     private LifecycleStateDTO getLifecycleState(String apiId) {
+        return getLifecycleState(null, apiId);
+    }
+        
+    private LifecycleStateDTO getLifecycleState(APIIdentifier identifier, String apiId) {
         try {
             String tenantDomain = RestApiUtil.getLoggedInUserTenantDomain();
             APIProvider apiProvider = RestApiUtil.getLoggedInUserProvider();
-            APIIdentifier apiIdentifier = APIMappingUtil.getAPIIdentifierFromUUID(apiId, tenantDomain);
+            APIIdentifier apiIdentifier;
+            if (identifier == null) {
+                apiIdentifier = APIMappingUtil.getAPIIdentifierFromUUID(apiId, tenantDomain);
+            } else {
+                apiIdentifier = identifier;
+            }
             Map<String, Object> apiLCData = apiProvider.getAPILifeCycleData(apiIdentifier);
             if (apiLCData == null) {
                 String errorMessage = "Error while getting lifecycle state for API : " + apiId;
@@ -2249,10 +2287,10 @@ public class ApisApiServiceImpl implements ApisApiService {
             APIDTO currentAPI = getAPIByID(apiId);
             APIVersionStringComparator comparator = new APIVersionStringComparator();
             Set<String> versions = apiProvider.getAPIVersions(
-                    APIUtil.replaceEmailDomain(currentAPI.getProvider()), currentAPI.getName());
+                    APIUtil.replaceEmailDomain(apiIdentifier.getProviderName()), apiIdentifier.getName());
 
             for (String tempVersion : versions) {
-                if (comparator.compare(tempVersion, currentAPI.getVersion()) < 0) {
+                if (comparator.compare(tempVersion, apiIdentifier.getVersion()) < 0) {
                     apiOlderVersionExist = true;
                     break;
                 }
@@ -2567,7 +2605,9 @@ public class ApisApiServiceImpl implements ApisApiService {
      * @return updated mediation DTO as response
      */
     @Override
-    public Response apisApiIdMediationPoliciesPost(String type, String apiId, InputStream fileInputStream, Attachment fileDetail, String inlineContent, String ifMatch, MessageContext messageContext) {
+    public Response apisApiIdMediationPoliciesPost(String type, String apiId, InputStream fileInputStream,
+            Attachment fileDetail, String inlineContent, String ifMatch, MessageContext messageContext)
+            throws APIManagementException {
 
         String fileName = "";
         String mediationPolicyUrl = "";
@@ -2612,7 +2652,7 @@ public class ApisApiServiceImpl implements ApisApiService {
                 fileName = seqElement.getAttributeValue(new QName("name"));
                 //Constructing mediation resource path
                 mediationResourcePath = mediationResourcePath + fileName;
-                checkMediationPolicy(apiProvider, mediationResourcePath);
+                checkMediationPolicy(apiProvider, mediationResourcePath, fileName);
                 if (APIConstants.MEDIATION_SEQUENCE_ELEM.equals(localName)) {
                     ResourceFile contentFile = new ResourceFile(inSequenceStream, fileContentType);
                     //Adding api specific mediation policy
@@ -2627,7 +2667,7 @@ public class ApisApiServiceImpl implements ApisApiService {
                 //Constructing mediation resource path
                 mediationResourcePath = apiResourcePath + RegistryConstants.PATH_SEPARATOR + type +
                         RegistryConstants.PATH_SEPARATOR + fileName;
-                checkMediationPolicy(apiProvider,mediationResourcePath);
+                checkMediationPolicy(apiProvider,mediationResourcePath, fileName);
                 InputStream contentStream = new ByteArrayInputStream(inlineContent.getBytes(StandardCharsets.UTF_8));
                 String contentType = URLConnection.guessContentTypeFromName(fileName);
                 ResourceFile contentFile = new ResourceFile(contentStream, contentType);
@@ -2656,9 +2696,7 @@ public class ApisApiServiceImpl implements ApisApiService {
                 RestApiUtil.handleAuthorizationFailure(
                         "Authorization failure while adding mediation policy for the API " + apiId, e, log);
             } else {
-                String errorMessage = "Error while adding the mediation policy : " + fileName +
-                        "of API " + apiId;
-                RestApiUtil.handleInternalServerError(errorMessage, e, log);
+                throw e;
             }
         } catch (URISyntaxException e) {
             String errorMessage = "Error while getting location header for created " +
@@ -3080,9 +3118,6 @@ public class ApisApiServiceImpl implements ApisApiService {
             } else {
                 updatedSwagger = updateSwagger(apiId, apiDefinition);
             }
-            if (isSoapToRestConvertedAPI) {
-                SequenceGenerator.generateSequencesFromSwagger(updatedSwagger, apiIdentifier);
-            }
             return Response.ok().entity(updatedSwagger).build();
         } catch (APIManagementException e) {
             //Auth failure occurs when cross tenant accessing APIs. Sends 404, since we don't need
@@ -3502,9 +3537,8 @@ public class ApisApiServiceImpl implements ApisApiService {
             Set<Scope> scopes = apiDefinition.getScopes(definitionToAdd);
             apiToAdd.setUriTemplates(uriTemplates);
             apiToAdd.setScopes(scopes);
-            //Set x-wso2-extensions to API when importing through API publisher
-            boolean isBasepathExtractedFromSwagger = false;
-            apiToAdd = OASParserUtil.setExtensionsToAPI(definitionToAdd, apiToAdd, isBasepathExtractedFromSwagger);
+            //Set extensions from API definition to API object
+            apiToAdd = OASParserUtil.setExtensionsToAPI(definitionToAdd, apiToAdd);
             if (!syncOperations) {
                 validateScopes(apiToAdd);
                 swaggerData = new SwaggerData(apiToAdd);
@@ -3898,7 +3932,7 @@ public class ApisApiServiceImpl implements ApisApiService {
             APIStateChangeResponse stateChangeResponse = apiProvider.changeLifeCycleStatus(apiIdentifier, action);
 
             //returns the current lifecycle state
-            LifecycleStateDTO stateDTO = getLifecycleState(apiId);;
+            LifecycleStateDTO stateDTO = getLifecycleState(apiIdentifier, apiId);
 
             WorkflowResponseDTO workflowResponseDTO = APIMappingUtil
                     .toWorkflowResponseDTO(stateDTO, stateChangeResponse);
@@ -3989,7 +4023,7 @@ public class ApisApiServiceImpl implements ApisApiService {
             try {
                 String tenantDomain = RestApiUtil.getLoggedInUserTenantDomain();
                 APIIdentifier apiIdentifier = APIMappingUtil.getAPIIdentifierFromUUID(apiId, tenantDomain);
-                return exportApiUtil.exportApiById(apiIdentifier, preserveStatus);
+                return exportApiUtil.exportApiById(apiIdentifier, preserveStatus, format);
             } catch (APIManagementException e) {
                 if (RestApiUtil.isDueToResourceNotFound(e) || RestApiUtil.isDueToAuthorizationFailure(e)) {
                     RestApiUtil.handleResourceNotFoundError(RestApiConstants.RESOURCE_API, apiId, e, log);
@@ -4407,13 +4441,17 @@ public class ApisApiServiceImpl implements ApisApiService {
 
     /**
      * Check the existence of the mediation policy
+     *
      * @param mediationResourcePath mediation config content
      *
      */
-    public void checkMediationPolicy(APIProvider apiProvider,String mediationResourcePath) throws APIManagementException {
+    public void checkMediationPolicy(APIProvider apiProvider, String mediationResourcePath, String name) throws APIManagementException {
         if (apiProvider.checkIfResourceExists(mediationResourcePath)) {
-            RestApiUtil.handleConflict("Mediation policy already " +
-                    "exists in the given resource path, cannot create new", log);
+            throw new APIManagementException(ExceptionCodes.MEDIATION_POLICY_API_ALREADY_EXISTS);
+        }
+        if (StringUtils.isNotBlank(name) && name.length() > APIConstants.MAX_LENGTH_MEDIATION_POLICY_NAME) {
+            throw new APIManagementException(ExceptionCodes.from(ExceptionCodes.MEDIATION_POLICY_NAME_TOO_LONG,
+                    APIConstants.MAX_LENGTH_MEDIATION_POLICY_NAME + ""));
         }
     }
     /**
@@ -4433,7 +4471,7 @@ public class ApisApiServiceImpl implements ApisApiService {
 
         for (Scope scope : api.getScopes()) {
             String scopeName = scope.getKey();
-            if (!(APIUtil.isWhiteListedScope(scopeName))) {
+            if (!(APIUtil.isAllowedScope(scopeName))) {
                 // Check if each scope key is already assigned as a local scope to a different API which is also not a
                 // different version of the same API. If true, return error.
                 // If false, check if the scope key is already defined as a shared scope. If so, do not honor the

@@ -3884,7 +3884,7 @@ paths:
         2. Retrieving subscriptions for a specific API.
         `GET https://127.0.0.1:9443/api/am/publisher/v1/subscriptions?apiId=c43a325c-260b-4302-81cb-768eafaa3aed`
       parameters:
-        - $ref: '#/parameters/apiId-Q'
+        - $ref: '#/parameters/apiId-Q-Opt'
         - $ref: '#/parameters/limit'
         - $ref: '#/parameters/offset'
         - $ref: '#/parameters/If-None-Match'
@@ -7236,6 +7236,18 @@ parameters:
     required: true
     type: string
 
+  # API Identifier
+  # Specified as part of the query string
+  apiId-Q-Opt:
+    name: apiId
+    in: query
+    description: |
+      **API ID** consisting of the **UUID** of the API.
+      The combination of the provider of the API, name of the API and the version is also accepted as a valid API I.
+      Should be formatted as **provider-name-version**.
+    required: false
+    type: string
+
   # Label Type
   # Specified as part of the query string
   labelType-Q:
@@ -7652,6 +7664,8 @@ definitions:
       lifeCycleStatus:  # NEED TO RENAME AS lifeCycleState
         type: string
         example: CREATED
+        x-otherScopes:
+        - apim:api_publish
       wsdlInfo:
         $ref: '#/definitions/WSDLInfo'
       wsdlUrl:
@@ -7681,6 +7695,8 @@ definitions:
       enableStore:
         type: boolean
         example: true
+        x-otherScopes:
+          - apim:api_publish
       type:
         type: string
         description: The api creation type to be used. Accepted values are HTTP, WS, SOAPTOREST, GRAPHQL
@@ -7800,7 +7816,7 @@ definitions:
           - ALL_TENANTS
           - SPECIFIC_TENANTS
         example: CURRENT_TENANT
-        default: ALL_TENANTS
+        default: CURRENT_TENANT
         x-otherScopes:
           - apim:api_publish
       subscriptionAvailableTenants:
@@ -7984,6 +8000,8 @@ definitions:
         items:
           type: string
           example: ["Finance"]
+        x-otherScopes:
+          - apim:api_publish
       keyManagers:
         description: |
           API Key Managers
@@ -8276,6 +8294,9 @@ definitions:
       apiId:
         type: string
         example: 01234567-0123-0123-0123-012345678901
+      version:
+        type: string
+        example: 1.0
       operations:
         type: array
         items:
@@ -10093,6 +10114,12 @@ definitions:
         description: |
           Is Document Visibility configuration enabled
         example: false
+      crossTenantSubscriptionEnabled:
+        type: boolean
+        description: |
+          Is Cross Tenant Subscriptions Enabled
+        example: false
+        default: false
       deployments:
         type: array
         items:

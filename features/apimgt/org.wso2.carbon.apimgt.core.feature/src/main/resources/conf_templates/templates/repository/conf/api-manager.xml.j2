@@ -15,11 +15,17 @@
     APIs will be protected with OAuth2 security-->
     <EnableMTLSForAPIs>true</EnableMTLSForAPIs>
 
+    <!-- These parameters will be used to set the pool size of HTTP client-->
+    <HttpClient>
+         <MaxTotal>{{apim.http_client.max_total}}</MaxTotal>
+         <DefaultMaxPerRoute>{{apim.http_client.default_max_per_route}}</DefaultMaxPerRoute>
+     </HttpClient>
+
     <!-- Authentication manager configuration for Admin Portal. This is a required configuration as its user
     authentication logic relies on this. -->
     <AuthManager>
         <!-- Server URL of the Authentication service -->
-        <ServerURL>https://localhost:${mgt.transport.https.port}${carbon.context}services/</ServerURL>
+        <ServerURL>{{apim.auth_manager.service_url}}</ServerURL>
         <!-- Admin username for the Authentication manager. -->
         <Username>${admin.username}</Username>
         <!-- Admin password for the Authentication manager. -->
@@ -50,6 +56,7 @@
              to be appended to the JWT. If not specified no claims will be appended.If user wants to add all user claims in the
              jwt token, he needs to enable this parameter.
              The DefaultClaimsRetriever class adds user claims from the default carbon user store. -->
+        <EnableUserClaims>{{apim.jwt.enable_user_claims}}</EnableUserClaims>
         {% if apim.jwt.enable_user_claims %}
         <ClaimsRetrieverImplClass>{{apim.jwt.claims_extractor_impl}}</ClaimsRetrieverImplClass>
         {% else %}
@@ -155,6 +162,12 @@
       <JWKSConfiguration>
         <URL>{{issuer_1.jwks.url}}</URL>
       </JWKSConfiguration>
+    {% endif %}
+    {% if issuer_1.consumer_key_claim is defined %}
+    <ConsumerKeyClaim>{{issuer_1.consumer_key_claim}}</ConsumerKeyClaim>
+    {% endif %}
+    {% if issuer_1.scopes_claim is defined %}
+    <ScopesClaim>{{issuer_1.scopes_claim}}</ScopesClaim>
     {% endif %}
     {% if issuer_1.disable_default_claim_mapping is defined %}
       <ClaimMappings disable-default-claim-mapping ="{{issuer_1.disable_default_claim_mapping}}">
@@ -349,26 +362,15 @@
         <!-- Admin password for API key manager. -->
         <Password>{{apim.key_manager.password}}</Password>
 
-        <!-- Configurations related to enable thrift support for key-management related communication.
-             If you want to switch back to Web Service Client, change the value of "KeyValidatorClientType" to "WSClient".
-             In a distributed environment;
-             -If you are at the Gateway node, you need to point "ThriftClientPort" value to the "ThriftServerPort" value given at KeyManager node.
-             -If you need to start two API Manager instances in the same machine, you need to give different ports to "ThriftServerPort" value in two nodes.
-             -ThriftServerHost - Allows to configure a hostname for the thrift server. It uses the carbon hostname by default.
-	         -The Gateway uses this parameter to connect to the key validation thrift service. -->
-        <KeyValidatorClientType>WSClient</KeyValidatorClientType>
-        <ConnectionPool>
-            <MaxIdle>{{apim.key_manager.pool.max_idle}}</MaxIdle>
-            <InitIdleCapacity>{{apim.key_manager.pool.init_idle_capacity}}</InitIdleCapacity>
-        </ConnectionPool>
-        <!-- Specifies the implementation to be used for KeyValidationHandler. Steps for validating a token can be controlled by plugging in a
-             custom KeyValidation Handler -->
         <KeyValidationHandlerClassName>{{apim.key_manager.key_validation_handler_impl}}</KeyValidationHandlerClassName>
+        <DefaultKeyManagerType>{{apim.key_manager.type}}</DefaultKeyManagerType>
        {% if apim.jwt.expiry_time is defined %}
         <JWTExpiryTime>{{apim.jwt.expiry_time}}</JWTExpiryTime>
        {% endif %}
-     <EnableDefaultKeyManagerRegistration>{{apim.key_manager.enable_registration}}</EnableDefaultKeyManagerRegistration>
      <EnableKeyManagerConfigurationRetriever>{{apim.key_manager.enable_retriever}}</EnableKeyManagerConfigurationRetriever>
+      {% if apim.key_manager.enable_provisioned_app_validation is defined %}
+      <EnableProvisionedAppValidation>{{apim.key_manager.enable_provisioned_app_validation}}</EnableProvisionedAppValidation>
+      {% endif %}
     </APIKeyValidator>
 
 
@@ -388,16 +390,17 @@
         {% endif %}
         <!-- Scope used for marking Application Tokens. If a token is generated with this scope, they will be treated as Application Access Tokens -->
         <ApplicationTokenScope>{{apim.oauth_config.default_app_scope}}</ApplicationTokenScope>
-        <!-- All  scopes under the ScopeWhitelist element are not validating against roles that has assigned to it.
+        <!-- All  scopes under the AllowedScopes element are not validating against roles that has assigned to it.
              By default ^device_.* and openid scopes have been white listed internally. -->
-        <ScopeWhitelist>
-        {%for scope in apim.oauth_config.white_listed_scopes%}
+        <AllowedScopes>
+        {%for scope in apim.oauth_config.allowed_scopes%}
             <Scope>{{scope}}</Scope>
         {% endfor %}
-        </ScopeWhitelist>
+        </AllowedScopes>
 
         <!-- Name of the token API -->
-        <TokenEndPointName>/oauth2/token</TokenEndPointName>
+        <TokenEndPointName>{{apim.oauth_config.token_endpoint_context}}</TokenEndPointName>
+        <RevokeEndpointName>{{apim.oauth_config.revoke_endpoint_context}}</RevokeEndpointName>
         <!-- This the API URL for revoke API. When we revoke tokens revoke requests should go through this
              API deployed in API gateway. Then it will do cache invalidations related to revoked tokens.
              In distributed deployment we should configure this property in key manager node by pointing
@@ -413,6 +416,7 @@
         org.wso2.carbon.identity.oauth.tokenprocessor.HashingPersistenceProcessor and change the value of
         <EnableClientSecretHash> to true in the identity.xml -->
         <EnableTokenHashMode>{{apim.oauth_config.enable_token_hashing}}</EnableTokenHashMode>
+
     </OAuthConfigurations>
 
     <TokenRevocationNotifiers class="{{apim.token.revocation.notifier_impl}}">
@@ -492,6 +496,7 @@
 
         <!--This parameter specifies whether Anonymous Mode is enabled. By default it is true.-->
         <EnableAnonymousMode>{{apim.devportal.enable_anonymous_mode}}</EnableAnonymousMode>
+        <EnableCrossTenantSubscription>{{apim.devportal.enable_cross_tenant_subscriptions}}</EnableCrossTenantSubscription>
     </APIStore>
 
     <APIPublisher>
@@ -552,148 +557,148 @@
 
     <RESTAPI>
         <!--Configure white-listed URIs of REST API. Accessing white-listed URIs does not require credentials (does not require Authorization header). -->
-        <WhiteListedURIs>
-         {% if apim.rest_api.whitelisted_uri is defined %}
-            {% for uri in apim.rest_api.whitelisted_uri %}
-                <WhiteListedURI>
+        <AllowedURIs>
+         {% if apim.rest_api.allowed_uri is defined %}
+            {% for uri in apim.rest_api.allowed_uri %}
+                <AllowedURI>
                 <URI>{{uri.uri_path}}</URI>
                 <HTTPMethods>{{uri.http_method}}</HTTPMethods>
-                </WhiteListedURI>
+                </AllowedURI>
             {% endfor %}
          {% endif %}
-             <WhiteListedURI>
+             <AllowedURI>
                 <URI>/api/am/store/{version}/tenants</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-             </WhiteListedURI>
-            <WhiteListedURI>
+             </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/publisher/{version}/swagger.json</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/swagger.json</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/admin/{version}/swagger.json</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/publisher/{version}/swagger.yaml</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/swagger.yaml</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/admin/{version}/swagger.yaml</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/apis</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/apis/{apiId}</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/apis/{apiId}/swagger</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/apis/{apiId}/wsdl</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/apis/{apiId}/comments</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                  <URI>/api/am/store/{version}/apis/{apiId}/graphql-schema</URI>
                  <HTTPMethods>GET</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/apis/{apiId}/documents</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/apis/{apiId}/documents/{documentId}</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/apis/{apiId}/documents/{documentId}/content</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/apis/{apiId}/thumbnail</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/api-products</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/api-products/{apiId}</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/api-products/{apiId}/swagger</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/api-products/{apiId}/documents</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/api-products/{apiId}/documents/{documentId}</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/api-products/{apiId}/documents/{documentId}/content</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/api-products/{apiId}/thumbnail</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/tags</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/tiers/{tierLevel}</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/tiers/{tierLevel}/{tierName}</URI>
                 <HTTPMethods>GET,HEAD</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/search</URI>
                 <HTTPMethods>GET</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/settings</URI>
                 <HTTPMethods>GET</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/publisher/{version}/settings</URI>
                 <HTTPMethods>GET</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/admin/{version}/settings</URI>
                 <HTTPMethods>GET</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/endpoint-registry/{version}/settings</URI>
                 <HTTPMethods>GET</HTTPMethods>
-            </WhiteListedURI>
-            <WhiteListedURI>
+            </AllowedURI>
+            <AllowedURI>
                 <URI>/api/am/store/{version}/api-categories</URI>
                 <HTTPMethods>GET</HTTPMethods>
-            </WhiteListedURI>
-        </WhiteListedURIs>
+            </AllowedURI>
+        </AllowedURIs>
         <ETagSkipList>
             <ETagSkipURI>
                 <URI>/api/am/store/{version}/apis</URI>
@@ -806,7 +811,6 @@
         </ETagSkipList>
     </RESTAPI>
     <ThrottlingConfigurations>
-        <EnableAdvanceThrottling>{{apim.throttling.enable_advanced_throttling}}</EnableAdvanceThrottling>
         <TrafficManager>
             <Type>{{apim.throttling.event_type}}</Type>
 
@@ -885,7 +889,11 @@
                 {% if apim.throttling.jms.topic_connection_factory is defined %}
                 <connectionfactory.TopicConnectionFactory>{{apim.throttling.jms.topic_connection_factory}}</connectionfactory.TopicConnectionFactory>
                 {% elif apim.throttling.throttle_decision_endpoints is defined %}
-                <connectionfactory.TopicConnectionFactory>amqp://{{apim.throttling.jms.username}}:{{apim.throttling.jms.password}}@clientid/carbon?brokerlist='{% for url in apim.throttling.throttle_decision_endpoints %}{{url}}?retries='5'%26connectdelay='50';{% endfor %}'</connectionfactory.TopicConnectionFactory>
+                <connectionfactory.TopicConnectionFactory>amqp://<![CDATA[{{apim.throttling.jms.username}}]]>:<![CDATA[{{apim.throttling.jms.password}}]]>@clientid/carbon?brokerlist='{% for url in apim.throttling.throttle_decision_endpoints %}{{url}}?retries='5'%26connectdelay='50';{% endfor %}'</connectionfactory.TopicConnectionFactory>
+                {% elif apim.throttling.jms.username is defined %}
+                {% if apim.throttling.jms.password is defined %}
+                <connectionfactory.TopicConnectionFactory>amqp://<![CDATA[{{apim.throttling.jms.username}}]]>:<![CDATA[{{apim.throttling.jms.password}}]]>@clientid/carbon?brokerlist='tcp://${carbon.local.ip}:${jms.port}'</connectionfactory.TopicConnectionFactory>
+                {% endif %}
                 {% else %}
                 <connectionfactory.TopicConnectionFactory>amqp://${admin.username}:${admin.password}@clientid/carbon?brokerlist='tcp://${carbon.local.ip}:${jms.port}'</connectionfactory.TopicConnectionFactory>
                 {% endif %}
@@ -918,6 +926,9 @@
 
     <WorkflowConfigurations>
         <Enabled>{{apim.workflow.enable}}</Enabled>
+        {% if apim.workflow.list_pending_tasks is defined %}
+        <ListPendingTasks>{{apim.workflow.list_pending_tasks}}</ListPendingTasks>
+        {% endif %}
     	<ServerUrl>{{apim.workflow.service_url}}</ServerUrl>
     	<ServerUser>{{apim.workflow.wf_engine_user}}</ServerUser>
     	<ServerPassword>{{apim.workflow.wf_engine_pass}}</ServerPassword>
@@ -1064,12 +1075,16 @@
         {% if apim.ai_security.cash_expiry_time is defined %}
         <CacheExpiryTime>{{apim.ai_security.cash_expiry_time}}</CacheExpiryTime>
         {% endif %}
+        {% if apim.ai_security.skip_cert_validation is defined %}
+        <SkipCertValidation>{{apim.ai_security.skip_cert_validation}}</SkipCertValidation>
+        {% endif %}
         <APISecurityEnforcer>
             <EndPoint>{{apim.ai_security.sideband_request_endpoint}}</EndPoint>
             <ASEToken>{{apim.ai_security.ase_token}}</ASEToken>
             {% if apim.ai_security.model_creation_endpoint is defined %}
             <ModelCreationEndpoint>
                 <EndPoint>{{apim.ai_security.model_creation_endpoint}}</EndPoint>
+                <BackupEndPoint>{{apim.ai_security.backup_sideband_request_endpoint}}</BackupEndPoint>
                 <AccessKey>{{apim.ai_security.access_key}}</AccessKey>
                 <SecretKey>{{apim.ai_security.secret_key}}</SecretKey>
             </ModelCreationEndpoint>
@@ -1125,9 +1140,6 @@
     <skipRolesByRegex>{{apim.skip_roles_by_regex.regex}}</skipRolesByRegex>
     {% endif %}
 
-    <JWTAuthentication>
-        <EnableSubscriptionValidationViaKeyManager>{{apim.jwt_authenitcation.subscription_validation_via_km}}</EnableSubscriptionValidationViaKeyManager>
-    </JWTAuthentication>
     <CertificateReLoaderConfiguration>
         <Period>{{apim.certificate_reloader.period}}</Period>
     </CertificateReLoaderConfiguration>
@@ -1151,6 +1163,8 @@
         {% endif %}
         {% if apim.event_hub.service_url is defined %}
         <ServiceURL>{{apim.event_hub.service_url}}</ServiceURL>
+        {% else %}
+         <ServiceURL>{{apim.throttling.service_url}}</ServiceURL>
         {% endif %}
          {% if apim.event_hub.init_delay is defined %}
         <InitDelay>{{apim.event_hub.init_delay}}</InitDelay>
@@ -1200,16 +1214,20 @@
                     <ReceiverUrlGroup>tcp://${carbon.local.ip}:${receiver.url.port}</ReceiverUrlGroup>
                     <AuthUrlGroup>ssl://${carbon.local.ip}:${auth.url.port}</AuthUrlGroup>
                 {% endif %}
-            {% endif %}}
+            {% endif %}
         </EventPublisherConfiguration>
          <EventReceiverConfiguration>
              <transport.jms.ConnectionFactoryJNDIName>TopicConnectionFactory</transport.jms.ConnectionFactoryJNDIName>
              <transport.jms.DestinationType>topic</transport.jms.DestinationType>
              <java.naming.factory.initial>{{apim.event_hub.java_naming_factory_initial}}</java.naming.factory.initial>
              {% if apim.event_hub.event_listening_endpoints is defined %}
-             <connectionfactory.TopicConnectionFactory>amqp://{{apim.event_hub.username}}:{{apim.event_hub.password}}@clientid/carbon?brokerlist='{% for url in apim.event_hub.event_listening_endpoints %}{{url}}?retries='5'%26connectdelay='50';{% endfor %}'</connectionfactory.TopicConnectionFactory>
+             <connectionfactory.TopicConnectionFactory>amqp://<![CDATA[{{apim.event_hub.username}}]]>:<![CDATA[{{apim.event_hub.password}}]]>@clientid/carbon?brokerlist='{% for url in apim.event_hub.event_listening_endpoints %}{{url}}?retries='5'%26connectdelay='50';{% endfor %}'</connectionfactory.TopicConnectionFactory>
              {% elif apim.throttling.throttle_decision_endpoints is defined %}
-             <connectionfactory.TopicConnectionFactory>amqp://{{apim.throttling.jms.username}}:{{apim.throttling.jms.password}}@clientid/carbon?brokerlist='{% for url in apim.throttling.throttle_decision_endpoints %}{{url}}?retries='5'%26connectdelay='50';{% endfor %}'</connectionfactory.TopicConnectionFactory>
+             <connectionfactory.TopicConnectionFactory>amqp://<![CDATA[{{apim.throttling.jms.username}}]]>:<![CDATA[{{apim.throttling.jms.password}}]]>@clientid/carbon?brokerlist='{% for url in apim.throttling.throttle_decision_endpoints %}{{url}}?retries='5'%26connectdelay='50';{% endfor %}'</connectionfactory.TopicConnectionFactory>
+             {% elif apim.throttling.jms.username is defined %}
+             {% if apim.throttling.jms.password is defined %}
+             <connectionfactory.TopicConnectionFactory>amqp://<![CDATA[{{apim.throttling.jms.username}}]]>:<![CDATA[{{apim.throttling.jms.password}}]]>@clientid/carbon?brokerlist='tcp://${carbon.local.ip}:${jms.port}'</connectionfactory.TopicConnectionFactory>
+             {% endif %}
              {% else %}
              <connectionfactory.TopicConnectionFactory>amqp://${admin.username}:${admin.password}@clientid/carbon?brokerlist='tcp://${carbon.local.ip}:${jms.port}'</connectionfactory.TopicConnectionFactory>
              {% endif %}
@@ -1224,6 +1242,9 @@
         {% endif %}
         {% if apim.sync_runtime_artifacts.publisher.publish_directly_to_gateway is defined %}
         <PublishDirectlyToGW>{{apim.sync_runtime_artifacts.publisher.publish_directly_to_gateway}}</PublishDirectlyToGW>
+        {% endif %}
+        {% if database.sync_runtime_artifacts_db is defined %}
+        <DataSourceName>{{apim.datasource_sync_runtime_artifacts.name}}</DataSourceName>
         {% endif %}
     </SyncRuntimeArtifactsPublisher>
     {% endif %}
@@ -1240,6 +1261,15 @@
         {% endif %}
         {% if apim.sync_runtime_artifacts.gateway.artifact_retriever is defined %}
         <ArtifactRetriever>{{apim.sync_runtime_artifacts.gateway.artifact_retriever}}</ArtifactRetriever>
+        {% endif %}
+        {% if apim.sync_runtime_artifacts.gateway.deployment_retry_duration is defined %}
+        <RetryDuration>{{apim.sync_runtime_artifacts.gateway.deployment_retry_duration}}</RetryDuration>
+        {% endif %}
+        {% if apim.sync_runtime_artifacts.gateway.data_retrieval_mode is defined %}
+        <DataRetrievalMode>{{apim.sync_runtime_artifacts.gateway.data_retrieval_mode}}</DataRetrievalMode>
+        {% endif %}
+        {% if apim.sync_runtime_artifacts.gateway.event_waiting_time is defined %}
+        <EventWaitingTime>{{apim.sync_runtime_artifacts.gateway.event_waiting_time}}</EventWaitingTime>
         {% endif %}
     </SyncRuntimeArtifactsGateway>
     {% endif %}

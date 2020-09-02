@@ -17,6 +17,7 @@
  */
 package org.wso2.carbon.apimgt.gateway.handlers;
 
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -46,7 +47,9 @@ import org.wso2.carbon.apimgt.gateway.internal.ServiceReferenceHolder;
 import org.wso2.carbon.apimgt.gateway.utils.APIMgtGoogleAnalyticsUtils;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.APIManagerAnalyticsConfiguration;
+import org.wso2.carbon.apimgt.impl.caching.CacheProvider;
 import org.wso2.carbon.apimgt.impl.dto.APIKeyValidationInfoDTO;
+import org.wso2.carbon.apimgt.impl.jwt.SignedJWTInfo;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 import org.wso2.carbon.apimgt.usage.publisher.APIMgtUsageDataPublisher;
 import org.wso2.carbon.apimgt.usage.publisher.DataPublisherUtil;
@@ -65,10 +68,11 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.text.ParseException;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import javax.cache.Cache;
 
 /**
  * This is a handler which is actually embedded to the netty pipeline which does operations such as
@@ -259,19 +263,18 @@ public class WebsocketInboundHandler extends ChannelInboundHandlerAdapter {
 
                 //Initial guess of a JWT token using the presence of a DOT.
 
-                SignedJWT signedJWT = null;
+                SignedJWTInfo signedJWTInfo = null;
                 if (StringUtils.isNotEmpty(apiKey) && apiKey.contains(APIConstants.DOT)) {
                     try {
                         // Check if the header part is decoded
-                        Base64.getUrlDecoder().decode(apiKey.split("\\.")[0]);
                         if (StringUtils.countMatches(apiKey, APIConstants.DOT) != 2) {
                             log.debug("Invalid JWT token. The expected token format is <header.payload.signature>");
                             throw new APISecurityException(APISecurityConstants.API_AUTH_INVALID_CREDENTIALS,
                                     "Invalid JWT token");
                         }
-                        signedJWT = SignedJWT.parse(apiKey);
+                        signedJWTInfo = getSignedJwtInfo(apiKey);
                         String keyManager = ServiceReferenceHolder.getInstance().getJwtValidationService()
-                                .getKeyManagerNameIfJwtValidatorExist(signedJWT);
+                                .getKeyManagerNameIfJwtValidatorExist(signedJWTInfo);
                         if (StringUtils.isNotEmpty(keyManager)){
                             isJwtToken = true;
                         }
@@ -284,11 +287,19 @@ public class WebsocketInboundHandler extends ChannelInboundHandlerAdapter {
                     }
                 }
                 // Find the authentication scheme based on the token type
+                String apiVersion = version;
+                boolean isDefaultVersion = false;
+                if ((apiContextUri.startsWith("/" + version)
+                        || apiContextUri.startsWith("/t/" + tenantDomain + "/" + version))) {
+                    apiVersion = APIConstants.DEFAULT_WEBSOCKET_VERSION;
+                    isDefaultVersion = true;
+                }
                 if (isJwtToken) {
                     log.debug("The token was identified as a JWT token");
+
                     AuthenticationContext authenticationContext =
-                            new JWTValidator(null, new APIKeyValidator(null)).
-                                    authenticateForWebSocket(signedJWT, apiContextUri, version);
+                            new JWTValidator(new APIKeyValidator()).
+                                    authenticateForWebSocket(signedJWTInfo, apiContextUri, apiVersion);
                     if(authenticationContext == null || !authenticationContext.isAuthenticated()) {
                         return false;
                     }
@@ -308,12 +319,24 @@ public class WebsocketInboundHandler extends ChannelInboundHandlerAdapter {
                     info.setApplicationName(authenticationContext.getApplicationName());
                     info.setConsumerKey(authenticationContext.getConsumerKey());
                     info.setEndUserName(authenticationContext.getUsername());
+                    info.setApiTier(authenticationContext.getApiTier());
 
                     //This prefix is added for synapse to dispatch this request to the specific sequence
                     if (APIConstants.API_KEY_TYPE_PRODUCTION.equals(info.getType())) {
-                        uri = "/_PRODUCTION_" + uri;
+                        if (isDefaultVersion) {
+                            uri = "/_PRODUCTION_" + uri + "/" + authenticationContext.getApiVersion();
+                        } else {
+                            uri = "/_PRODUCTION_" + uri;
+                        }
                     } else if (APIConstants.API_KEY_TYPE_SANDBOX.equals(info.getType())) {
-                        uri = "/_SANDBOX_" + uri;
+                        if (isDefaultVersion) {
+                            uri = "/_SANDBOX_" + uri + "/" + authenticationContext.getApiVersion();
+                        } else {
+                            uri = "/_SANDBOX_" + uri;
+                        }
+                    }
+                    if (isDefaultVersion) {
+                        version = authenticationContext.getApiVersion();
                     }
 
                     infoDTO = info;
@@ -339,7 +362,7 @@ public class WebsocketInboundHandler extends ChannelInboundHandlerAdapter {
                     }
                     String keyValidatorClientType = APISecurityUtils.getKeyValidatorClientType();
                     if (APIConstants.API_KEY_VALIDATOR_WS_CLIENT.equals(keyValidatorClientType)) {
-                        info = getApiKeyDataForWSClient(apiKey,tenantDomain);
+                        info = getApiKeyDataForWSClient(apiKey, tenantDomain, apiContextUri, apiVersion);
                     } else {
                         return false;
                     }
@@ -374,9 +397,10 @@ public class WebsocketInboundHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    protected APIKeyValidationInfoDTO getApiKeyDataForWSClient(String apiKey, String tenantDomain) throws APISecurityException {
+    protected APIKeyValidationInfoDTO getApiKeyDataForWSClient(String key, String domain, String apiContextUri,
+                                                               String apiVersion) throws APISecurityException {
 
-        return new WebsocketWSClient().getAPIKeyData(apiContextUri, version, apiKey, tenantDomain);
+        return new WebsocketWSClient().getAPIKeyData(apiContextUri, apiVersion, key, domain);
     }
 
     protected APIManagerAnalyticsConfiguration getApiManagerAnalyticsConfiguration() {
@@ -582,5 +606,28 @@ public class WebsocketInboundHandler extends ChannelInboundHandlerAdapter {
 
         // remove trailing '?' or '&' from the built string
         uri = queryBuilder.substring(0, queryBuilder.length() - 1);
+    }
+
+    private SignedJWTInfo getSignedJwtInfo(String accessToken) throws ParseException {
+
+        String signature = accessToken.split("\\.")[2];
+        SignedJWTInfo signedJWTInfo;
+        Cache gatewaySignedJWTParseCache = CacheProvider.getGatewaySignedJWTParseCache();
+        if (gatewaySignedJWTParseCache != null) {
+            Object cachedEntry = gatewaySignedJWTParseCache.get(signature);
+            if (cachedEntry != null) {
+                signedJWTInfo = (SignedJWTInfo) cachedEntry;
+            } else {
+                SignedJWT signedJWT = SignedJWT.parse(accessToken);
+                JWTClaimsSet jwtClaimsSet = signedJWT.getJWTClaimsSet();
+                signedJWTInfo = new SignedJWTInfo(accessToken, signedJWT, jwtClaimsSet);
+                gatewaySignedJWTParseCache.put(signature, signedJWTInfo);
+            }
+        } else {
+            SignedJWT signedJWT = SignedJWT.parse(accessToken);
+            JWTClaimsSet jwtClaimsSet = signedJWT.getJWTClaimsSet();
+            signedJWTInfo = new SignedJWTInfo(accessToken, signedJWT, jwtClaimsSet);
+        }
+        return signedJWTInfo;
     }
 }

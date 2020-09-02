@@ -18,6 +18,9 @@
  *
  */
 var path = require('path');
+const fs = require('fs');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const ManifestPlugin = require('webpack-manifest-plugin');
 
 const config = {
     entry: {
@@ -25,8 +28,8 @@ const config = {
     },
     output: {
         path: path.resolve(__dirname, 'site/public/dist'),
-        filename: '[name].bundle.js',
-        chunkFilename: '[name].bundle.js',
+        filename: '[name].[contenthash].bundle.js',
+        chunkFilename: '[name].[contenthash].bundle.js',
         publicPath: 'site/public/dist/',
     },
     watch: false,
@@ -41,8 +44,10 @@ const config = {
             AppData: path.resolve(__dirname, 'source/src/app/data/'),
             AppComponents: path.resolve(__dirname, 'source/src/app/components/'),
             AppTests: path.resolve(__dirname, 'source/Tests/'),
-            react: path.resolve('../../../../../node_modules/react'),
-            reactDom: path.resolve('../../../../../node_modules/react-dom'),
+            react: fs.existsSync('../../../../../node_modules/react')
+                ? path.resolve('../../../../../node_modules/react') : path.resolve('../node_modules/react'),
+            reactDom: fs.existsSync('../../../../../node_modules/react-dom')
+                ? path.resolve('../../../../../node_modules/react-dom') : path.resolve('../node_modules/react-dom'),
         },
         extensions: ['.mjs','.js', '.jsx'],
     },
@@ -89,7 +94,10 @@ const config = {
         Settings: 'Settings',
         MaterialIcons: 'MaterialIcons',
     },
-    plugins: [],
+    plugins: [
+        new CleanWebpackPlugin(),
+        new ManifestPlugin(),
+    ],
 };
 
 if (process.env.NODE_ENV === 'development') {
@@ -111,7 +119,19 @@ if (process.env.NODE_ENV === 'development') {
 module.exports = function(env) {
     if (env && env.analysis) {
         var BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+
         config.plugins.push(new BundleAnalyzerPlugin());
+
+    }
+    if (env && env.unused) {
+        var UnusedFilesWebpackPlugin = require("unused-files-webpack-plugin").UnusedFilesWebpackPlugin;
+
+        config.plugins.push(new UnusedFilesWebpackPlugin({
+            failOnUnused: process.env.NODE_ENV !== 'development',
+            patterns: ['source/src/**/*.jsx', 'source/src/**/*.js'],
+            ignore: ['babel.config.js', '**/*.txt', 'source/src/index.js'],
+          }));
+
     }
     return config;
 };

@@ -78,7 +78,6 @@ const styles = theme => ({
         padding: '5px 5px 5px 5px',
     },
     selectRoot: {
-        background: theme.custom.appBar.searchInputBackground,
         borderRight: '1px solid rgba(0, 0, 0, 0.42)',
         minHeight: '40px',
         padding: '5px 5px 5px 15px',
@@ -95,12 +94,13 @@ const styles = theme => ({
     InfoToolTip: {
         backgroundColor: theme.custom.appBar.searchInputBackground,
         color: theme.palette.getContrastText(theme.custom.appBar.searchInputBackground),
-        maxWidth: 249,
+        maxWidth: 500,
         fontSize: theme.typography.pxToRem(14),
         fontWeight: '400',
         border: '1px solid #dadde9',
         borderRadius: '5px',
         padding: '15px 10px 0 18px',
+        lineHeight: '22px',
     },
     ariaLabel: {
         width: 0,
@@ -377,7 +377,19 @@ class HeaderSearch extends React.Component {
                                 <li>
                                     <FormattedMessage
                                         id='Base.Header.headersearch.HeaderSearch.tooltip.option9'
-                                        defaultMessage='By Microgateway Label [ Syntax - label:xxxx ]'
+                                        defaultMessage='By Gateway Label [ Syntax - label:xxxx ]'
+                                    />
+                                </li>
+                                <li>
+                                    <FormattedMessage
+                                        id='Base.Header.headersearch.HeaderSearch.tooltip.option11'
+                                        defaultMessage='By Tags [ Syntax - tags:xxxx ]'
+                                    />
+                                </li>
+                                <li>
+                                    <FormattedMessage
+                                        id='Base.Header.headersearch.HeaderSearch.tooltip.option12'
+                                        defaultMessage='By Api Category [ Syntax - api-category:xxxx ]'
                                     />
                                 </li>
                                 <li>

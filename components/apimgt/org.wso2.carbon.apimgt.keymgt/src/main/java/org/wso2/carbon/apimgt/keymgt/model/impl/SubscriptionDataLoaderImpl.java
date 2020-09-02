@@ -26,13 +26,13 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
-import org.wso2.carbon.apimgt.impl.dto.EventHubConfigurationDto;
-import org.wso2.carbon.apimgt.keymgt.model.entity.APIList;
 import org.wso2.carbon.apimgt.impl.APIConstants;
+import org.wso2.carbon.apimgt.impl.dto.EventHubConfigurationDto;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 import org.wso2.carbon.apimgt.keymgt.internal.ServiceReferenceHolder;
 import org.wso2.carbon.apimgt.keymgt.model.SubscriptionDataLoader;
 import org.wso2.carbon.apimgt.keymgt.model.entity.API;
+import org.wso2.carbon.apimgt.keymgt.model.entity.APIList;
 import org.wso2.carbon.apimgt.keymgt.model.entity.APIPolicyList;
 import org.wso2.carbon.apimgt.keymgt.model.entity.ApiPolicy;
 import org.wso2.carbon.apimgt.keymgt.model.entity.Application;
@@ -142,7 +142,9 @@ public class SubscriptionDataLoaderImpl implements SubscriptionDataLoader {
         if (responseString != null && !responseString.isEmpty()) {
             apis = (new Gson().fromJson(responseString, APIList.class)).getList();
         }
-        System.out.println("apis :" +  apis.get(0).toString());
+        if (log.isDebugEnabled()) {
+            log.debug("apis :" + apis.get(0).toString());
+        }
         return apis;
     }
 
@@ -374,7 +376,7 @@ public class SubscriptionDataLoaderImpl implements SubscriptionDataLoader {
 
     private String invokeService(String path, String tenantDomain) throws DataLoadingException, IOException {
 
-        String serviceURLStr = getEventHubConfigurationDto.getServiceUrl();
+        String serviceURLStr = getEventHubConfigurationDto.getServiceUrl().concat(APIConstants.INTERNAL_WEB_APP_EP);
         HttpGet method = new HttpGet(serviceURLStr + path);
 
             URL serviceURL = new URL(serviceURLStr + path);

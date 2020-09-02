@@ -43,6 +43,7 @@ import org.wso2.carbon.apimgt.api.ApplicationNameWithInvalidCharactersException;
 import org.wso2.carbon.apimgt.api.BlockConditionNotFoundException;
 import org.wso2.carbon.apimgt.api.ExceptionCodes;
 import org.wso2.carbon.apimgt.api.PolicyNotFoundException;
+import org.wso2.carbon.apimgt.api.dto.KeyManagerConfigurationDTO;
 import org.wso2.carbon.apimgt.api.model.API;
 import org.wso2.carbon.apimgt.api.model.APIIdentifier;
 import org.wso2.carbon.apimgt.api.model.APIKey;
@@ -130,6 +131,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.UUID;
 
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamException;
@@ -1713,6 +1715,8 @@ public abstract class AbstractAPIManager implements APIManager {
         //application will not be shared within the group
         defaultApp.setGroupId("");
         defaultApp.setTokenType(APIConstants.TOKEN_TYPE_JWT);
+        defaultApp.setUUID(UUID.randomUUID().toString());
+        defaultApp.setDescription(APIConstants.DEFAULT_APPLICATION_DESCRIPTION);
         apiMgtDAO.addApplication(defaultApp, subscriber.getName());
     }
 
@@ -1987,21 +1991,8 @@ public abstract class AbstractAPIManager implements APIManager {
     public Set<Tier> getTiers() throws APIManagementException {
         Set<Tier> tiers = new TreeSet<Tier>(new TierNameComparator());
 
-        Map<String, Tier> tierMap;
-        if (!APIUtil.isAdvanceThrottlingEnabled()) {
-            if (tenantId == MultitenantConstants.INVALID_TENANT_ID) {
-                tierMap = APIUtil.getTiers();
-            } else {
-                PrivilegedCarbonContext.startTenantFlow();
-                PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantId(tenantId, true);
-                tierMap = APIUtil.getTiers(tenantId);
-                endTenantFlow();
-            }
-            tiers.addAll(tierMap.values());
-        } else {
-            tierMap = APIUtil.getTiersFromPolicies(PolicyConstants.POLICY_LEVEL_SUB, tenantId);
-            tiers.addAll(tierMap.values());
-        }
+        Map<String, Tier> tierMap = APIUtil.getTiersFromPolicies(PolicyConstants.POLICY_LEVEL_SUB, tenantId);
+        tiers.addAll(tierMap.values());
 
         return tiers;
     }
@@ -2014,22 +2005,8 @@ public abstract class AbstractAPIManager implements APIManager {
     public Set<Tier> getTiers(String tenantDomain) throws APIManagementException {
 
         Set<Tier> tiers = new TreeSet<Tier>(new TierNameComparator());
-        Map<String, Tier> tierMap;
-        if (!APIUtil.isAdvanceThrottlingEnabled()) {
-            startTenantFlow(tenantDomain);
-            int requestedTenantId = PrivilegedCarbonContext.getThreadLocalCarbonContext().getTenantId();
-            if (requestedTenantId == MultitenantConstants.SUPER_TENANT_ID
-                    || requestedTenantId == MultitenantConstants.INVALID_TENANT_ID) {
-                tierMap = APIUtil.getTiers();
-            } else {
-                tierMap = APIUtil.getTiers(requestedTenantId);
-            }
-            tiers.addAll(tierMap.values());
-            endTenantFlow();
-        } else {
-            tierMap = APIUtil.getTiersFromPolicies(PolicyConstants.POLICY_LEVEL_SUB, tenantId);
-            tiers.addAll(tierMap.values());
-        }
+        Map<String, Tier> tierMap = APIUtil.getTiersFromPolicies(PolicyConstants.POLICY_LEVEL_SUB, tenantId);
+        tiers.addAll(tierMap.values());
         return tiers;
     }
 
@@ -2046,22 +2023,18 @@ public abstract class AbstractAPIManager implements APIManager {
 
         String tenantDomain = getTenantDomain(username);
         Map<String, Tier> tierMap;
-        if (!APIUtil.isAdvanceThrottlingEnabled()) {
-            tierMap = APIUtil.getTiers(tierType, tenantDomain);
-            tiers.addAll(tierMap.values());
+
+        int tenantIdFromUsername = APIUtil.getTenantId(username);
+        if (tierType == APIConstants.TIER_API_TYPE) {
+            tierMap = APIUtil.getTiersFromPolicies(PolicyConstants.POLICY_LEVEL_SUB, tenantIdFromUsername);
+        } else if (tierType == APIConstants.TIER_RESOURCE_TYPE) {
+            tierMap = APIUtil.getTiersFromPolicies(PolicyConstants.POLICY_LEVEL_API, tenantIdFromUsername);
+        } else if (tierType == APIConstants.TIER_APPLICATION_TYPE) {
+            tierMap = APIUtil.getTiersFromPolicies(PolicyConstants.POLICY_LEVEL_APP, tenantIdFromUsername);
         } else {
-            int tenantIdFromUsername = APIUtil.getTenantId(username);
-            if (tierType == APIConstants.TIER_API_TYPE) {
-                tierMap = APIUtil.getTiersFromPolicies(PolicyConstants.POLICY_LEVEL_SUB, tenantIdFromUsername);
-            } else if (tierType == APIConstants.TIER_RESOURCE_TYPE) {
-                tierMap = APIUtil.getTiersFromPolicies(PolicyConstants.POLICY_LEVEL_API, tenantIdFromUsername);
-            } else if (tierType == APIConstants.TIER_APPLICATION_TYPE) {
-                tierMap = APIUtil.getTiersFromPolicies(PolicyConstants.POLICY_LEVEL_APP, tenantIdFromUsername);
-            } else {
-                throw new APIManagementException("No such a tier type : " + tierType);
-            }
-            tiers.addAll(tierMap.values());
+            throw new APIManagementException("No such a tier type : " + tierType);
         }
+        tiers.addAll(tierMap.values());
 
         return tiers;
     }
@@ -2133,6 +2106,12 @@ public abstract class AbstractAPIManager implements APIManager {
     @Override
     public Map<String, Object> searchPaginatedAPIs(String searchQuery, String requestedTenantDomain,
                                                    int start, int end, boolean isLazyLoad) throws APIManagementException {
+        return searchPaginatedAPIs(searchQuery, requestedTenantDomain, start, end, isLazyLoad, false);
+    }
+
+    @Override
+    public Map<String, Object> searchPaginatedAPIs(String searchQuery, String requestedTenantDomain, int start, int end,
+            boolean isLazyLoad, boolean isPublisherListing) throws APIManagementException {
         Map<String, Object> result = new HashMap<String, Object>();
         boolean isTenantFlowStarted = false;
         String[] searchQueries = searchQuery.split("&");
@@ -2211,6 +2190,9 @@ public abstract class AbstractAPIManager implements APIManager {
                 APIUtil.loadTenantRegistry(tenantIDLocal);
                 userRegistry = getRegistryService().getGovernanceUserRegistry(CarbonConstants.REGISTRY_ANONNYMOUS_USERNAME, tenantIDLocal);
                 userNameLocal = CarbonConstants.REGISTRY_ANONNYMOUS_USERNAME;
+                if (!requestedTenantDomain.equals(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME)) {
+                    APIUtil.loadTenantConfigBlockingMode(requestedTenantDomain);
+                }
             } else {
                 userRegistry = this.registry;
                 tenantIDLocal = tenantId;
@@ -2232,7 +2214,8 @@ public abstract class AbstractAPIManager implements APIManager {
             } else if (searchQuery != null && searchQuery.startsWith(APIConstants.CONTENT_SEARCH_TYPE_PREFIX)) {
                 result = searchPaginatedAPIsByContent(userRegistry, tenantIDLocal, searchQuery, start, end, isLazyLoad);
             } else {
-                result = searchPaginatedAPIs(userRegistry, tenantIDLocal, searchQuery, start, end, isLazyLoad);
+                result = searchPaginatedAPIs(userRegistry, tenantIDLocal, searchQuery, start, end, isLazyLoad,
+                        isPublisherListing);
             }
 
         } catch (Exception e) {
@@ -2610,7 +2593,11 @@ public abstract class AbstractAPIManager implements APIManager {
     public List<String> getApiVersionsMatchingApiName(String apiName,String username) throws APIManagementException {
         return apiMgtDAO.getAPIVersionsMatchingApiName(apiName,username);
     }
-
+    
+    public Map<String, Object> searchPaginatedAPIs(Registry registry, int tenantId, String searchQuery, int start,
+            int end, boolean limitAttributes) throws APIManagementException {
+        return searchPaginatedAPIs(registry, tenantId, searchQuery, start, end, limitAttributes, false);
+    }
 
     /**
      * Returns API Search result based on the provided query. This search method supports '&' based concatenate
@@ -2624,7 +2611,7 @@ public abstract class AbstractAPIManager implements APIManager {
      */
 
     public Map<String, Object> searchPaginatedAPIs(Registry registry, int tenantId, String searchQuery, int start,
-                                                   int end, boolean limitAttributes) throws APIManagementException {
+            int end, boolean limitAttributes, boolean reducedPublisherAPIInfo) throws APIManagementException {
 
         SortedSet<Object> apiSet = new TreeSet<>(new APIAPIProductNameComparator());
         List<Object> apiList = new ArrayList<>();
@@ -2705,7 +2692,11 @@ public abstract class AbstractAPIManager implements APIManager {
                     if (limitAttributes) {
                         resultAPI = APIUtil.getAPI(artifact);
                     } else {
-                        resultAPI = APIUtil.getAPI(artifact, registry);
+                        if(reducedPublisherAPIInfo) {
+                            resultAPI = APIUtil.getReducedPublisherAPIForListing(artifact, registry);
+                        } else {
+                            resultAPI = APIUtil.getAPI(artifact, registry);
+                        }
                     }
                     if (resultAPI != null) {
                         apiList.add(resultAPI);
@@ -2723,26 +2714,28 @@ public abstract class AbstractAPIManager implements APIManager {
             // Creating a apiIds string
             String apiIdsString = "";
             int apiCount = apiList.size();
-            for (int i = 0; i < apiCount; i++) {
-                Object api = apiList.get(i);
-                String apiId = "";
-                if (api instanceof API) {
-                    apiId = ((API) api).getId().getApplicationId();
-                } else if (api instanceof APIProduct) {
-                    apiId = ((APIProduct) api).getId().getApplicationId();
-                }
+            if (!reducedPublisherAPIInfo) {
+                for (int i = 0; i < apiCount; i++) {
+                    Object api = apiList.get(i);
+                    String apiId = "";
+                    if (api instanceof API) {
+                        apiId = ((API) api).getId().getApplicationId();
+                    } else if (api instanceof APIProduct) {
+                        apiId = ((APIProduct) api).getId().getApplicationId();
+                    }
 
-                if (apiId != null && !apiId.isEmpty()) {
-                    if (apiIdsString.isEmpty()) {
-                        apiIdsString = apiId;
-                    } else {
-                        apiIdsString = apiIdsString + "," + apiId;
+                    if (apiId != null && !apiId.isEmpty()) {
+                        if (apiIdsString.isEmpty()) {
+                            apiIdsString = apiId;
+                        } else {
+                            apiIdsString = apiIdsString + "," + apiId;
+                        }
                     }
                 }
             }
 
             // setting scope
-            if (!apiIdsString.isEmpty()) {
+            if (!apiIdsString.isEmpty() && !reducedPublisherAPIInfo) {
                 String tenantDomain = PrivilegedCarbonContext.getThreadLocalCarbonContext().getTenantDomain();
                 KeyManager keyManager = KeyManagerHolder.getKeyManagerInstance(tenantDomain);
                 Map<String, Set<Scope>> apiScopeSet = keyManager.getScopesForAPIS(apiIdsString);
@@ -3103,55 +3096,62 @@ public abstract class AbstractAPIManager implements APIManager {
             String keyManagerName = apiKey.getKeyManager();
             String consumerKey = apiKey.getConsumerKey();
             if (StringUtils.isNotEmpty(consumerKey)) {
-                KeyManager keyManager = KeyManagerHolder.getKeyManagerInstance(tenantDomain, keyManagerName);
-                if (keyManager != null) {
-                    OAuthApplicationInfo oAuthApplicationInfo = keyManager.retrieveApplication(consumerKey);
-                    if (StringUtils.isNotEmpty(apiKey.getAppMetaData())) {
-                        OAuthApplicationInfo storedOAuthApplicationInfo = new Gson().fromJson(apiKey.getAppMetaData()
-                                , OAuthApplicationInfo.class);
-                        if (storedOAuthApplicationInfo.getParameter(APIConstants.JSON_GRANT_TYPES)
-                                instanceof String) {
-                            oAuthApplicationInfo.addParameter(APIConstants.JSON_GRANT_TYPES,
-                                    ((String) storedOAuthApplicationInfo
-                                            .getParameter(APIConstants.JSON_GRANT_TYPES))
-                                            .replace(",", " "));
-                        }
-                        if (oAuthApplicationInfo == null) {
-                            oAuthApplicationInfo = storedOAuthApplicationInfo;
-                        } else {
-
-                            if (StringUtils.isEmpty(oAuthApplicationInfo.getCallBackURL())) {
-                                oAuthApplicationInfo.setCallBackURL(storedOAuthApplicationInfo.getCallBackURL());
-                            }
-                            if (oAuthApplicationInfo.getParameter(APIConstants.JSON_GRANT_TYPES) == null &&
-                                    storedOAuthApplicationInfo.getParameter(APIConstants.JSON_GRANT_TYPES) != null) {
+                KeyManagerConfigurationDTO keyManagerConfigurationDTO = apiMgtDAO.getKeyManagerConfigurationByName(tenantDomain, keyManagerName);
+                if (keyManagerConfigurationDTO  != null && keyManagerConfigurationDTO.isEnabled()) {
+                    KeyManager keyManager = KeyManagerHolder.getKeyManagerInstance(tenantDomain, keyManagerName);
+                    if (keyManager != null) {
+                        OAuthApplicationInfo oAuthApplicationInfo = keyManager.retrieveApplication(consumerKey);
+                        if (StringUtils.isNotEmpty(apiKey.getAppMetaData())) {
+                            OAuthApplicationInfo storedOAuthApplicationInfo = new Gson().fromJson(apiKey.getAppMetaData()
+                                    , OAuthApplicationInfo.class);
+                            if (storedOAuthApplicationInfo.getParameter(APIConstants.JSON_GRANT_TYPES)
+                                    instanceof String) {
                                 oAuthApplicationInfo.addParameter(APIConstants.JSON_GRANT_TYPES,
-                                        storedOAuthApplicationInfo.getParameter(APIConstants.JSON_GRANT_TYPES));
+                                        ((String) storedOAuthApplicationInfo
+                                                .getParameter(APIConstants.JSON_GRANT_TYPES))
+                                                .replace(",", " "));
+                            }
+                            if (oAuthApplicationInfo == null) {
+                                oAuthApplicationInfo = storedOAuthApplicationInfo;
+                            } else {
+
+                                if (StringUtils.isEmpty(oAuthApplicationInfo.getCallBackURL())) {
+                                    oAuthApplicationInfo.setCallBackURL(storedOAuthApplicationInfo.getCallBackURL());
+                                }
+                                if (oAuthApplicationInfo.getParameter(APIConstants.JSON_GRANT_TYPES) == null &&
+                                        storedOAuthApplicationInfo.getParameter(APIConstants.JSON_GRANT_TYPES) != null) {
+                                    oAuthApplicationInfo.addParameter(APIConstants.JSON_GRANT_TYPES,
+                                            storedOAuthApplicationInfo.getParameter(APIConstants.JSON_GRANT_TYPES));
+                                }
+                                if (StringUtils.isEmpty(oAuthApplicationInfo.getClientSecret()) &&
+                                        StringUtils.isNotEmpty(storedOAuthApplicationInfo.getClientSecret())) {
+                                    oAuthApplicationInfo.setClientSecret(storedOAuthApplicationInfo.getClientSecret());
+                                }
                             }
                         }
-                    }
-                    AccessTokenInfo tokenInfo = keyManager.getAccessTokenByConsumerKey(consumerKey);
-                    if (oAuthApplicationInfo != null) {
-                        apiKey.setConsumerSecret(oAuthApplicationInfo.getClientSecret());
-                        apiKey.setCallbackUrl(oAuthApplicationInfo.getCallBackURL());
-                        apiKey.setGrantTypes(
-                                (String) oAuthApplicationInfo.getParameter(APIConstants.JSON_GRANT_TYPES));
-                        if (oAuthApplicationInfo.getParameter(APIConstants.JSON_ADDITIONAL_PROPERTIES) != null) {
-                            apiKey.setAdditionalProperties(
-                                    oAuthApplicationInfo.getParameter(APIConstants.JSON_ADDITIONAL_PROPERTIES));
+                        AccessTokenInfo tokenInfo = keyManager.getAccessTokenByConsumerKey(consumerKey);
+                        if (oAuthApplicationInfo != null) {
+                            apiKey.setConsumerSecret(oAuthApplicationInfo.getClientSecret());
+                            apiKey.setCallbackUrl(oAuthApplicationInfo.getCallBackURL());
+                            apiKey.setGrantTypes(
+                                    (String) oAuthApplicationInfo.getParameter(APIConstants.JSON_GRANT_TYPES));
+                            if (oAuthApplicationInfo.getParameter(APIConstants.JSON_ADDITIONAL_PROPERTIES) != null) {
+                                apiKey.setAdditionalProperties(
+                                        oAuthApplicationInfo.getParameter(APIConstants.JSON_ADDITIONAL_PROPERTIES));
+                            }
                         }
-                    }
-                    if (tokenInfo != null) {
-                        apiKey.setAccessToken(tokenInfo.getAccessToken());
-                        apiKey.setValidityPeriod(tokenInfo.getValidityPeriod());
-                        apiKey.setTokenScope(getScopeString(tokenInfo.getScopes()));
+                        if (tokenInfo != null) {
+                            apiKey.setAccessToken(tokenInfo.getAccessToken());
+                            apiKey.setValidityPeriod(tokenInfo.getValidityPeriod());
+                            apiKey.setTokenScope(getScopeString(tokenInfo.getScopes()));
+                        } else {
+                            if (log.isDebugEnabled()) {
+                                log.debug("Access token does not exist for Consumer Key: " + consumerKey);
+                            }
+                        }
                     } else {
-                        if (log.isDebugEnabled()) {
-                            log.debug("Access token does not exist for Consumer Key: " + consumerKey);
-                        }
+                        log.error("Key Manager " + keyManagerName + " not initialized in tenant " + tenantDomain);
                     }
-                } else {
-                    log.error("Key Manager " + keyManagerName + " not initialized in tenant " + tenantDomain);
                 }
             }
         }

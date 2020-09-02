@@ -18,13 +18,14 @@
  */
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const config = {
     entry: { index: './source/index.jsx' },
     output: {
         path: path.resolve(__dirname, 'site/public/dist'),
-        filename: '[name].bundle.js',
-        chunkFilename: '[name].bundle.js',
+        filename: '[name].[contenthash].bundle.js',
+        chunkFilename: '[name].[contenthash].bundle.js',
         publicPath: 'site/public/dist/',
     },
     node: {
@@ -83,6 +84,18 @@ const config = {
                 test: /\.(woff|woff2|eot|ttf|svg)$/,
                 loader: 'url-loader?limit=100000',
             },
+            // Until https://github.com/jantimon/html-webpack-plugin/issues/1483 ~tmkb
+            // This was added to generate the index.jag from a hbs template file including the hashed bundle file
+            {
+                test: /\.jag\.hbs$/,
+                loader: 'underscore-template-loader',
+                query: {
+                    engine: 'lodash',
+                    interpolate: '\\{\\[(.+?)\\]\\}',
+                    evaluate: '\\{%([\\s\\S]+?)%\\}',
+                    escape: '\\{\\{(.+?)\\}\\}',
+                },
+            },
         ],
     },
     externals: {
@@ -90,10 +103,18 @@ const config = {
         MaterialIcons: 'MaterialIcons',
         Config: 'AppConfig',
     },
-    plugins: [new MonacoWebpackPlugin({
-        languages: ['xml', 'json', 'yaml', 'sql', 'mysql'],
-        features: ['!gotoSymbol'],
-    })],
+    plugins: [
+        new MonacoWebpackPlugin({
+            languages: ['xml', 'json', 'yaml', 'sql', 'mysql'],
+            features: ['!gotoSymbol'],
+        }),
+        new HtmlWebpackPlugin({
+            inject: false,
+            template: path.resolve(__dirname, 'site/public/pages/index.jag.hbs'),
+            filename: path.resolve(__dirname, 'site/public/pages/index.jag'),
+            minify: false, // Make this true to get exploded, formatted index.jag file
+        }),
+    ],
 };
 
 // Note: for more info about monaco plugin: https://github.com/Microsoft/monaco-editor-webpack-plugin
@@ -117,6 +138,15 @@ module.exports = function (env) {
     if (env && env.analysis) {
         const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
         config.plugins.push(new BundleAnalyzerPlugin());
+    }
+    if (env && env.unused) {
+        const { UnusedFilesWebpackPlugin } = require('unused-files-webpack-plugin');
+
+        config.plugins.push(new UnusedFilesWebpackPlugin({
+            failOnUnused: process.env.NODE_ENV !== 'development',
+            patterns: ['source/src/**/*.jsx', 'source/src/**/*.js'],
+            ignore: ['babel.config.js', '**/*.txt', 'source/src/index.js'],
+        }));
     }
     return config;
 };

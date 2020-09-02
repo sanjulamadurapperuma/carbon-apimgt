@@ -69,7 +69,7 @@ public abstract class AbstractKeyValidationHandler implements KeyValidationHandl
             if (validationContext.getTokenInfo().isApplicationToken()) {
                 dto.setUserType(APIConstants.ACCESS_TOKEN_USER_TYPE_APPLICATION);
             } else {
-                dto.setUserType("APPLICATION_USER");
+                dto.setUserType(APIConstants.AUTH_APPLICATION_USER_LEVEL_TOKEN);
             }
 
             AccessTokenInfo tokenInfo = validationContext.getTokenInfo();
@@ -217,6 +217,10 @@ public abstract class AbstractKeyValidationHandler implements KeyValidationHandl
         //TODO add a check to see whether datastore is initialized an load data using rest api if it is not loaded
         if (datastore != null) {
             api = datastore.getApiByContextAndVersion(context, version);
+            if (api == null && APIConstants.DEFAULT_WEBSOCKET_VERSION.equals(version)) {
+                // for websocket default version.
+                api = datastore.getDefaultApiByContext(context);
+            }
             if (api != null) {
                 key = datastore.getKeyMappingByKeyAndKeyManager(consumerKey, keyManager);
                 if (key != null) {
@@ -314,12 +318,12 @@ public abstract class AbstractKeyValidationHandler implements KeyValidationHandl
                 //go further and load missing objects
                 if(app == null) {
                     app = new SubscriptionDataLoaderImpl().getApplicationById(key.getApplicationId());
-                    if(app != null && app.getId() != 0) {
+                    if(app != null && app.getId() != null && app.getId() != 0) {
                         // load to the memory
-                        log.debug("Loading Application to the in-memory datastore.");
+                        log.debug("Loading Application to the in-memory datastore. applicationId = " + app.getId());
                         datastore.addOrUpdateApplication(app);
                     } else {
-                        log.debug("Application not found.");
+                        log.debug("Application not found. applicationId = " + key.getApplicationId());
                     }
                 }
                 if (app != null) {
@@ -363,86 +367,87 @@ public abstract class AbstractKeyValidationHandler implements KeyValidationHandl
         infoDTO.setSubscriber(app.getSubName());
         infoDTO.setApplicationId(app.getId().toString());
         infoDTO.setApiName(api.getApiName());
+        infoDTO.setApiVersion(api.getApiVersion());
         infoDTO.setApiPublisher(api.getApiProvider());
         infoDTO.setApplicationName(app.getName());
         infoDTO.setApplicationTier(app.getPolicy());
+        infoDTO.setApplicationUUID(app.getUUID());
+        infoDTO.setAppAttributes(app.getAttributes());
         infoDTO.setType(type);
 
         // Advanced Level Throttling Related Properties
-        if (APIUtil.isAdvanceThrottlingEnabled()) {
-            String apiTier = api.getApiTier();
-            String subscriberUserId = sub.getSubscriptionId();
-            String subscriberTenant = MultitenantUtils.getTenantDomain(app.getSubName());
+        String apiTier = api.getApiTier();
+        String subscriberUserId = sub.getSubscriptionId();
+        String subscriberTenant = MultitenantUtils.getTenantDomain(app.getSubName());
 
-            ApplicationPolicy appPolicy = datastore.getApplicationPolicyByName(app.getPolicy(),
-                    tenantId);
-            if (appPolicy == null) {
-                try {
-                    appPolicy = new SubscriptionDataLoaderImpl()
-                            .getApplicationPolicy(app.getPolicy(), apiTenantDomain);
-                    datastore.addOrUpdateApplicationPolicy(appPolicy);
-                } catch (DataLoadingException e) {
-                    log.error("Error while loading ApplicationPolicy");
-                }
+        ApplicationPolicy appPolicy = datastore.getApplicationPolicyByName(app.getPolicy(),
+                tenantId);
+        if (appPolicy == null) {
+            try {
+                appPolicy = new SubscriptionDataLoaderImpl()
+                        .getApplicationPolicy(app.getPolicy(), apiTenantDomain);
+                datastore.addOrUpdateApplicationPolicy(appPolicy);
+            } catch (DataLoadingException e) {
+                log.error("Error while loading ApplicationPolicy");
             }
-            SubscriptionPolicy subPolicy = datastore.getSubscriptionPolicyByName(sub.getPolicyId(),
-                    tenantId);
-            if (subPolicy == null) {
-                try {
-                    subPolicy = new SubscriptionDataLoaderImpl()
-                            .getSubscriptionPolicy(sub.getPolicyId(), apiTenantDomain);
-                    datastore.addOrUpdateSubscriptionPolicy(subPolicy);
-                } catch (DataLoadingException e) {
-                    log.error("Error while loading SubscriptionPolicy");
-                }
-            }
-            ApiPolicy apiPolicy = datastore.getApiPolicyByName(api.getApiTier(), tenantId);
-
-            boolean isContentAware = false;
-            if (appPolicy.isContentAware() || subPolicy.isContentAware()
-                    || (apiPolicy != null && apiPolicy.isContentAware())) {
-                isContentAware = true;
-            }
-            infoDTO.setContentAware(isContentAware);
-
-            // TODO this must implement as a part of throttling implementation.
-            int spikeArrest = 0;
-            String apiLevelThrottlingKey = "api_level_throttling_key";
-
-            if (subPolicy.getRateLimitCount() > 0) {
-                spikeArrest = subPolicy.getRateLimitCount();
-            }
-
-            String spikeArrestUnit = null;
-
-            if (subPolicy.getRateLimitTimeUnit() != null) {
-                spikeArrestUnit = subPolicy.getRateLimitTimeUnit();
-            }
-            boolean stopOnQuotaReach = subPolicy.isStopOnQuotaReach();
-            int graphQLMaxDepth = 0;
-            if (subPolicy.getGraphQLMaxDepth() > 0) {
-                graphQLMaxDepth = subPolicy.getGraphQLMaxDepth();
-            }
-            int graphQLMaxComplexity = 0;
-            if (subPolicy.getGraphQLMaxComplexity() > 0) {
-                graphQLMaxComplexity = subPolicy.getGraphQLMaxComplexity();
-            }
-            List<String> list = new ArrayList<String>();
-            list.add(apiLevelThrottlingKey);
-            infoDTO.setSpikeArrestLimit(spikeArrest);
-            infoDTO.setSpikeArrestUnit(spikeArrestUnit);
-            infoDTO.setStopOnQuotaReach(stopOnQuotaReach);
-            infoDTO.setSubscriberTenantDomain(subscriberTenant);
-            infoDTO.setGraphQLMaxDepth(graphQLMaxDepth);
-            infoDTO.setGraphQLMaxComplexity(graphQLMaxComplexity);
-            if (apiTier != null && apiTier.trim().length() > 0) {
-                infoDTO.setApiTier(apiTier);
-            }
-            // We also need to set throttling data list associated with given API. This need to have
-            // policy id and
-            // condition id list for all throttling tiers associated with this API.
-            infoDTO.setThrottlingDataList(list);
         }
+        SubscriptionPolicy subPolicy = datastore.getSubscriptionPolicyByName(sub.getPolicyId(),
+                tenantId);
+        if (subPolicy == null) {
+            try {
+                subPolicy = new SubscriptionDataLoaderImpl()
+                        .getSubscriptionPolicy(sub.getPolicyId(), apiTenantDomain);
+                datastore.addOrUpdateSubscriptionPolicy(subPolicy);
+            } catch (DataLoadingException e) {
+                log.error("Error while loading SubscriptionPolicy");
+            }
+        }
+        ApiPolicy apiPolicy = datastore.getApiPolicyByName(api.getApiTier(), tenantId);
+
+        boolean isContentAware = false;
+        if (appPolicy.isContentAware() || subPolicy.isContentAware()
+                || (apiPolicy != null && apiPolicy.isContentAware())) {
+            isContentAware = true;
+        }
+        infoDTO.setContentAware(isContentAware);
+
+        // TODO this must implement as a part of throttling implementation.
+        int spikeArrest = 0;
+        String apiLevelThrottlingKey = "api_level_throttling_key";
+
+        if (subPolicy.getRateLimitCount() > 0) {
+            spikeArrest = subPolicy.getRateLimitCount();
+        }
+
+        String spikeArrestUnit = null;
+
+        if (subPolicy.getRateLimitTimeUnit() != null) {
+            spikeArrestUnit = subPolicy.getRateLimitTimeUnit();
+        }
+        boolean stopOnQuotaReach = subPolicy.isStopOnQuotaReach();
+        int graphQLMaxDepth = 0;
+        if (subPolicy.getGraphQLMaxDepth() > 0) {
+            graphQLMaxDepth = subPolicy.getGraphQLMaxDepth();
+        }
+        int graphQLMaxComplexity = 0;
+        if (subPolicy.getGraphQLMaxComplexity() > 0) {
+            graphQLMaxComplexity = subPolicy.getGraphQLMaxComplexity();
+        }
+        List<String> list = new ArrayList<String>();
+        list.add(apiLevelThrottlingKey);
+        infoDTO.setSpikeArrestLimit(spikeArrest);
+        infoDTO.setSpikeArrestUnit(spikeArrestUnit);
+        infoDTO.setStopOnQuotaReach(stopOnQuotaReach);
+        infoDTO.setSubscriberTenantDomain(subscriberTenant);
+        infoDTO.setGraphQLMaxDepth(graphQLMaxDepth);
+        infoDTO.setGraphQLMaxComplexity(graphQLMaxComplexity);
+        if (apiTier != null && apiTier.trim().length() > 0) {
+            infoDTO.setApiTier(apiTier);
+        }
+        // We also need to set throttling data list associated with given API. This need to have
+        // policy id and
+        // condition id list for all throttling tiers associated with this API.
+        infoDTO.setThrottlingDataList(list);
         infoDTO.setAuthorized(true);
         return infoDTO;
     }

@@ -81,7 +81,7 @@ export default function ClaimMappings(props) {
                 if (remoteClaim === newRemoteClaim) {
                     Alert.error(<FormattedMessage
                         id='Claim.Mapping.already.exists'
-                        defaultMessage='Claim Mapping Already Exist'
+                        defaultMessage='Claim Mapping already exists.'
                     />);
                     clearValues();
                     exist = true;
@@ -105,7 +105,7 @@ export default function ClaimMappings(props) {
         setClaimMapping(newMapping);
     };
     return (
-        <Box m={2}>
+        <Box mt={2}>
             <Table className={classes.table} aria-label='simple table'>
                 <TableHead>
                     <TableRow>

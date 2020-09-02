@@ -58,7 +58,6 @@ import org.wso2.carbon.apimgt.impl.handlers.UserPostSelfRegistrationHandler;
 import org.wso2.carbon.apimgt.impl.jwt.JWTValidationService;
 import org.wso2.carbon.apimgt.impl.jwt.JWTValidationServiceImpl;
 import org.wso2.carbon.apimgt.impl.jwt.transformer.JWTTransformer;
-import org.wso2.carbon.apimgt.impl.keymgt.AbstractKeyManagerConnectorConfiguration;
 import org.wso2.carbon.apimgt.impl.keymgt.KeyManagerConfigurationService;
 import org.wso2.carbon.apimgt.impl.keymgt.KeyManagerConfigurationServiceImpl;
 import org.wso2.carbon.apimgt.impl.notifier.ApisNotifier;
@@ -77,6 +76,7 @@ import org.wso2.carbon.apimgt.impl.recommendationmgt.AccessTokenGenerator;
 import org.wso2.carbon.apimgt.impl.recommendationmgt.RecommendationEnvironment;
 import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
+import org.wso2.carbon.apimgt.impl.utils.GatewayArtifactsMgtDBUtil;
 import org.wso2.carbon.apimgt.impl.workflow.events.APIMgtWorkflowDataPublisher;
 import org.wso2.carbon.base.MultitenantConstants;
 import org.wso2.carbon.base.ServerConfiguration;
@@ -199,6 +199,7 @@ public class APIManagerComponent {
             bundleContext.registerService(Notifier.class.getName(), new PolicyNotifier(), null);
             bundleContext.registerService(Notifier.class.getName(), new DeployAPIInGatewayNotifier(), null);
 
+
             APIManagerConfigurationServiceImpl configurationService = new APIManagerConfigurationServiceImpl(configuration);
             ServiceReferenceHolder.getInstance().setAPIManagerConfigurationService(configurationService);
             registration = componentContext.getBundleContext().registerService(APIManagerConfigurationService.class.getName(), configurationService, null);
@@ -224,6 +225,7 @@ public class APIManagerComponent {
             AuthorizationUtils.addAuthorizeRoleListener(APIConstants.AM_PUBLISHER_LIFECYCLE_EXECUTION_ID, RegistryUtils.getAbsolutePath(RegistryContext.getBaseInstance(), APIUtil.getMountedPath(RegistryContext.getBaseInstance(), RegistryConstants.GOVERNANCE_REGISTRY_BASE_PATH) + APIConstants.API_LIFE_CYCLE_HISTORY), APIConstants.Permissions.API_PUBLISH, UserMgtConstants.EXECUTE_ACTION, null);
             setupImagePermissions();
             APIMgtDBUtil.initialize();
+            GatewayArtifactsMgtDBUtil.initialize();
             configureEventPublisherProperties();
             configureNotificationEventPublisher();
             // Load initially available api contexts at the server startup. This Cache is only use by the products other than the api-manager
@@ -246,10 +248,7 @@ public class APIManagerComponent {
                 log.error("Exception when creating default roles for tenant " + MultitenantConstants.SUPER_TENANT_ID, e);
             }
             // Adding default throttle policies
-            boolean advancedThrottlingEnabled = APIUtil.isAdvanceThrottlingEnabled();
-            if (advancedThrottlingEnabled) {
-                addDefaultAdvancedThrottlePolicies();
-            }
+            addDefaultAdvancedThrottlePolicies();
             // Update all NULL THROTTLING_TIER values to Unlimited
             boolean isNullThrottlingTierConversionEnabled = APIUtil.updateNullThrottlingTierAtStartup();
             try {
@@ -271,7 +270,7 @@ public class APIManagerComponent {
             }
             APIUtil.init();
 
-            // Activating UserPostSelfRegistration handler component
+            // Activating UserPostSelfRegistration handler componeAPITemplateBuilderImplnt
             try {
                 registration = componentContext.getBundleContext()
                         .registerService(AbstractEventHandler.class.getName(), new UserPostSelfRegistrationHandler(),
@@ -833,16 +832,11 @@ public class APIManagerComponent {
             policy = ReferencePolicy.DYNAMIC,
             unbind = "removeKeyManagerConnectorConfiguration")
     protected void addKeyManagerConnectorConfiguration(
-            KeyManagerConnectorConfiguration keyManagerConnectorConfiguration, Map<String, Object> properties) {
+            KeyManagerConnectorConfiguration keyManagerConnectorConfiguration) {
 
-        if (properties.containsKey(APIConstants.KeyManager.KEY_MANAGER_TYPE)) {
-            String type = (String) properties.get(APIConstants.KeyManager.KEY_MANAGER_TYPE);
-            if (keyManagerConnectorConfiguration instanceof AbstractKeyManagerConnectorConfiguration) {
-                ((AbstractKeyManagerConnectorConfiguration) keyManagerConnectorConfiguration).setKeyManagerType(type);
-            }
-            ServiceReferenceHolder.getInstance().addKeyManagerConnectorConfiguration(type,
-                    keyManagerConnectorConfiguration);
-        }
+        ServiceReferenceHolder.getInstance()
+                .addKeyManagerConnectorConfiguration(keyManagerConnectorConfiguration.getType(),
+                        keyManagerConnectorConfiguration);
     }
 
     /**

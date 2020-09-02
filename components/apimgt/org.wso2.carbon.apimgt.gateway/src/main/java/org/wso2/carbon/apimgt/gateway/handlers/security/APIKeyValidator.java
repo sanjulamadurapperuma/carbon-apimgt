@@ -17,7 +17,6 @@
 package org.wso2.carbon.apimgt.gateway.handlers.security;
 
 import org.apache.axis2.Constants;
-import org.apache.axis2.engine.AxisConfiguration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -34,9 +33,11 @@ import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.api.model.URITemplate;
 import org.wso2.carbon.apimgt.gateway.APIMgtGatewayConstants;
 import org.wso2.carbon.apimgt.gateway.MethodStats;
+import org.wso2.carbon.apimgt.gateway.handlers.Utils;
 import org.wso2.carbon.apimgt.gateway.handlers.security.keys.APIKeyDataStore;
 import org.wso2.carbon.apimgt.gateway.handlers.security.keys.WSAPIKeyDataStore;
 import org.wso2.carbon.apimgt.gateway.internal.ServiceReferenceHolder;
+import org.wso2.carbon.apimgt.gateway.utils.GatewayUtils;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.APIManagerConfiguration;
 import org.wso2.carbon.apimgt.impl.caching.CacheProvider;
@@ -46,6 +47,7 @@ import org.wso2.carbon.apimgt.impl.dto.APIKeyValidationInfoDTO;
 import org.wso2.carbon.apimgt.impl.dto.ResourceInfoDTO;
 import org.wso2.carbon.apimgt.impl.dto.VerbInfoDTO;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
+import org.wso2.carbon.apimgt.keymgt.service.TokenValidationContext;
 import org.wso2.carbon.apimgt.tracing.TracingSpan;
 import org.wso2.carbon.apimgt.tracing.TracingTracer;
 import org.wso2.carbon.apimgt.tracing.Util;
@@ -73,20 +75,17 @@ public class APIKeyValidator {
 
     protected APIKeyDataStore dataStore;
 
-    private boolean gatewayKeyCacheEnabled = true;
+    private boolean gatewayKeyCacheEnabled;
 
-    private boolean isGatewayAPIResourceValidationEnabled = true;
+    private boolean isGatewayAPIResourceValidationEnabled;
 
     protected Log log = LogFactory.getLog(getClass());
 
     private ArrayList<URITemplate> uriTemplates = null;
 
-    public APIKeyValidator(AxisConfiguration axisConfig) {
-        //check the client type from config
-        String keyValidatorClientType = getKeyValidatorClientType();
-        if (APIConstants.API_KEY_VALIDATOR_WS_CLIENT.equals(keyValidatorClientType)) {
-            this.dataStore = new WSAPIKeyDataStore();
-        }
+    public APIKeyValidator() {
+
+        this.dataStore = new WSAPIKeyDataStore();
 
         this.gatewayKeyCacheEnabled = isGatewayTokenCacheEnabled();
 
@@ -161,7 +160,8 @@ public class APIKeyValidator {
 
                 if (info != null) {
                     if (APIUtil.isAccessTokenExpired(info)) {
-                        log.info("Invalid OAuth Token : Access Token " + apiKey + " expired.");
+                        log.info("Invalid OAuth Token : Access Token " + GatewayUtils.getMaskedToken(apiKey) + " " +
+                                "expired.");
                         info.setAuthorized(false);
                         // in cache, if token is expired  remove cache entry.
                         getGatewayKeyCache().remove(cacheKey);
@@ -385,7 +385,7 @@ public class APIKeyValidator {
                 return verbInfoList;
             }
         } else {
-            API selectedApi = synCtx.getConfiguration().getAPI(apiName);
+            API selectedApi = Utils.getSelectedAPI(synCtx);
             Resource selectedResource = null;
             String resourceString;
 
@@ -753,5 +753,19 @@ public class APIKeyValidator {
                                                         String tenantDomain, String keyManager)
             throws APISecurityException {
         return dataStore.validateSubscription(context, version, consumerKey,tenantDomain, keyManager);
+    }
+
+    /**
+     * Validate scopes bound to the resource of the API being invoked against the scopes of the token.
+     *
+     * @param tokenValidationContext Token validation context
+     * @param tenantDomain           Tenant domain
+     * @return <code>true</code> if scope validation is successful and
+     * <code>false</code> if scope validation failed
+     * @throws APISecurityException in case of scope validation failure
+     */
+    public boolean validateScopes(TokenValidationContext tokenValidationContext, String tenantDomain)
+            throws APISecurityException {
+        return dataStore.validateScopes(tokenValidationContext, tenantDomain);
     }
 }

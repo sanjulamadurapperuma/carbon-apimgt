@@ -204,37 +204,64 @@ public class DefaultKeyValidationHandler extends AbstractKeyValidationHandler {
                 SubscriptionDataHolder.getInstance().getTenantSubscriptionStore(tenantDomain);
         API api = tenantSubscriptionStore.getApiByContextAndVersion(validationContext.getContext(),
                 validationContext.getVersion());
+        boolean scopesValidated = false;
         if (api != null) {
 
             for (String resource : resourceArray) {
                 List<URLMapping> resources = api.getResources();
                 URLMapping urlMapping = null;
                 for (URLMapping mapping : resources) {
-                    if (resource.equals(mapping.getUrlPattern()) && httpVerb.equals(mapping.getHttpMethod())) {
-                        urlMapping = mapping;
-                        break;
+                    if (httpVerb.equals(mapping.getHttpMethod())) {
+                        if (isResourcePathMatching(resource, mapping)) {
+                            urlMapping = mapping;
+                            break;
+                        }
                     }
                 }
                 if (urlMapping != null) {
                     if (urlMapping.getScopes().size() == 0) {
-                        return true;
+                        scopesValidated = true;
+                        continue;
                     }
                     List<String> mappingScopes = urlMapping.getScopes();
+                    boolean validate = false;
                     for (String scope : mappingScopes) {
                         if (scopesSet.contains(scope)) {
-                            return true;
+                            scopesValidated = true;
+                            validate = true;
+                            break;
                         }
                     }
-                    if (urlMapping.getScopes().size() > 0) {
-                        apiKeyValidationInfoDTO.setAuthorized(false);
-                        apiKeyValidationInfoDTO.setValidationStatus(APIConstants.KeyValidationStatus.INVALID_SCOPE);
-                        return false;
+                    if (!validate && urlMapping.getScopes().size() > 0) {
+                        break;
                     }
                 }
             }
         }
-        apiKeyValidationInfoDTO.setAuthorized(false);
-        apiKeyValidationInfoDTO.setValidationStatus(APIConstants.KeyValidationStatus.INVALID_SCOPE);
+        if (!scopesValidated) {
+            apiKeyValidationInfoDTO.setAuthorized(false);
+            apiKeyValidationInfoDTO.setValidationStatus(APIConstants.KeyValidationStatus.INVALID_SCOPE);
+        }
+        return scopesValidated;
+    }
+
+    private boolean isResourcePathMatching(String resourceString, URLMapping urlMapping) {
+
+        String resource = resourceString.trim();
+        String urlPattern = urlMapping.getUrlPattern().trim();
+
+        if (resource.equalsIgnoreCase(urlPattern)) {
+            return true;
+        }
+
+        // If the urlPattern is only one character longer than the resource and the urlPattern ends with a '/'
+        if (resource.length() + 1 == urlPattern.length() && urlPattern.endsWith("/")) {
+            // Check if resource is equal to urlPattern if the trailing '/' of the urlPattern is ignored
+            String urlPatternWithoutSlash = urlPattern.substring(0, urlPattern.length() - 1);
+            return resource.equalsIgnoreCase(urlPatternWithoutSlash);
+        }
+
         return false;
     }
+
 }

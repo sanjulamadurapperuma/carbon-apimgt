@@ -19,21 +19,21 @@ package org.wso2.carbon.apimgt.impl.listeners;
 
 import org.apache.axis2.util.JavaUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.wso2.carbon.apimgt.api.APIManagementException;
 import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.APIManagerConfiguration;
+import org.wso2.carbon.apimgt.impl.dto.TokenIssuerDto;
+import org.wso2.carbon.apimgt.impl.factory.KeyManagerHolder;
 import org.wso2.carbon.apimgt.impl.internal.ServiceReferenceHolder;
 import org.wso2.carbon.apimgt.impl.loader.KeyManagerConfigurationDataRetriever;
-import org.wso2.carbon.apimgt.impl.service.KeyMgtRegistrationService;
 import org.wso2.carbon.core.ServerStartupObserver;
 import org.wso2.carbon.utils.CarbonUtils;
 import org.wso2.carbon.utils.multitenancy.MultitenantConstants;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Class for performing operations on initial server startup
@@ -49,21 +49,14 @@ public class ServerStartupListener implements ServerStartupObserver {
         APIManagerConfiguration apiManagerConfiguration =
                 ServiceReferenceHolder.getInstance().getAPIManagerConfigurationService().getAPIManagerConfiguration();
         if (apiManagerConfiguration != null) {
-            String defaultKeyManagerRegistration =
-                    apiManagerConfiguration.getFirstProperty(APIConstants.ENABLE_DEFAULT_KEY_MANAGER_REGISTRATION);
-            if (StringUtils.isNotEmpty(defaultKeyManagerRegistration) &&
-                    JavaUtils.isTrueExplicitly(defaultKeyManagerRegistration)) {
-                try {
-                    KeyMgtRegistrationService.registerDefaultKeyManager(MultitenantConstants.SUPER_TENANT_DOMAIN_NAME);
-                } catch (APIManagementException e) {
-                    log.error("Error while registering Default Key Manager for SuperTenant", e);
-                }
-            }
             String enableKeyManagerRetrieval =
                     apiManagerConfiguration.getFirstProperty(APIConstants.ENABLE_KEY_MANAGER_RETRIVAL);
             if (JavaUtils.isTrueExplicitly(enableKeyManagerRetrieval)) {
                 startConfigureKeyManagerConfigurations();
             }
+            Map<String, TokenIssuerDto> tokenIssuerDtoMap =
+                    apiManagerConfiguration.getJwtConfigurationDto().getTokenIssuerDtoMap();
+            tokenIssuerDtoMap.forEach((issuer, tokenIssuer) -> KeyManagerHolder.addGlobalJWTValidators(tokenIssuer));
         }
     }
 
@@ -74,6 +67,7 @@ public class ServerStartupListener implements ServerStartupObserver {
         String repositoryDir = "repository";
         String resourcesDir = "resources";
         String extensionsDir = "extensions";
+        String customAssetsDir = "customAssets";
         String webappDir = "webapps";
         String authenticationEndpointDir = "authenticationendpoint";
         String accountRecoveryEndpointDir = "accountrecoveryendpoint";
@@ -86,6 +80,9 @@ public class ServerStartupListener implements ServerStartupObserver {
             String resourceExtDirectoryPath =
                     CarbonUtils.getCarbonHome() + File.separator + repositoryDir + File.separator + resourcesDir
                             + File.separator + extensionsDir;
+            String customAssetsExtDirectoryPath =
+                    CarbonUtils.getCarbonHome() + File.separator + repositoryDir + File.separator + resourcesDir
+                    + File.separator + extensionsDir + File.separator + customAssetsDir;
             String authenticationEndpointWebAppPath =
                     CarbonUtils.getCarbonRepository() + webappDir + File.separator + authenticationEndpointDir;
             String authenticationEndpointWebAppExtPath =
@@ -94,6 +91,9 @@ public class ServerStartupListener implements ServerStartupObserver {
                     CarbonUtils.getCarbonRepository() + webappDir + File.separator + accountRecoveryEndpointDir;
             String accountRecoveryWebAppExtPath = accountRecoveryWebAppPath + File.separator + extensionsDir;
             if (new File(resourceExtDirectoryPath).exists()) {
+                // delete extensions directory from the webapp folders if they exist
+                FileUtils.deleteDirectory(new File(authenticationEndpointWebAppExtPath));
+                FileUtils.deleteDirectory(new File(accountRecoveryWebAppExtPath));
                 log.info("Starting to copy identity page extensions...");
                 String headerJsp = resourceExtDirectoryPath + File.separator + headerJspFile;
                 String footerJsp = resourceExtDirectoryPath + File.separator + footerJspFile;
@@ -123,6 +123,13 @@ public class ServerStartupListener implements ServerStartupObserver {
                 if (new File(privacyPolicyContentJsp).exists()) {
                     copyFileToDirectory(privacyPolicyContentJsp, authenticationEndpointWebAppExtPath,
                             authenticationEndpointWebAppPath);
+                }
+                // copy custom asset files to the webapp directories
+                if (new File(customAssetsExtDirectoryPath).exists()) {
+                    FileUtils.copyDirectory(new File(customAssetsExtDirectoryPath),
+                            new File(authenticationEndpointWebAppExtPath + File.separator + customAssetsDir));
+                    FileUtils.copyDirectory(new File(customAssetsExtDirectoryPath),
+                            new File(accountRecoveryWebAppExtPath + File.separator + customAssetsDir));
                 }
                 log.info("Successfully completed copying identity page extensions");
             }

@@ -37,7 +37,7 @@ import org.wso2.carbon.apimgt.impl.APIConstants;
 import org.wso2.carbon.apimgt.impl.APIManagerConfiguration;
 import org.wso2.carbon.apimgt.impl.caching.CacheProvider;
 import org.wso2.carbon.apimgt.impl.dto.BasicAuthValidationInfoDTO;
-import org.wso2.carbon.apimgt.keymgt.stub.usermanager.APIKeyMgtRemoteUserStoreMgtService;
+import org.wso2.carbon.apimgt.impl.dto.EventHubConfigurationDto;
 import org.wso2.carbon.apimgt.keymgt.stub.usermanager.APIKeyMgtRemoteUserStoreMgtServiceAPIManagementException;
 import org.wso2.carbon.apimgt.keymgt.stub.usermanager.APIKeyMgtRemoteUserStoreMgtServiceStub;
 import org.wso2.carbon.user.core.UserCoreConstants;
@@ -49,6 +49,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.cache.Cache;
 import javax.cache.Caching;
@@ -68,15 +69,16 @@ public class BasicAuthCredentialValidator {
      *
      * @throws APISecurityException If an authentication failure or some other error occurs
      */
-    BasicAuthCredentialValidator() throws APISecurityException {
+    public BasicAuthCredentialValidator() throws APISecurityException {
         this.gatewayKeyCacheEnabled = isGatewayTokenCacheEnabled();
         this.getGatewayUsernameCache();
 
         ConfigurationContext configurationContext = ServiceReferenceHolder.getInstance().getAxis2ConfigurationContext();
         APIManagerConfiguration config = ServiceReferenceHolder.getInstance().getAPIManagerConfiguration();
-        String username = config.getFirstProperty(APIConstants.API_KEY_VALIDATOR_USERNAME);
-        String password = config.getFirstProperty(APIConstants.API_KEY_VALIDATOR_PASSWORD);
-        String url = config.getFirstProperty(APIConstants.API_KEY_VALIDATOR_URL);
+        EventHubConfigurationDto eventHubConfigurationDto = config.getEventHubConfigurationDto();
+        String username = eventHubConfigurationDto.getUsername();
+        String password = eventHubConfigurationDto.getPassword();
+        String url = eventHubConfigurationDto.getServiceUrl();
         if (url == null) {
             throw new APISecurityException(APISecurityConstants.API_AUTH_GENERAL_ERROR,
                     "API key manager URL unspecified");
@@ -84,7 +86,7 @@ public class BasicAuthCredentialValidator {
 
         try {
             apiKeyMgtRemoteUserStoreMgtServiceStub = new APIKeyMgtRemoteUserStoreMgtServiceStub(configurationContext, url +
-                    "APIKeyMgtRemoteUserStoreMgtService");
+                    "/services/APIKeyMgtRemoteUserStoreMgtService");
             ServiceClient client = apiKeyMgtRemoteUserStoreMgtServiceStub._getServiceClient();
             Options options = client.getOptions();
             options.setCallTransportCleanup(true);
@@ -199,12 +201,20 @@ public class BasicAuthCredentialValidator {
         }
 
         if (openAPI != null) {
-            // retrieve the user roles related to the scope of the API resource
             String resourceRoles = null;
-            String resourceScope = OpenAPIUtils.getScopesOfResource(openAPI, synCtx);
-            if (resourceScope != null) {
-                resourceRoles = OpenAPIUtils.getRolesOfScope(openAPI, synCtx, resourceScope);
+            // retrieve the user roles related to the scope of the API resource
+            List<String> resourceScopes = OpenAPIUtils.getScopesOfResource(openAPI, synCtx);
+            List<String> resourceRolesList = new ArrayList<>();
+            if (resourceScopes != null && resourceScopes.size() > 0) {
+                for (String resourceScope : resourceScopes) {
+                    String roles = OpenAPIUtils.getRolesOfScope(openAPI, synCtx, resourceScope);
+                    if (StringUtils.isNotEmpty(roles)) {
+                        resourceRolesList.add(roles);
+                    }
+                }
+                resourceRoles = String.join(",", resourceRolesList);
             }
+
 
             if (StringUtils.isNotBlank(resourceRoles)) {
                 userRoles = getUserRoles(username);
@@ -292,7 +302,8 @@ public class BasicAuthCredentialValidator {
      * @return true if the validation passed
      * @throws APISecurityException If an authentication failure or some other error occurs
      */
-    @MethodStats public boolean validateScopes(String username, OpenAPI openAPI, MessageContext synCtx,
+    @MethodStats
+    public boolean validateScopes(String username, OpenAPI openAPI, MessageContext synCtx,
             String[] userRoleList) throws APISecurityException {
         String apiContext = (String) synCtx.getProperty(RESTConstants.REST_API_CONTEXT);
         String apiVersion = (String) synCtx.getProperty(RESTConstants.SYNAPSE_REST_API_VERSION);
@@ -310,11 +321,18 @@ public class BasicAuthCredentialValidator {
         }
 
         if (openAPI != null) {
-            // retrieve the user roles related to the scope of the API resource
             String resourceRoles = null;
-            String resourceScope = OpenAPIUtils.getScopesOfResource(openAPI, synCtx);
-            if (resourceScope != null) {
-                resourceRoles = OpenAPIUtils.getRolesOfScope(openAPI, synCtx, resourceScope);
+            // retrieve the user roles related to the scope of the API resource
+            List<String> resourceScopes = OpenAPIUtils.getScopesOfResource(openAPI, synCtx);
+            List<String> resourceRolesList = new ArrayList<>();
+            if (resourceScopes != null && resourceScopes.size() > 0) {
+                for (String resourceScope : resourceScopes) {
+                    String roles = OpenAPIUtils.getRolesOfScope(openAPI, synCtx, resourceScope);
+                    if (StringUtils.isNotEmpty(roles)) {
+                        resourceRolesList.add(roles);
+                    }
+                }
+                resourceRoles = String.join(",", resourceRolesList);
             }
 
             if (StringUtils.isNotBlank(resourceRoles)) {

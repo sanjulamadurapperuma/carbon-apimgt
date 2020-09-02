@@ -195,7 +195,7 @@ function APICreateDefault(props) {
                 } else {
                     Alert.info(intl.formatMessage({
                         id: 'Apis.Create.Default.APICreateDefault.success.otherStatus',
-                        defaultMessage: 'API updated succesfully',
+                        defaultMessage: 'API updated successfully',
                     }));
                 }
                 history.push(`/apis/${api.id}/overview`);
@@ -324,7 +324,7 @@ function APICreateDefault(props) {
                             <Button
                                 variant='contained'
                                 color='primary'
-                                disabled={isAPICreateDisabled}
+                                disabled={isAPICreateDisabled || !apiInputs.isFormValid}
                                 onClick={createAPIOnly}
                             >
                                 Create
@@ -338,7 +338,7 @@ function APICreateDefault(props) {
                                     id='itest-id-apicreatedefault-createnpublish'
                                     variant='contained'
                                     color='primary'
-                                    disabled={!isPublishable || isAPICreateDisabled}
+                                    disabled={!isPublishable || isAPICreateDisabled || !apiInputs.isFormValid}
                                     onClick={createAndPublish}
                                 >
                                     {!isPublishing && 'Create & Publish'}

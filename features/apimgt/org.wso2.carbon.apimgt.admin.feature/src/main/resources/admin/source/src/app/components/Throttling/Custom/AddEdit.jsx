@@ -39,6 +39,9 @@ import Joi from '@hapi/joi';
 const MonacoEditor = lazy(() => import('react-monaco-editor' /* webpackChunkName: "CustomPolicyAddMonacoEditor" */));
 
 const useStyles = makeStyles((theme) => ({
+    root: {
+        marginBottom: theme.spacing(15),
+    },
     error: {
         color: theme.palette.error.dark,
     },
@@ -63,6 +66,7 @@ const useStyles = makeStyles((theme) => ({
     },
     buttonBox: {
         marginTop: theme.spacing(2),
+        marginBottom: theme.spacing(2),
     },
     saveButton: {
         marginRight: theme.spacing(2),
@@ -162,7 +166,7 @@ function AddEdit(props) {
     const validate = (fieldName, value) => {
         let error = '';
         let keys;
-        const schema = Joi.string().max(30).regex(/^[^~!@#;:%^*()+={}|\\<>"',&$\s+]*$/);
+        const schema = Joi.string().regex(/^[^~!@#;:%^*()+={}|\\<>"',&$\s+]*$/);
         const validateKeyTemplates = ['$userId', '$apiContext', '$apiVersion', '$resourceKey',
             '$appTenant', '$apiTenant', '$appId', '$clientIp'];
         switch (fieldName) {
@@ -176,6 +180,11 @@ function AddEdit(props) {
                     error = intl.formatMessage({
                         id: 'Throttling.Custom.Policy.policy.name.space',
                         defaultMessage: 'Name contains spaces',
+                    });
+                } else if (value.length > 60) {
+                    error = intl.formatMessage({
+                        id: 'Throttling.Custom.Policy.policy.name.too.long.error.msg',
+                        defaultMessage: 'Custom policy name is too long',
                     });
                 } else if (schema.validate(value).error) {
                     error = intl.formatMessage({
@@ -300,7 +309,7 @@ function AddEdit(props) {
                     defaultMessage: 'Custom Rate Limiting Policy - Define Policy',
                 })}
         >
-            <Box component='div' m={2}>
+            <Box component='div' m={2} className={classes.root}>
                 <Grid container spacing={2}>
                     <Grid item xs={12} md={12} lg={12}>
                         <TextField
@@ -324,7 +333,7 @@ function AddEdit(props) {
                             helperText={validationError.policyName ? validationError.policyName : (
                                 <FormattedMessage
                                     id='Admin.Throttling.Custom.policy.add.policy.name'
-                                    defaultMessage='Name of Throttling Policy'
+                                    defaultMessage='Name of the throttle policy'
                                 />
                             )}
                         />
@@ -339,7 +348,7 @@ function AddEdit(props) {
                             helperText={(
                                 <FormattedMessage
                                     id='Admin.Throttling.Custom.policy.add.policy.description'
-                                    defaultMessage='Description of Throttling Policy'
+                                    defaultMessage='Description of the throttle policy'
                                 />
                             )}
                         />
@@ -363,13 +372,14 @@ function AddEdit(props) {
                                 <FormattedMessage
                                     id='dsdds'
                                     defaultMessage={'The specific combination of attributes being checked '
-                                    + 'in the policy need to be defined as the key template'}
+                                        + 'in the policy need to be defined as the key template. Allowed values are : '
+                                        + '$userId, $apiContext, $apiVersion, $resourceKey, $appTenant, $apiTenant,'
+                                        + ' $appId, $clientIp'}
                                 />
                             )}
                         />
                         <FormHelperText className={classes.helperText}>
-                            Eg: $userId, $apiContext, $apiVersion, $resourceKey, $appTenant, $apiTenant,
-                            $appId, $clientIp
+                            Eg: $userId:$apiContext:$apiVersion
                         </FormHelperText>
                     </Grid>
                     <Grid item xs={12} md={12} lg={12}>

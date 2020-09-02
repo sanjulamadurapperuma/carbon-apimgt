@@ -78,7 +78,6 @@ public class APIHandlerServiceComponent {
     private static final Log log = LogFactory.getLog(APIHandlerServiceComponent.class);
 
     private APIKeyValidatorClientPool clientPool;
-
     private ServiceRegistration registration;
 
     @Activate
@@ -107,7 +106,6 @@ public class APIHandlerServiceComponent {
                 // Register Tenant service creator to deploy tenant specific common synapse configurations
                 TenantServiceCreator listener = new TenantServiceCreator();
                 bundleContext.registerService(Axis2ConfigurationContextObserver.class.getName(), listener, null);
-                if (apiManagerConfiguration.getThrottleProperties().isEnabled()) {
                     ServiceReferenceHolder.getInstance().setThrottleDataPublisher(new ThrottleDataPublisher());
                     ThrottleDataHolder throttleDataHolder = new ThrottleDataHolder();
                     APIThrottleDataServiceImpl throttleDataServiceImpl =
@@ -120,19 +118,6 @@ public class APIHandlerServiceComponent {
                     ServiceReferenceHolder.getInstance().setRevokedTokenService(new RevokedTokenDataImpl());
                     log.debug("APIThrottleDataService Registered...");
                     // start web service throttle data retriever as separate thread and start it.
-                    if (apiManagerConfiguration.getThrottleProperties().getBlockCondition().isEnabled()) {
-                        BlockingConditionRetriever webServiceThrottleDataRetriever = new BlockingConditionRetriever();
-                        webServiceThrottleDataRetriever.startWebServiceThrottleDataRetriever();
-                        KeyTemplateRetriever webServiceBlockConditionsRetriever = new KeyTemplateRetriever();
-                        webServiceBlockConditionsRetriever.startKeyTemplateDataRetriever();
-
-                        // Start web service based revoked JWT tokens retriever.
-                        // Advanced throttle properties & blocking conditions have to be enabled for JWT token
-                        // retrieval due to the throttle config dependency for this feature.
-                        RevokedJWTTokensRetriever webServiceRevokedJWTTokensRetriever = new RevokedJWTTokensRetriever();
-                        webServiceRevokedJWTTokensRetriever.startRevokedJWTTokensRetriever();
-                    }
-                }
 
                 // Set APIM Gateway JWT Generator
 
@@ -163,7 +148,7 @@ public class APIHandlerServiceComponent {
         CacheProvider.createGatewayApiKeyCache();
         CacheProvider.createGatewayApiKeyDataCache();
         CacheProvider.getInvalidGatewayApiKeyCache();
-        CacheProvider.getJWKSCache();
+        CacheProvider.createParsedSignJWTCache();
     }
 
     @Deactivate

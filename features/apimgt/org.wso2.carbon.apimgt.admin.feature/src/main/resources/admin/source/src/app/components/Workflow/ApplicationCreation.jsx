@@ -30,7 +30,6 @@ import { makeStyles } from '@material-ui/core/styles';
 import SearchIcon from '@material-ui/icons/Search';
 import RefreshIcon from '@material-ui/icons/Refresh';
 import Card from '@material-ui/core/Card';
-import CardActionArea from '@material-ui/core/CardActionArea';
 import CardActions from '@material-ui/core/CardActions';
 import CardContent from '@material-ui/core/CardContent';
 import MUIDataTable from 'mui-datatables';
@@ -53,6 +52,8 @@ import localizedFormat from 'dayjs/plugin/localizedFormat';
 import CheckIcon from '@material-ui/icons/Check';
 import ClearIcon from '@material-ui/icons/Clear';
 import Box from '@material-ui/core/Box';
+import CircularProgress from '@material-ui/core/CircularProgress';
+import WarningBase from 'AppComponents/AdminPages/Addons/WarningBase';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -86,6 +87,9 @@ function ListLabels() {
     const restApi = new API();
     const classes = useStyles();
     const [searchText, setSearchText] = useState('');
+    const [isUpdating, setIsUpdating] = useState(null);
+    const [buttonValue, setButtonValue] = useState();
+    const [hasListPermission, setHasListPermission] = useState(true);
 
     /**
      * API call to get Detected Data
@@ -109,11 +113,16 @@ function ListLabels() {
                 return workflowlist;
             })
             .catch((error) => {
-                Alert.error(intl.formatMessage({
-                    id: 'Workflow.ApplicationCreation.apicall.has.errors',
-                    defaultMessage: 'Unable to get workflow pending requests for Application Creation',
-                }));
-                throw (error);
+                const { status } = error;
+                if (status === 401) {
+                    setHasListPermission(false);
+                } else {
+                    Alert.error(intl.formatMessage({
+                        id: 'Workflow.ApplicationCreation.apicall.has.errors',
+                        defaultMessage: 'Unable to get workflow pending requests for Application Creation',
+                    }));
+                    throw (error);
+                }
             });
     }
 
@@ -138,7 +147,9 @@ function ListLabels() {
     }, []);
 
     const updateStatus = (referenceId, value) => {
+        setButtonValue(value);
         const body = { status: value, attributes: {}, description: '' };
+        setIsUpdating(true);
         if (value === 'APPROVED') {
             body.description = 'Approve workflow request.';
         }
@@ -149,22 +160,25 @@ function ListLabels() {
         const promisedupdateWorkflow = restApi.updateWorkflow(referenceId, body);
         return promisedupdateWorkflow
             .then(() => {
-                return (
-                    <FormattedMessage
-                        id='Workflow.ApplicationCreation.update.success'
-                        defaultMessage='workflow status is updated successfully'
-                    />
-                );
+                setIsUpdating(false);
+                Alert.success(intl.formatMessage({
+                    id: 'Workflow.ApplicationCreation.update.success',
+                    defaultMessage: 'Workflow status is updated successfully',
+                }));
             })
             .catch((error) => {
-                const { response } = error;
-                if (response.body) {
+                const { response, status } = error;
+                const { body: { description } } = response;
+                if (status === 401) {
+                    Alert.error(description);
+                } else if (response.body) {
                     Alert.error(intl.formatMessage({
                         id: 'Workflow.ApplicationCreation.updateStatus.has.errors',
                         defaultMessage: 'Unable to complete application creation approve/reject process. ',
                     }));
                     throw (response.body.description);
                 }
+                setIsUpdating(false);
                 return null;
             })
             .then(() => {
@@ -232,7 +246,7 @@ function ListLabels() {
             name: 'applicationTier',
             label: intl.formatMessage({
                 id: 'Workflow.ApplicationCreation.table.header.ApplicationTier',
-                defaultMessage: 'Throtting Policy',
+                defaultMessage: 'Throttling Policy',
             }),
             options: {
                 sort: false,
@@ -260,7 +274,7 @@ function ListLabels() {
                             {properties.userName}
                             <br />
                             <Tooltip title={format}>
-                                <Typography color='textSecondary'>
+                                <Typography color='textSecondary' variant='caption'>
                                     {time}
                                 </Typography>
                             </Tooltip>
@@ -288,9 +302,14 @@ function ListLabels() {
                                     variant='contained'
                                     size='small'
                                     onClick={() => updateStatus(referenceId, 'APPROVED')}
+                                    disabled={isUpdating}
                                 >
                                     <CheckIcon />
-                                    Approve
+                                    <FormattedMessage
+                                        id='Workflow.ApplicationCreation.table.button.approve'
+                                        defaultMessage='Approve'
+                                    />
+                                    {(isUpdating && buttonValue === 'APPROVED') && <CircularProgress size={15} /> }
                                 </Button>
                                 &nbsp;&nbsp;
                                 <Button
@@ -298,9 +317,14 @@ function ListLabels() {
                                     variant='contained'
                                     size='small'
                                     onClick={() => updateStatus(referenceId, 'REJECTED')}
+                                    disabled={isUpdating}
                                 >
                                     <ClearIcon />
-                                    Reject
+                                    <FormattedMessage
+                                        id='Workflow.ApplicationCreation.table.button.reject'
+                                        defaultMessage='Reject'
+                                    />
+                                    {(isUpdating && buttonValue === 'REJECTED') && <CircularProgress size={15} />}
                                 </Button>
                             </Box>
                         </div>
@@ -322,7 +346,7 @@ function ListLabels() {
     const searchActive = true;
     const searchPlaceholder = intl.formatMessage({
         id: 'Workflow.applicationcreation.search.default',
-        defaultMessage: 'Search by workflow request description',
+        defaultMessage: 'Search by Application, Throttling Policy or Creator',
     });
 
     const filterData = (event) => {
@@ -352,25 +376,20 @@ function ListLabels() {
                 pageStyle='small'
             >
                 <Card className={classes.root}>
-                    <CardActionArea>
-                        <CardContent>
-                            <Typography gutterBottom variant='h5' component='h2'>
-                                <FormattedMessage
-                                    id='Workflow.ApplicationCreation.List.empty.title.applicationcreations'
-                                    defaultMessage='Application Creation'
-                                />
-                            </Typography>
-                            <Typography variant='body2' color='textSecondary' component='p'>
-                                <FormattedMessage
-                                    id='Workflow.ApplicationCreation.List.empty.content.applicationcreations'
-                                    defaultMessage={'There are no workflow pending requests for application creation.'
-                                    + 'It is possible to approve or reject workflow pending requests of application'
-                                    + 'creation. Workflow Approval Executor needs to be enabled to approve or '
-                                    + 'reject the requests. '}
-                                />
-                            </Typography>
-                        </CardContent>
-                    </CardActionArea>
+                    <CardContent>
+                        <Typography gutterBottom variant='h5' component='h2'>
+                            <FormattedMessage
+                                id='Workflow.ApplicationCreation.List.empty.title.applicationcreations'
+                                defaultMessage='Application Creation'
+                            />
+                        </Typography>
+                        <Typography variant='body2' color='textSecondary' component='p'>
+                            <FormattedMessage
+                                id='Workflow.ApplicationCreation.List.empty.content.applicationcreations'
+                                defaultMessage='There are no pending workflow requests for application creation.'
+                            />
+                        </Typography>
+                    </CardContent>
                     <CardActions>
                         {addButtonOverride || (
                             <span updateList={fetchData} {...addButtonProps} />
@@ -378,6 +397,26 @@ function ListLabels() {
                     </CardActions>
                 </Card>
             </ContentBase>
+        );
+    }
+    if (!hasListPermission) {
+        return (
+            <WarningBase
+                pageProps={pageProps}
+                title={(
+                    <FormattedMessage
+                        id='Workflow.ApplicationCreation.permission.denied.title'
+                        defaultMessage='Permission Denied'
+                    />
+                )}
+                content={(
+                    <FormattedMessage
+                        id='Workflow.ApplicationCreation.permission.denied.content'
+                        defaultMessage={'You dont have enough permission to view Application Creation - '
+                        + 'Approval Tasks. Please contact the site administrator.'}
+                    />
+                )}
+            />
         );
     }
     if (!data) {

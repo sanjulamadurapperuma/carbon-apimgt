@@ -200,10 +200,8 @@ public abstract class APIDefinition {
      *
      * @param swaggerContent String
      * @param api            API
-     * @param isBasepathExtractedFromSwagger boolean
      * @return API
      */
-    public abstract API setExtensionsToAPI(String swaggerContent, API api, boolean isBasepathExtractedFromSwagger)
+    public abstract API setExtensionsToAPI(String swaggerContent, API api)
             throws APIManagementException;
-
 }

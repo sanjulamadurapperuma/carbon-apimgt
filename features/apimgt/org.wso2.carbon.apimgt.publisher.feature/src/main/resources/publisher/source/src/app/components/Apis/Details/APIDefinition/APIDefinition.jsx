@@ -37,12 +37,12 @@ import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
-import yaml from 'js-yaml';
+import CircularProgress from '@material-ui/core/CircularProgress';
+import YAML from 'js-yaml';
 import Alert from 'AppComponents/Shared/Alert';
 import API from 'AppData/api.js';
 import { doRedirectToLogin } from 'AppComponents/Shared/RedirectToLogin';
 import { withRouter } from 'react-router';
-import json2yaml from 'json2yaml';
 import { isRestricted } from 'AppData/AuthManager';
 import ResourceNotFound from '../../../Base/Errors/ResourceNotFound';
 import APISecurityAudit from './APISecurityAudit';
@@ -82,6 +82,9 @@ const styles = (theme) => ({
     button: {
         marginLeft: theme.spacing(1),
     },
+    progressLoader: {
+        marginLeft: theme.spacing(1),
+    },
 });
 /**
  * This component holds the functionality of viewing the api definition content of an api. The initial view is a
@@ -105,6 +108,7 @@ class APIDefinition extends React.Component {
             isAuditApiClicked: false,
             securityAuditProperties: [],
             isSwaggerValid: true,
+            isUpdating: false,
         };
         this.handleNo = this.handleNo.bind(this);
         this.handleOk = this.handleOk.bind(this);
@@ -144,8 +148,8 @@ class APIDefinition extends React.Component {
                     });
                 } else {
                     this.setState({
-                        swagger: json2yaml.stringify(response.obj).replace('---\n', ''),
-                        swaggerModified: json2yaml.stringify(response.obj).replace('---\n', ''),
+                        swagger: YAML.safeDump(YAML.safeLoad(response.data)),
+                        swaggerModified: YAML.safeDump(YAML.safeLoad(response.data)),
                         format: 'yaml',
                         convertTo: this.getConvertToFormat('yaml'),
                     });
@@ -180,9 +184,9 @@ class APIDefinition extends React.Component {
         const { format, swagger, convertTo } = this.state;
         let formattedString = '';
         if (convertTo === 'json') {
-            formattedString = JSON.stringify(yaml.load(swagger), null, 1);
+            formattedString = JSON.stringify(YAML.load(swagger), null, 1);
         } else {
-            formattedString = json2yaml.stringify(JSON.parse(swagger)).replace('---\n', '');
+            formattedString = YAML.safeDump(YAML.safeLoad(swagger));
         }
         this.setState({
             swagger: formattedString,
@@ -206,7 +210,7 @@ class APIDefinition extends React.Component {
             if (format === 'json') {
                 JSON.parse(modifiedContent, null);
             } else {
-                yaml.load(modifiedContent);
+                YAML.load(modifiedContent);
             }
             this.setState({ isSwaggerValid: true, swaggerModified: modifiedContent });
         } catch (e) {
@@ -318,12 +322,13 @@ class APIDefinition extends React.Component {
      * */
     updateSwaggerDefinition(swaggerContent, specFormat, toFormat) {
         const { api, intl, updateAPI } = this.props;
+        this.setState({ isUpdating: true });
         let parsedContent = {};
         if (this.hasJsonStructure(swaggerContent)) {
             parsedContent = JSON.parse(swaggerContent);
         } else {
             try {
-                parsedContent = yaml.load(swaggerContent);
+                parsedContent = YAML.load(swaggerContent);
             } catch (err) {
                 console.log(err);
                 Alert.error(intl.formatMessage({
@@ -356,6 +361,7 @@ class APIDefinition extends React.Component {
                  *Otherwise, we need to refresh the page to get changes.
                  */
                 updateAPI();
+                this.setState({ isUpdating: false });
             })
             .catch((err) => {
                 console.log(err);
@@ -363,6 +369,7 @@ class APIDefinition extends React.Component {
                     id: 'Apis.Details.APIDefinition.APIDefinition.error.while.updating.api.definition',
                     defaultMessage: 'Error occurred while updating the API Definition',
                 }));
+                this.setState({ isUpdating: false });
             });
     }
 
@@ -372,7 +379,7 @@ class APIDefinition extends React.Component {
     render() {
         const {
             swagger, graphQL, openEditor, openDialog, format, convertTo, notFound, isAuditApiClicked,
-            securityAuditProperties, isSwaggerValid, swaggerModified,
+            securityAuditProperties, isSwaggerValid, swaggerModified, isUpdating,
         } = this.state;
         const { classes, resourceNotFountMessage, api } = this.props;
         let downloadLink;
@@ -517,24 +524,18 @@ class APIDefinition extends React.Component {
                             variant='contained'
                             color='primary'
                             onClick={this.openUpdateConfirmation}
-                            disabled={!isSwaggerValid}
+                            disabled={!isSwaggerValid || isUpdating}
                         >
                             <FormattedMessage
                                 id='Apis.Details.APIDefinition.APIDefinition.documents.swagger.editor.update.content'
                                 defaultMessage='Update Content'
                             />
+                            {isUpdating && <CircularProgress className={classes.progressLoader} size={24} />}
                         </Button>
                     </Paper>
                     <Suspense
                         fallback={(
-                            <div>
-                                (
-                                <FormattedMessage
-                                    id='Apis.Details.APIDefinition.APIDefinition.loading'
-                                    defaultMessage='Loading...'
-                                />
-                                )
-                            </div>
+                            <Progress />
                         )}
                     >
                         <EditorDialog

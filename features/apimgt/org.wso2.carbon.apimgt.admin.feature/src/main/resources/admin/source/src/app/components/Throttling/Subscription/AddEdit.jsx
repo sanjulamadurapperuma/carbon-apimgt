@@ -49,6 +49,9 @@ import API from 'AppData/api';
 import Joi from '@hapi/joi';
 
 const useStyles = makeStyles((theme) => ({
+    root: {
+        marginBottom: theme.spacing(10),
+    },
     error: {
         color: theme.palette.error.dark,
     },
@@ -56,6 +59,10 @@ const useStyles = makeStyles((theme) => ({
         paddingBottom: theme.spacing(4),
     },
     radioGroup: {
+        display: 'flex',
+        flexDirection: 'row',
+    },
+    radioGroupBilling: {
         display: 'flex',
         flexDirection: 'row',
         justifyContent: 'center',
@@ -175,8 +182,8 @@ function AddEdit(props) {
         customAttributes: [],
         stopOnQuotaReach: true,
         permissions: {
-            roles: ['Internal/everyone'],
-            permissionStatus: 'allow',
+            roles: 'Internal/everyone',
+            permissionStatus: 'ALLOW',
         },
         graphQL: {
             maxComplexity: '',
@@ -232,8 +239,8 @@ function AddEdit(props) {
                     customAttributes: setCustomAttributes(result.body.customAttributes),
                     stopOnQuotaReach: result.body.stopOnQuotaReach,
                     permissions: {
-                        roles: ['Internal/everyone'],
-                        permissionStatus: 'allow',
+                        roles: 'Internal/everyone',
+                        permissionStatus: 'ALLOW',
                     },
                     graphQL: {
                         maxComplexity: (result.body.graphQLMaxComplexity === 0) ? '' : result.body.graphQLMaxComplexity,
@@ -267,8 +274,8 @@ function AddEdit(props) {
             customAttributes: [],
             stopOnQuotaReach: true,
             permissions: {
-                roles: ['Internal/everyone'],
-                permissionStatus: 'allow',
+                roles: 'Internal/everyone',
+                permissionStatus: 'ALLOW',
             },
             graphQL: {
                 maxComplexity: '',
@@ -281,7 +288,7 @@ function AddEdit(props) {
 
     const validate = (fieldName, value) => {
         let error = '';
-        const schema = Joi.string().max(30).regex(/^[^~!@#;:%^*()+={}|\\<>"',&$\s+]*$/);
+        const schema = Joi.string().regex(/^[^~!@#;:%^*()+={}|\\<>"',&$\s+]*$/);
         switch (fieldName) {
             case 'policyName':
                 if (value === '') {
@@ -293,6 +300,11 @@ function AddEdit(props) {
                     error = intl.formatMessage({
                         id: 'Throttling.Subscription.Policy.policy.name.space.error.msg',
                         defaultMessage: 'Name contains spaces',
+                    });
+                } else if (value.length > 60) {
+                    error = intl.formatMessage({
+                        id: 'Throttling.Subscription.Policy.policy.name.too.long.error.msg',
+                        defaultMessage: 'Subscription policy name is too long',
                     });
                 } else if (schema.validate(value).error) {
                     error = intl.formatMessage({
@@ -386,6 +398,17 @@ function AddEdit(props) {
         return errorText;
     };
 
+    const getRoleList = (rolesString) => {
+        // Split the roles string using comma, trim spaces and remove empty strings (if any)
+        if (rolesString.indexOf(',') === -1) {
+            return [rolesString];
+        } else {
+            return rolesString.split(',').map((role) => {
+                return role.trim();
+            }).filter((role) => role !== '');
+        }
+    };
+
     const formSaveCallback = () => {
         const formErrors = getAllFormErrors();
         if (formErrors !== '') {
@@ -423,6 +446,10 @@ function AddEdit(props) {
                         billingCycle: state.monetization.billingCycle,
                     },
                 },
+                permissions: {
+                    permissionType: state.permissions.permissionStatus,
+                    roles: getRoleList(state.permissions.roles),
+                },
             };
         } else {
             subscriptionThrottlingPolicy = {
@@ -452,6 +479,10 @@ function AddEdit(props) {
                         currencyType: state.monetization.currencyType,
                         billingCycle: state.monetization.billingCycle,
                     },
+                },
+                permissions: {
+                    permissionType: state.permissions.permissionStatus,
+                    roles: getRoleList(state.permissions.roles),
                 },
             };
         }
@@ -530,14 +561,17 @@ function AddEdit(props) {
     return (
         <ContentBase
             pageStyle='half'
-            title={
-                intl.formatMessage({
-                    id: 'Throttling.Subscription.AddEdit.title.main',
-                    defaultMessage: 'Subscription Rate Limiting Policy',
+            title={isEdit
+                ? intl.formatMessage({
+                    id: 'Throttling.Subscription.AddEdit.title.edit',
+                    defaultMessage: 'Subscription Rate Limiting Policy - Edit',
                 })
-            }
+                : intl.formatMessage({
+                    id: 'Throttling.Subscription.AddEdit.title.add',
+                    defaultMessage: 'Subscription Rate Limiting Policy - Create new',
+                })}
         >
-            <Box component='div' m={2}>
+            <Box component='div' m={2} className={classes.root}>
                 <Grid container spacing={2}>
                     <Grid item xs={12} md={12} lg={3}>
                         <Box display='flex' flexDirection='row' alignItems='center'>
@@ -943,7 +977,7 @@ function AddEdit(props) {
                                         name='billingPlan'
                                         value={billingPlan}
                                         onChange={onChange}
-                                        className={classes.radioGroup}
+                                        className={classes.radioGroupBilling}
                                     >
                                         <FormControlLabel
                                             value='FREE'
@@ -1134,7 +1168,7 @@ function AddEdit(props) {
                                 alignItems='center'
                                 className={classes.toggleSwitchPadding}
                             >
-                                <Box flex='1'>
+                                <Box flex='0.65'>
                                     <Typography color='inherit' variant='body1' component='div'>
                                         <FormattedMessage
                                             id='Throttling.Subscription.stop.quota.reach'
@@ -1285,7 +1319,7 @@ function AddEdit(props) {
                     <Grid item xs={12} md={12} lg={9}>
                         <Box component='div' m={1}>
                             <Box display='flex' flexDirection='row' alignItems='center'>
-                                {permissionStatus === 'allow' ? (
+                                {permissionStatus === 'ALLOW' ? (
                                     <Box flex='1'>
                                         <TextField
                                             name='roles'
@@ -1306,6 +1340,9 @@ function AddEdit(props) {
                                             helperText={intl.formatMessage({
                                                 id: 'Throttling.Subscription.enter.permission.allowed',
                                                 defaultMessage: 'This policy is "Allowed" for above roles.',
+                                            }) + ' ' + intl.formatMessage({
+                                                id: 'Throttling.Subscription.enter.role.separation.help.text',
+                                                defaultMessage: 'Use comma to seperate roles.',
                                             })}
                                             variant='outlined'
                                         />
@@ -1324,6 +1361,9 @@ function AddEdit(props) {
                                             helperText={intl.formatMessage({
                                                 id: 'Throttling.Subscription.enter.permission.denied',
                                                 defaultMessage: 'This policy is "Denied" for above roles.',
+                                            }) + ' ' + intl.formatMessage({
+                                                id: 'Throttling.Subscription.enter.role.separation.help.text',
+                                                defaultMessage: 'Use comma to seperate roles.',
                                             })}
                                             variant='outlined'
                                         />
@@ -1337,8 +1377,8 @@ function AddEdit(props) {
                                     onChange={onChange}
                                     className={classes.radioGroup}
                                 >
-                                    <FormControlLabel value='allow' control={<Radio />} label='Allow' />
-                                    <FormControlLabel value='deny' control={<Radio />} label='Deny' />
+                                    <FormControlLabel value='ALLOW' control={<Radio />} label='Allow' />
+                                    <FormControlLabel value='DENY' control={<Radio />} label='Deny' />
                                 </RadioGroup>
                             </Box>
                         </Box>

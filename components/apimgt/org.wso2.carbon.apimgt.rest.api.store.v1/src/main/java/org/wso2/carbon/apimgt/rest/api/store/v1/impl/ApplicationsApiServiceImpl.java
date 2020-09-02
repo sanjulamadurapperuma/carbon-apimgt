@@ -172,6 +172,10 @@ public class ApplicationsApiServiceImpl implements ApplicationsApiService {
                 body.setAttributes(applicationAttributes);
             }
 
+            //we do not honor tokenType sent in the body and
+            //all the applications created will of 'JWT' token type
+            body.setTokenType(ApplicationDTO.TokenTypeEnum.JWT);
+
             //subscriber field of the body is not honored. It is taken from the context
             Application application = ApplicationMappingUtil.fromDTOtoApplication(body, username);
 
@@ -286,6 +290,12 @@ public class ApplicationsApiServiceImpl implements ApplicationsApiService {
             if (applicationAttributes != null) {
                 body.setAttributes(applicationAttributes);
             }
+
+            //we do not honor tokenType sent in the body and all the applications are considered of 'JWT' token type
+            //unless the current application is already of 'OAUTH' type
+            if (!ApplicationDTO.TokenTypeEnum.OAUTH.toString().equals(oldApplication.getTokenType())) {
+                body.setTokenType(ApplicationDTO.TokenTypeEnum.JWT);
+            }
             
             //we do not honor the subscriber coming from the request body as we can't change the subscriber of the application
             Application application = ApplicationMappingUtil.fromDTOtoApplication(body, username);
@@ -393,8 +403,9 @@ public class ApplicationsApiServiceImpl implements ApplicationsApiService {
                                 if (payload.has(APIConstants.JwtTokenConstants.EXPIRY_TIME)) {
                                     expiryTime = APIUtil.getExpiryifJWT(apiKey);
                                 }
+                                String tokenIdentifier = payload.getString(APIConstants.JwtTokenConstants.JWT_ID);
                                 String tenantDomain = RestApiUtil.getLoggedInUserTenantDomain();
-                                apiConsumer.revokeAPIKey(apiKey, expiryTime, tenantDomain);
+                                apiConsumer.revokeAPIKey(tokenIdentifier, expiryTime, tenantDomain);
                                 return Response.ok().build();
                             } else {
                                 if (log.isDebugEnabled()) {
@@ -460,7 +471,7 @@ public class ApplicationsApiServiceImpl implements ApplicationsApiService {
         String username = RestApiUtil.getLoggedInUsername();
         try {
             APIConsumer apiConsumer = APIManagerFactory.getInstance().getAPIConsumer(username);
-            Application application = apiConsumer.getApplicationByUUID(applicationId);
+            Application application = apiConsumer.getLightweightApplicationByUUID(applicationId);
             if (application != null) {
                 if (RestAPIStoreUtils.isUserOwnerOfApplication(application)) {
                     apiConsumer.removeApplication(application, username);
@@ -920,6 +931,7 @@ public class ApplicationsApiServiceImpl implements ApplicationsApiService {
                                                                                     String ifMatch,
                                                                                     MessageContext messageContext)
             throws APIManagementException {
+
         String username = RestApiUtil.getLoggedInUsername();
         APIConsumer apiConsumer = RestApiUtil.getConsumer(username);
         Application application = apiConsumer.getApplicationByUUID(applicationId);
@@ -941,19 +953,25 @@ public class ApplicationsApiServiceImpl implements ApplicationsApiService {
                                 "application " + applicationId + ". Invalid jsonInput \'"
                                 + body.getAdditionalProperties() + "\' provided.", log);
                     }
-                    if (StringUtils.isNotEmpty(body.getConsumerSecret())){
+                    if (StringUtils.isNotEmpty(body.getConsumerSecret())) {
                         appKey.setConsumerSecret(body.getConsumerSecret());
                     }
                     String[] scopes = body.getScopes().toArray(new String[0]);
-                    AccessTokenInfo response = apiConsumer.renewAccessToken(body.getRevokeToken(),
-                            appKey.getConsumerKey(), appKey.getConsumerSecret(),
-                            body.getValidityPeriod().toString(), scopes, jsonInput, appKey.getKeyManager());
 
-                    ApplicationTokenDTO appToken = new ApplicationTokenDTO();
-                    appToken.setAccessToken(response.getAccessToken());
-                    appToken.setTokenScopes(Arrays.asList(response.getScopes()));
-                    appToken.setValidityTime(response.getValidityPeriod());
-                    return Response.ok().entity(appToken).build();
+                    try {
+                        AccessTokenInfo response = apiConsumer.renewAccessToken(body.getRevokeToken(),
+                                appKey.getConsumerKey(), appKey.getConsumerSecret(),
+                                body.getValidityPeriod().toString(), scopes, jsonInput, appKey.getKeyManager());
+                        ApplicationTokenDTO appToken = new ApplicationTokenDTO();
+                        appToken.setAccessToken(response.getAccessToken());
+                        if (response.getScopes() != null) {
+                            appToken.setTokenScopes(Arrays.asList(response.getScopes()));
+                        }
+                        appToken.setValidityTime(response.getValidityPeriod());
+                        return Response.ok().entity(appToken).build();
+                    } catch (APIManagementException e) {
+                        RestApiUtil.handleBadRequest(e.getErrorHandler(), log);
+                    }
                 } else {
                     RestApiUtil
                             .handleResourceNotFoundError(RestApiConstants.RESOURCE_APP_CONSUMER_KEY, keyMappingId, log);

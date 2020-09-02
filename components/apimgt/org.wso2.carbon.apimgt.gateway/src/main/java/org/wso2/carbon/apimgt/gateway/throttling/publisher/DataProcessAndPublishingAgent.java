@@ -200,6 +200,10 @@ public class DataProcessAndPublishingAgent implements Runnable {
         }
 
         if (remoteIP != null && remoteIP.length() > 0) {
+            if (remoteIP.contains(":") && remoteIP.split(":").length == 2) {
+                log.warn("Client port will be ignored and only the IP address (IPV4) will concern from " + remoteIP);
+                remoteIP = remoteIP.split(":")[0];
+            }
             try {
                 InetAddress address = APIUtil.getAddress(remoteIP);
                 if (address instanceof Inet4Address) {
